@@ -1,0 +1,176 @@
+JAC PROGRAMMING LANGUAGE - Condensed Reference
+
+=== CORE CONCEPTS ===
+Jac: AI-first language, superset of Python. Object-Spatial Programming (OSP). Data graphs + mobile computation. Scale-agnostic: same code local/cloud. Automatic persistence, API generation.
+
+=== VARIABLES & TYPES ===
+Variables: name: type = value; Required type annotations. glob: global variables. :g: access global.
+Types: int, float, str, bool, list[T], dict[K,V], set[T], tuple, any. Union: T1 | T2. Optional: T | None.
+Literals: String "text", Number 42, 3.14, Boolean True/False, List [1,2,3], Dict {"k":"v"}.
+
+=== CONTROL FLOW ===
+If: if condition { } elif { } else { }. Match: match value { case pattern: code; case _: default; }.
+Loops: for item in collection { }, for i=start to condition by increment { }, while condition { }.
+Comprehensions: [expr for x in iter if cond], {k:v for x in iter}.
+
+=== FUNCTIONS ===
+Definition: def name(param: type) -> return_type { body; }. Lambda: lambda x: type: expr.
+Callable type: callable[[param_types], return_type]. Higher-order: functions as parameters/returns.
+Built-ins: filter(func, iter), map(func, iter), sorted(iter, key=func).
+Decorators: @decorator_name. Stack bottom-up. Parameterized: @decorator(args).
+Async: async def name() { await expr; }. asyncio.run(coro).
+
+=== OBJECTS (OOP) ===
+Definition: obj Name { has attr: type; def method() -> type; }.
+Auto constructor from has declarations. No __init__ needed.
+postinit: has attr by postinit; def postinit() { }.
+Inheritance: obj Child(Parent) { }. Override methods.
+Access: :pub (default), :priv (class only), :protect (class + children).
+Implementation separation: name.jac (interface), name.impl.jac (implementation).
+impl Name.method { body; }.
+
+=== IMPORTS ===
+Python: import module; import from module {symbol}. import module as alias;.
+Jac: include module; (flattens namespace). Resolution: caller dir, JAC_PATH, sys.path.
+
+=== FILE OPERATIONS ===
+open(path, mode): with open(path) as file { }. json.load(file), json.dump(obj, file).
+os: getcwd(), path.exists(). pathlib.Path(path).
+
+=== AI INTEGRATION (byLLM) ===
+Model: import from byllm {Model, Image}. glob llm = Model(model_name="gpt-4.1-mini", temperature=0.7, max_tokens=500).
+AI Function: def func(param: type) -> type by llm(); Uses function signature as prompt.
+Semantic strings: sem ClassName = "description"; sem ClassName.attr = "description";.
+Multimodal: Image(path), supports text/images/audio.
+
+=== NODES (OSP) ===
+Definition: node Name { has attr: type; def method(); }.
+Like obj but spatial: can be connected in graph. Persist when connected to root.
+Creation: name = Node(attr=val); Connect: parent ++> child; (creates edge, returns list).
+Access: node_list[0] for single node.
+
+=== EDGES (OSP) ===
+Definition: edge Name { has attr: type; }. Typed, directional relationships.
+Connection: node1 +>:EdgeType(attr=val):+> node2; (bidirectional).
+Directional: node1 +>:EdgeType:+> node2; (forward only).
+Properties: edges store relationship metadata.
+
+=== WALKERS (OSP) ===
+Definition: walker Name { has state: type; can ability with NodeType entry { }; }.
+Mobile computation: traverses graph, executes abilities at nodes.
+Spawn: node spawn walker; or walker() spawn node;.
+Abilities: can name with NodeType entry/exit { }. here: current node. visitor: current walker.
+visit [edge_filter]; continues traversal. disengage; stops walker.
+
+=== GRAPH NAVIGATION ===
+Filters: [start_node operator edge_filter node_filter].
+Operators: --> (outgoing), <-- (incoming), <-> (bidirectional), --> --> (2 hops).
+Edge filter: :EdgeType:, :EdgeType:attr==val:. Node filter: (`?NodeType), (`?NodeType:attr==val).
+Examples: [root-->(`?Person)], [node->:Friend:->(`?Person)], [node->:Edge:weight>5:->].
+Operators in filters: ==, !=, <, >, <=, >=, in, not in, is, is not.
+
+=== GRAPH TRAVERSAL ===
+visit [filter]; BFS default. visit :0: [filter]; DFS (stack). visit :N: [filter]; priority.
+Visited tracking: has visited: set = set(); check before processing.
+Path finding: queue = deque([(node, 0)]); BFS pattern.
+
+=== PERSISTENCE (jac serve) ===
+Automatic: nodes connected to root persist. root: special starting node in serve mode.
+Service only: jac serve file.jac. NOT jac run (stateless).
+Transaction: changes persist at request end. Database: configure via DATABASE_URL.
+
+=== API GENERATION (jac serve) ===
+Walkers → endpoints: /walker/walker_name. Walker params → request body JSON.
+Methods: default POST. Specify: static has methods: list = ["get", "post"];.
+Auth: static has auth: bool = True; (default True, public False).
+Response: report {data}; → {"returns": [{data}]}.
+Health: Create walker health_check for monitoring.
+
+=== JAC CLOUD DEPLOYMENT ===
+Commands: jac serve file.jac. Automatic: API routes, persistence, multi-user.
+Environment: getenv("VAR_NAME", "default"). Config: glob config = {}.
+Docker: FROM python:3.11-slim, RUN pip install jaclang, CMD jac serve app.jac.
+Kubernetes: Deployment, Service, Ingress. Horizontal scaling: replicas, HPA.
+
+=== MULTI-USER ===
+Isolation: each user separate graph (with auth). Root per user. Walker params: has user_id: str;.
+Permissions: Check ownership: node.owner == user_id. Shared: has shared_with: list[str].
+Roles: enum Role {VIEWER, EDITOR, ADMIN}. Filter access by role.
+
+=== ENVIRONMENT & LOGGING ===
+Environment: import from os {getenv}. config = {"key": getenv("KEY", "default")}.
+Logging: import from logging {getLogger}. logger = getLogger("app"). logger.info/warning/error().
+Structured: node LogEntry {has level: str; has message: str; has context: dict;}.
+
+=== TESTING ===
+Test files: file.test.jac. Auto-discovery: jac test file.jac.
+Test blocks: test test_name { code; check assertion; }.
+Assertions: check expr; isinstance(obj, Type). Graph testing: check len([filter]) == N;.
+Walker testing: walker spawn node; check walker.state.
+
+=== TYPE SYSTEM ===
+Flexible: any type for dynamic. Runtime: isinstance(val, type). Type guards: if isinstance().
+Validation: def validate(val: any, expected: any) -> bool.
+Schema: obj SchemaValidator {def validate_object(obj: any) -> dict;}.
+Graph-aware: type-safe node/edge operations. Walker type checking: validate before process.
+
+=== PERFORMANCE ===
+Graph structure: index cached data, avoid redundant connections. Cached: has count: int (vs compute).
+Traversal: BFS for breadth, DFS for depth. Cache results: node CacheEntry {computed data}.
+Memory: lightweight nodes, batch processing, cleanup references. Limit traversal depth.
+Monitoring: import from time {time}, import from psutil {Process}. Track execution time, memory.
+
+=== BEST PRACTICES ===
+Spatial thinking: relationships as edges, not lists. Type safety: use strong typing, not any everywhere.
+Modular: separate interface (.jac) from implementation (.impl.jac). Test: comprehensive test.jac files.
+Security: validate access, sanitize input, :priv sensitive data. Performance: measure first, optimize hot paths.
+Documentation: types as documentation, semantic strings for AI context.
+
+=== MIGRATION FROM PYTHON ===
+class → obj: automatic constructor with has. __init__ params → has declarations.
+Lists to graphs: relationships → edges. Manual iteration → spatial filters.
+Type hints → required types. Indentation → braces {}. : → ; for statements.
+
+=== SYNTAX SUMMARY ===
+Statements end with ;. Blocks use { }. Comments: # single, #* multi *#.
+String format: f"text {var}". Type annotations: var: type = value.
+Node creation: node = Node(attr=val); Edge connection: n1 +>:Edge:+> n2;.
+Graph query: [start-->filter]. Walker spawn: node spawn Walker();.
+with entry { } : program entry point (like if __name__ == "__main__").
+
+=== COMMON PATTERNS ===
+Get or create: nodes = [root-->Type]; if not nodes { create }.
+Singleton: ensure one instance connected to root.
+Visitor: walker with abilities for each node type. State accumulation: walker has results: list.
+Caching: Check cache node, compute if missing, store in cache node.
+Pagination: batch_size, process in chunks. Cleanup: del node; removes from graph.
+RBAC: node UserProfile {has role: Role;}. Filter by role in walkers.
+
+=== ERROR HANDLING ===
+try { code; } except ExceptionType as e { handle; }. raise ValueError("message");.
+Validation: if not valid { report {"error": "message"}; return; }.
+Walker errors: check conditions, report errors, use disengage for early exit.
+
+=== ADVANCED FEATURES ===
+Enum: enum Name {VAL1 = "val1", VAL2 = "val2"}. Access: Name.VAL1, Name.VAL1.value.
+Generics: use any with runtime validation. Type constraints in validation functions.
+Protocols: define interfaces with method signatures, implement across types.
+Webhooks: walker receive_webhook {has source: str; has data: dict;}.
+Background tasks: walkers for cleanup, scheduled operations.
+
+=== PROJECT STRUCTURE ===
+my_project/
+├── main.jac              # Entry point
+├── models/
+│   ├── user.jac          # Interface
+│   └── user.impl.jac     # Implementation
+├── walkers/
+│   └── operations.jac    # Walker definitions
+├── tests/
+│   └── main.test.jac     # Tests
+└── .env                  # Configuration
+
+=== COMMON OPERATORS ===
+Arithmetic: +, -, *, /, %, **. Comparison: ==, !=, <, >, <=, >=.
+Logical: and, or, not. Membership: in, not in. Identity: is, is not.
+Graph: ++> (create+connect), --> (traverse), +>:Edge:+> (connect with edge).
