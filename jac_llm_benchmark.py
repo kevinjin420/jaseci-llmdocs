@@ -595,80 +595,32 @@ class JacBenchmark:
             }
         }
 
-    def generate_report(self, benchmark_results: Dict, output_file: str = None):
-        """Generate detailed report"""
-        report = []
-        report.append("=" * 80)
-        report.append("JAC LANGUAGE LLM BENCHMARK REPORT")
-        report.append("=" * 80)
-        report.append("")
-
-        # Summary
+    def generate_report(self, benchmark_results: Dict):
+        """Generate summary report to stdout"""
         summary = benchmark_results["summary"]
-        report.append("OVERALL SUMMARY")
-        report.append("-" * 80)
-        report.append(f"Total Score:      {summary['total_score']}/{summary['total_max']} ({summary['overall_percentage']}%)")
-        report.append(f"Tests Completed:  {summary['tests_completed']}/{summary['tests_total']}")
-        report.append("")
 
-        # Category breakdown
-        report.append("CATEGORY BREAKDOWN")
-        report.append("-" * 80)
+        print("=" * 80)
+        print("JAC LANGUAGE LLM BENCHMARK REPORT")
+        print("=" * 80)
+        print()
+        print("OVERALL SUMMARY")
+        print("-" * 80)
+        print(f"Total Score:      {summary['total_score']}/{summary['total_max']} ({summary['overall_percentage']}%)")
+        print(f"Tests Completed:  {summary['tests_completed']}/{summary['tests_total']}")
+        print()
+
+        print("CATEGORY BREAKDOWN")
+        print("-" * 80)
         for category, scores in summary["category_breakdown"].items():
-            report.append(f"{category:20s} {scores['score']:6.2f}/{scores['max']:3d} ({scores['percentage']:5.1f}%) [{scores['count']} tests]")
-        report.append("")
+            print(f"{category:20s} {scores['score']:6.2f}/{scores['max']:3d} ({scores['percentage']:5.1f}%) [{scores['count']} tests]")
+        print()
 
-        # Level breakdown
-        report.append("DIFFICULTY LEVEL BREAKDOWN")
-        report.append("-" * 80)
+        print("DIFFICULTY LEVEL BREAKDOWN")
+        print("-" * 80)
         for level, scores in summary["level_breakdown"].items():
-            report.append(f"{level:15s} {scores['score']:6.2f}/{scores['max']:3d} ({scores['percentage']:5.1f}%) [{scores['count']} tests]")
-        report.append("")
-
-        # Detailed results
-        report.append("DETAILED RESULTS")
-        report.append("=" * 80)
-
-        for result in benchmark_results["results"]:
-            report.append("")
-            report.append(f"Test ID: {result['test_id']} | Category: {result['category']} | Level: {result['level']}")
-            report.append(f"Score: {result['score']}/{result['max_score']} ({result['percentage']}%)")
-            report.append(f"Required Elements: {result['required_found']}")
-
-            if result['passed_checks']:
-                report.append("\nPassed Checks:")
-                for check in result['passed_checks']:
-                    report.append(f"  {check}")
-
-            if result['failed_checks']:
-                report.append("\nFailed Checks:")
-                for check in result['failed_checks']:
-                    report.append(f"  {check}")
-
-            if result['syntax_feedback']:
-                report.append("\nSyntax Feedback:")
-                for feedback in result['syntax_feedback']:
-                    report.append(f"  {feedback}")
-
-            report.append("\nGenerated Code:")
-            report.append("-" * 40)
-            for line in result['code'].split('\n'):
-                report.append(f"  {line}")
-            report.append("-" * 40)
-
-        report.append("")
-        report.append("=" * 80)
-        report.append("END OF REPORT")
-        report.append("=" * 80)
-
-        report_text = "\n".join(report)
-
-        if output_file:
-            with open(output_file, 'w') as f:
-                f.write(report_text)
-            print(f"Report saved to {output_file}")
-
-        return report_text
+            print(f"{level:15s} {scores['score']:6.2f}/{scores['max']:3d} ({scores['percentage']:5.1f}%) [{scores['count']} tests]")
+        print()
+        print("=" * 80)
 
     def export_test_prompts(self, output_file: str):
         """Export test prompts for LLMs"""
@@ -729,11 +681,11 @@ def main():
         print("\nUsage:")
         print("  python jac_llm_benchmark.py export <output_file>")
         print("      Export test prompts for LLMs")
-        print("\n  python jac_llm_benchmark.py evaluate <responses_file> [report_file]")
-        print("      Evaluate LLM responses and generate report")
+        print("\n  python jac_llm_benchmark.py evaluate <responses_file>")
+        print("      Evaluate LLM responses (outputs to stdout)")
         print("\nExample:")
         print("  python jac_llm_benchmark.py export test_prompts.json")
-        print("  python jac_llm_benchmark.py evaluate llm_responses.json report.txt")
+        print("  python jac_llm_benchmark.py evaluate llm_responses.json")
         return
 
     command = sys.argv[1]
@@ -750,29 +702,19 @@ def main():
     elif command == "evaluate":
         if len(sys.argv) < 3:
             print("Error: Please specify responses file")
-            print("Usage: python jac_llm_benchmark.py evaluate <responses_file> [report_file]")
+            print("Usage: python jac_llm_benchmark.py evaluate <responses_file>")
             return
 
         responses_file = sys.argv[2]
-        report_file = sys.argv[3] if len(sys.argv) > 3 else None
 
         if not Path(responses_file).exists():
             print(f"Error: Responses file not found: {responses_file}")
             return
 
         print(f"Running benchmark on {responses_file}...")
+        print()
         results = benchmark.run_benchmark(responses_file)
-
-        report = benchmark.generate_report(results, report_file)
-
-        if not report_file:
-            print(report)
-
-        # Also save JSON results
-        json_file = responses_file.replace('.json', '_results.json')
-        with open(json_file, 'w') as f:
-            json.dump(results, f, indent=2)
-        print(f"Detailed JSON results saved to {json_file}")
+        benchmark.generate_report(results)
 
     else:
         print(f"Unknown command: {command}")
