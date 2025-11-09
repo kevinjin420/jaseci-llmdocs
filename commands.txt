@@ -1,0 +1,5 @@
+read release/llmdocs-jaseci-mini.txt, complete instr in prompt.md
+
+./evaluate.sh tests/test-llmdocs-jaseci-mini.txt > ab-testing/mini/mini_
+
+rm tests/test-llmdocs-jaseci-mini.txt
