@@ -1,16 +1,16 @@
-Jac: Py superset for AI+graph. Install: pip install jaclang. CLI: jac run/serve/test file.jac. Entry: with entry {code}. Syntax: ; for statements, {} for blocks, f"text {var}". Types required. Files: .jac, .impl.jac, .test.jac.
-Types: int, str, float, bool, any, list[T], dict[K,V], set[T], tuple[T1,T2], T1|T2, T|None. Enum: enum E {V1,V2}. Control: if/elif/else, while, for. Match: match v {case T(): code; case _: ...}. Try: try {} except E as e {}. Lambda: lambda p: type: expr.
-Funcs: def n(p:t=v)->r{...}. async def. @dec. Objs: obj N{has a:t; def m(){...}}. N(a=v). Inherit: obj C(P). Impl: impl N.m{...}. Post-init: def postinit{...}.
+Jac: Py superset for AI+graph. Install: pip install jaclang. CLI: jac run/serve/test file.jac. Entry: with entry {code}. Syntax: ; for statements, {} for blocks, f"text {var}". Types required. Comments: # single, #* multi *#. Files: .jac, .impl.jac, .test.jac.
+Types: int, str, float, bool, any, list[T], dict[K,V], set[T], tuple[T1,T2], T1|T2, T|None. Enum: enum E {V1,V2}. Control: if/elif/else, while, for item in iter, for i=0 to i<10 by i+=1. Match: match v {case T(): code; case _: ...}. Try: try {} except E as e {}. Lambda: lambda p: type: expr.
+Funcs: def n(p:t=v)->r{...}. async def. @dec. Objs: obj N{has a:t; def m(){...}}. N(a=v). Inherit: obj C(P). Access: :pub, :priv, :protect. Impl: impl N.m{...}. Post-init: def postinit{...}. Glob: glob v:t=val; access :g:v.
 Nodes: node N{has a:t; def m; can ab with W entry|exit{...}}. Keywords: here, visitor, self. Connect: ++>, <++>. Typed: +>:E:+>, <+:E:<+. Filter: [n-->(`?T)](?a==v).
 Edges: edge E{has p:t; can ab}. Generic: ++>, <++>. Typed: +>:E(p=v):+>. Filter: [n->:E:->], [n->:E:p>v:->]. Del: del edge.
 Walkers: walker W{has s:t; can ab}. Spawn: n spawn W(). Visit: visit [-->], [<--], [<-->]. Typed visit: visit [-->(`?T)]. Edge visit: visit [->:E:->]. Control: disengage, skip, report v. Abilities on entry|exit for any, NodeType, or `root`.
 Queries: [n-->] succ, [<--n] pred, [-->(`?T)] type filter, [-->(`?T)](?a==v) attr filter, [->:E:->] edge filter. Multi-hop: [-->-->].
 Persistence: root per-user. Auto-persists if rooted. save(o) queue, commit() flush. DB: MongoDB.
-byLLM: pip install byllm. import from byllm{Model,Image}. llm=Model(model_name="gpt-4o"). AI func: def f(p)->r by llm(). Context: Docstrings, sem strings. Multi-modal: Image("path"). Methods: by llm(method='Reason|ReAct', tools=[...]). Stream: by llm(stream=T). Structured: return obj/enum. Opts: temperature, max_tokens.
+byLLM: pip install byllm. import from byllm{Model,Image,Video}. llm=Model(model_name="gpt-4o"). AI func: def f(p)->r by llm(). Context: Docstrings, sem strings. Multi-modal: Image("path"), Video("path"). Methods: by llm(method='Reason|ReAct', tools=[...]). Stream: by llm(stream=T). Structured: return obj/enum. Opts: temperature, max_tokens.
 Jac Cloud: jac serve → localhost:8000/docs. Endpoints: /walker/{n}, /walker/{n}/{id}. Config: obj __specs__{static has methods:list, auth:bool, ...}. Async: async walker, returns id, retrieve: wlk=&id; wlk.__jac__.status.
 Permissions: NoPerm, ReadPerm, ConnectPerm, WritePerm. Grant: grant(n,l) or _.allow_root(n,t,l). Revoke: revoke(n) or _.disallow_root(n,t). Custom: def __jac_access__()->L{...}.
 Testing: test "name"{assert cond}. Run: jac test file.jac.
-Obj-Spatial: Compute→data. n=loc, e=rel, w=agent. Order: loc entry→w entry→visits→w exit→loc exit.
+Obj-Spatial: Compute→data. n=loc, e=rel, w=agent. Order: loc entry→w entry→visits→w exit→loc exit. Utils: printgraph() visualize graph.
 Patterns: BFS: w{visited, queue}. DFS: w{visited, recursive}. RAG: node Doc{txt, emb}. embed(), find_similar(), answer() by llm. Social: n User; e Follow; n Post. w GetFeed.
 Best Practices: nodes=entities, obj=values, walkers=ops. Separate files. Type everything. Validate inputs. try/except. report not raise. Limit depth.
 Keywords: with entry, has, can, def, impl, glob, obj, node, edge, walker, spawn, visit, disengage, skip, report, sem, by, `root`, self, here, visitor, del, async/await, match/case, try/except, import/from.

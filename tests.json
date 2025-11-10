@@ -1,0 +1,1645 @@
+[
+  {
+    "id": "basic_01",
+    "level": 1,
+    "category": "Basic Syntax",
+    "task": "Create a simple Jac program with an entry point that prints 'Hello, Jac!'",
+    "required_elements": [
+      "with entry",
+      "print",
+      ";"
+    ],
+    "forbidden_elements": [],
+    "points": 5,
+    "hints": [
+      "Entry point syntax",
+      "Statement termination"
+    ]
+  },
+  {
+    "id": "basic_02",
+    "level": 1,
+    "category": "Basic Syntax",
+    "task": "Declare a global variable named 'counter' of type int with value 0, then print it",
+    "required_elements": [
+      "glob",
+      "counter",
+      ": int",
+      "= 0",
+      ":g:"
+    ],
+    "forbidden_elements": [],
+    "points": 5,
+    "hints": [
+      "Global variable declaration",
+      "Global access syntax"
+    ]
+  },
+  {
+    "id": "basic_03",
+    "level": 1,
+    "category": "Basic Syntax",
+    "task": "Create an enum called Status with values PENDING, ACTIVE, COMPLETED",
+    "required_elements": [
+      "enum Status",
+      "PENDING",
+      "ACTIVE",
+      "COMPLETED"
+    ],
+    "forbidden_elements": [],
+    "points": 5,
+    "hints": [
+      "Enum syntax"
+    ]
+  },
+  {
+    "id": "basic_04",
+    "level": 1,
+    "category": "Basic Syntax",
+    "task": "Write a function named 'add_numbers' that takes two int parameters and returns their sum",
+    "required_elements": [
+      "def add_numbers",
+      "int",
+      "->",
+      "return"
+    ],
+    "forbidden_elements": [],
+    "points": 5,
+    "hints": [
+      "Function definition",
+      "Type annotations",
+      "Return type"
+    ]
+  },
+  {
+    "id": "basic_05",
+    "level": 1,
+    "category": "Basic Syntax",
+    "task": "Create a for loop that iterates from 1 to 5 and prints each number",
+    "required_elements": [
+      "for",
+      "to",
+      "by",
+      "{",
+      "}"
+    ],
+    "forbidden_elements": [],
+    "points": 5,
+    "hints": [
+      "Jac for loop syntax with 'to' and 'by'"
+    ]
+  },
+  {
+    "id": "basic_06",
+    "level": 1,
+    "category": "Basic Syntax",
+    "task": "Create a multi-line comment using #* *# syntax with text inside",
+    "required_elements": [
+      "#*",
+      "*#"
+    ],
+    "forbidden_elements": [],
+    "points": 5,
+    "hints": [
+      "Multi-line comment syntax"
+    ]
+  },
+  {
+    "id": "basic_07",
+    "level": 1,
+    "category": "Basic Syntax",
+    "task": "Create a variable with an f-string that includes a variable interpolation",
+    "required_elements": [
+      "f\"",
+      "{",
+      "}"
+    ],
+    "forbidden_elements": [],
+    "points": 5,
+    "hints": [
+      "F-string formatting"
+    ]
+  },
+  {
+    "id": "basic_08",
+    "level": 1,
+    "category": "Basic Syntax",
+    "task": "Create a variable with union type annotation (str | int) and assign it a string value",
+    "required_elements": [
+      "|",
+      ": str",
+      "int"
+    ],
+    "forbidden_elements": [],
+    "points": 5,
+    "hints": [
+      "Union type syntax with pipe operator"
+    ]
+  },
+  {
+    "id": "basic_09",
+    "level": 1,
+    "category": "Basic Syntax",
+    "task": "Create a list comprehension that squares numbers from 1 to 5",
+    "required_elements": [
+      "[",
+      "for",
+      "in",
+      "]"
+    ],
+    "forbidden_elements": [],
+    "points": 5,
+    "hints": [
+      "List comprehension syntax"
+    ]
+  },
+  {
+    "id": "basic_10",
+    "level": 1,
+    "category": "Basic Syntax",
+    "task": "Create an if-elif-else chain checking if a number is positive, negative, or zero",
+    "required_elements": [
+      "if",
+      "elif",
+      "else"
+    ],
+    "forbidden_elements": [],
+    "points": 5,
+    "hints": [
+      "elif for multiple conditions"
+    ]
+  },
+  {
+    "id": "control_01",
+    "level": 2,
+    "category": "Control Flow",
+    "task": "Create a while loop that counts from 1 to 5",
+    "required_elements": [
+      "while",
+      "{",
+      "}"
+    ],
+    "forbidden_elements": [],
+    "points": 10,
+    "hints": [
+      "While loop syntax"
+    ]
+  },
+  {
+    "id": "control_02",
+    "level": 2,
+    "category": "Control Flow",
+    "task": "Create a match statement with at least two case patterns including a default case",
+    "required_elements": [
+      "match",
+      "case",
+      "case _"
+    ],
+    "forbidden_elements": [],
+    "points": 10,
+    "hints": [
+      "Match/case pattern matching"
+    ]
+  },
+  {
+    "id": "control_03",
+    "level": 2,
+    "category": "Control Flow",
+    "task": "Create a for loop with a break statement that exits when a condition is met",
+    "required_elements": [
+      "for",
+      "break",
+      "if"
+    ],
+    "forbidden_elements": [],
+    "points": 10,
+    "hints": [
+      "Loop control with break"
+    ]
+  },
+  {
+    "id": "control_04",
+    "level": 2,
+    "category": "Control Flow",
+    "task": "Create a for loop with continue statement that skips even numbers",
+    "required_elements": [
+      "for",
+      "continue",
+      "if"
+    ],
+    "forbidden_elements": [],
+    "points": 10,
+    "hints": [
+      "Loop control with continue"
+    ]
+  },
+  {
+    "id": "collection_01",
+    "level": 2,
+    "category": "Collections",
+    "task": "Create a set with type annotation set[int] and add elements to it",
+    "required_elements": [
+      "set[",
+      "int",
+      "]"
+    ],
+    "forbidden_elements": [],
+    "points": 10,
+    "hints": [
+      "Set type annotation"
+    ]
+  },
+  {
+    "id": "collection_02",
+    "level": 2,
+    "category": "Collections",
+    "task": "Create a tuple with type annotation tuple[str, int] containing a name and age",
+    "required_elements": [
+      "tuple[",
+      "str",
+      "int",
+      "]"
+    ],
+    "forbidden_elements": [],
+    "points": 10,
+    "hints": [
+      "Tuple type annotation with multiple types"
+    ]
+  },
+  {
+    "id": "collection_03",
+    "level": 2,
+    "category": "Collections",
+    "task": "Create a dictionary comprehension that maps numbers to their squares",
+    "required_elements": [
+      "{",
+      "for",
+      "in",
+      "}"
+    ],
+    "forbidden_elements": [],
+    "points": 10,
+    "hints": [
+      "Dict comprehension syntax"
+    ]
+  },
+  {
+    "id": "collection_04",
+    "level": 2,
+    "category": "Collections",
+    "task": "Create a list with type annotation list[str] and iterate over it with traditional for-in loop",
+    "required_elements": [
+      "list[",
+      "str",
+      "]",
+      "for",
+      "in"
+    ],
+    "forbidden_elements": [],
+    "points": 10,
+    "hints": [
+      "List type annotation and iteration"
+    ]
+  },
+  {
+    "id": "collection_05",
+    "level": 2,
+    "category": "Collections",
+    "task": "Create a dict with type annotation dict[str, int] and access a value using .get() method",
+    "required_elements": [
+      "dict[",
+      "str",
+      "int",
+      "]",
+      ".get("
+    ],
+    "forbidden_elements": [],
+    "points": 10,
+    "hints": [
+      "Dict type annotation and .get() method"
+    ]
+  },
+  {
+    "id": "type_01",
+    "level": 2,
+    "category": "Type System",
+    "task": "Use isinstance() to check if a variable is of type str at runtime",
+    "required_elements": [
+      "isinstance(",
+      "str"
+    ],
+    "forbidden_elements": [],
+    "points": 10,
+    "hints": [
+      "Runtime type checking"
+    ]
+  },
+  {
+    "id": "obj_01",
+    "level": 3,
+    "category": "Objects",
+    "task": "Create an object class named 'Person' with attributes name (str) and age (int)",
+    "required_elements": [
+      "obj Person",
+      "has name: str",
+      "has age: int"
+    ],
+    "forbidden_elements": [],
+    "points": 10,
+    "hints": [
+      "Object declaration",
+      "Attribute declaration with 'has'"
+    ]
+  },
+  {
+    "id": "obj_02",
+    "level": 3,
+    "category": "Objects",
+    "task": "Create an object 'Car' with attributes brand (str), year (int), and a method 'get_info' that returns a formatted string",
+    "required_elements": [
+      "obj Car",
+      "has brand",
+      "has year",
+      "def get_info",
+      "return"
+    ],
+    "forbidden_elements": [],
+    "points": 15,
+    "hints": [
+      "Object with methods",
+      "self reference"
+    ]
+  },
+  {
+    "id": "obj_03",
+    "level": 3,
+    "category": "Objects",
+    "task": "Create an object 'Student' that inherits from 'Person' and adds a 'grade' attribute",
+    "required_elements": [
+      "obj Student",
+      "Person",
+      "has grade"
+    ],
+    "forbidden_elements": [],
+    "points": 15,
+    "hints": [
+      "Inheritance syntax"
+    ]
+  },
+  {
+    "id": "obj_04",
+    "level": 3,
+    "category": "Objects",
+    "task": "Create an object with a postinit method that prints 'Object initialized'",
+    "required_elements": [
+      "obj",
+      "def postinit",
+      "print"
+    ],
+    "forbidden_elements": [],
+    "points": 15,
+    "hints": [
+      "Postinit lifecycle method"
+    ]
+  },
+  {
+    "id": "obj_05",
+    "level": 3,
+    "category": "Objects",
+    "task": "Create a lambda function that takes a number and returns its square",
+    "required_elements": [
+      "lambda",
+      ":",
+      "return"
+    ],
+    "forbidden_elements": [],
+    "points": 15,
+    "hints": [
+      "Lambda syntax with type annotations"
+    ]
+  },
+  {
+    "id": "obj_06",
+    "level": 3,
+    "category": "Objects",
+    "task": "Create an object with a private attribute using :priv: access modifier",
+    "required_elements": [
+      "obj",
+      "has",
+      ":priv:"
+    ],
+    "forbidden_elements": [],
+    "points": 15,
+    "hints": [
+      "Access control with :priv:"
+    ]
+  },
+  {
+    "id": "obj_07",
+    "level": 3,
+    "category": "Objects",
+    "task": "Create an object with a public attribute using :pub: access modifier",
+    "required_elements": [
+      "obj",
+      "has",
+      ":pub:"
+    ],
+    "forbidden_elements": [],
+    "points": 15,
+    "hints": [
+      "Access control with :pub:"
+    ]
+  },
+  {
+    "id": "obj_08",
+    "level": 3,
+    "category": "Functions",
+    "task": "Create a decorator function and apply it to another function using @ syntax",
+    "required_elements": [
+      "def",
+      "@",
+      "return"
+    ],
+    "forbidden_elements": [],
+    "points": 15,
+    "hints": [
+      "Decorator pattern with @ symbol"
+    ]
+  },
+  {
+    "id": "obj_09",
+    "level": 3,
+    "category": "Functions",
+    "task": "Create a function that accepts a callable as a parameter and calls it",
+    "required_elements": [
+      "def",
+      "callable",
+      "->"
+    ],
+    "forbidden_elements": [],
+    "points": 15,
+    "hints": [
+      "Higher-order functions with callable type"
+    ]
+  },
+  {
+    "id": "obj_10",
+    "level": 3,
+    "category": "Functions",
+    "task": "Create a function with default parameter values",
+    "required_elements": [
+      "def",
+      "=",
+      "->"
+    ],
+    "forbidden_elements": [],
+    "points": 15,
+    "hints": [
+      "Default parameters in function definition"
+    ]
+  },
+  {
+    "id": "graph_01",
+    "level": 4,
+    "category": "Graph Basics",
+    "task": "Create a node named 'City' with attributes name (str) and population (int)",
+    "required_elements": [
+      "node City",
+      "has name: str",
+      "has population: int"
+    ],
+    "forbidden_elements": [],
+    "points": 20,
+    "hints": [
+      "Node declaration syntax"
+    ]
+  },
+  {
+    "id": "graph_02",
+    "level": 4,
+    "category": "Graph Basics",
+    "task": "Create two City nodes and connect them with a bidirectional edge",
+    "required_elements": [
+      "node City",
+      "City(",
+      "<++>"
+    ],
+    "forbidden_elements": [],
+    "points": 20,
+    "hints": [
+      "Node instantiation",
+      "Bidirectional connection operator"
+    ]
+  },
+  {
+    "id": "graph_03",
+    "level": 4,
+    "category": "Graph Basics",
+    "task": "Create a custom edge named 'Road' with attribute distance (float), then connect two cities with it",
+    "required_elements": [
+      "edge Road",
+      "has distance",
+      "+>:Road",
+      ":+>"
+    ],
+    "forbidden_elements": [],
+    "points": 20,
+    "hints": [
+      "Edge declaration",
+      "Typed edge connection"
+    ]
+  },
+  {
+    "id": "graph_04",
+    "level": 4,
+    "category": "Graph Basics",
+    "task": "Create a node with an ability that executes on entry",
+    "required_elements": [
+      "node",
+      "can",
+      "with entry"
+    ],
+    "forbidden_elements": [],
+    "points": 20,
+    "hints": [
+      "Node abilities",
+      "Entry trigger"
+    ]
+  },
+  {
+    "id": "graph_05",
+    "level": 4,
+    "category": "Graph Basics",
+    "task": "Create a node that references 'visitor' in its ability to access the visiting walker",
+    "required_elements": [
+      "node",
+      "can",
+      "visitor"
+    ],
+    "forbidden_elements": [],
+    "points": 20,
+    "hints": [
+      "Node ability context",
+      "Visitor reference"
+    ]
+  },
+  {
+    "id": "graph_06",
+    "level": 4,
+    "category": "Graph Basics",
+    "task": "Create two nodes and connect them with unidirectional edge using ++> operator",
+    "required_elements": [
+      "node",
+      "++>"
+    ],
+    "forbidden_elements": [],
+    "points": 20,
+    "hints": [
+      "Unidirectional connection operator"
+    ]
+  },
+  {
+    "id": "graph_07",
+    "level": 4,
+    "category": "Graph Basics",
+    "task": "Connect to root node using root ++> syntax",
+    "required_elements": [
+      "root",
+      "++>"
+    ],
+    "forbidden_elements": [],
+    "points": 20,
+    "hints": [
+      "Root node connection for persistence"
+    ]
+  },
+  {
+    "id": "graph_08",
+    "level": 4,
+    "category": "Graph Basics",
+    "task": "Create a node with exit ability that triggers when walker leaves",
+    "required_elements": [
+      "node",
+      "can",
+      "with",
+      "exit"
+    ],
+    "forbidden_elements": [],
+    "points": 20,
+    "hints": [
+      "Exit ability on nodes"
+    ]
+  },
+  {
+    "id": "graph_09",
+    "level": 4,
+    "category": "Graph Basics",
+    "task": "Create an edge with an ability that executes when walker crosses it",
+    "required_elements": [
+      "edge",
+      "can",
+      "with",
+      "entry"
+    ],
+    "forbidden_elements": [],
+    "points": 20,
+    "hints": [
+      "Edge abilities"
+    ]
+  },
+  {
+    "id": "graph_10",
+    "level": 4,
+    "category": "Graph Basics",
+    "task": "Create a chain of 3 nodes connected using chained ++> operators",
+    "required_elements": [
+      "node",
+      "++>",
+      "++>"
+    ],
+    "forbidden_elements": [],
+    "points": 20,
+    "hints": [
+      "Chained connection syntax"
+    ]
+  },
+  {
+    "id": "walker_01",
+    "level": 5,
+    "category": "Walkers",
+    "task": "Create a walker named 'Explorer' with an attribute visited_count (int) initialized to 0",
+    "required_elements": [
+      "walker Explorer",
+      "has visited_count: int",
+      "= 0"
+    ],
+    "forbidden_elements": [],
+    "points": 25,
+    "hints": [
+      "Walker declaration",
+      "Attribute initialization"
+    ]
+  },
+  {
+    "id": "walker_02",
+    "level": 5,
+    "category": "Walkers",
+    "task": "Create a walker that visits all outgoing nodes using visit [-->]",
+    "required_elements": [
+      "walker",
+      "visit",
+      "[-->]"
+    ],
+    "forbidden_elements": [],
+    "points": 25,
+    "hints": [
+      "Walker visit syntax",
+      "Outgoing edge pattern"
+    ]
+  },
+  {
+    "id": "walker_03",
+    "level": 5,
+    "category": "Walkers",
+    "task": "Create a walker that visits nodes filtered by type, using the ?Type syntax",
+    "required_elements": [
+      "walker",
+      "visit",
+      "`?"
+    ],
+    "forbidden_elements": [],
+    "points": 25,
+    "hints": [
+      "Type filtering in visit",
+      "Backtick question mark syntax"
+    ]
+  },
+  {
+    "id": "walker_04",
+    "level": 5,
+    "category": "Walkers",
+    "task": "Create a walker with an entry ability that prints the current node using 'here'",
+    "required_elements": [
+      "walker",
+      "can",
+      "with entry",
+      "here"
+    ],
+    "forbidden_elements": [],
+    "points": 25,
+    "hints": [
+      "Walker abilities",
+      "Here reference for current location"
+    ]
+  },
+  {
+    "id": "walker_05",
+    "level": 5,
+    "category": "Walkers",
+    "task": "Create a walker that uses 'report' to stream a value back to the caller",
+    "required_elements": [
+      "walker",
+      "report"
+    ],
+    "forbidden_elements": [],
+    "points": 25,
+    "hints": [
+      "Report statement for returning values"
+    ]
+  },
+  {
+    "id": "walker_06",
+    "level": 5,
+    "category": "Walkers",
+    "task": "Spawn a walker on a node using 'node spawn walker_instance' syntax",
+    "required_elements": [
+      "spawn",
+      "walker"
+    ],
+    "forbidden_elements": [],
+    "points": 25,
+    "hints": [
+      "Walker spawning syntax"
+    ]
+  },
+  {
+    "id": "walker_07",
+    "level": 5,
+    "category": "Walkers",
+    "task": "Spawn a walker on root node using 'root spawn walker_instance'",
+    "required_elements": [
+      "root",
+      "spawn",
+      "walker"
+    ],
+    "forbidden_elements": [],
+    "points": 25,
+    "hints": [
+      "Root spawn pattern"
+    ]
+  },
+  {
+    "id": "walker_08",
+    "level": 5,
+    "category": "Walkers",
+    "task": "Create a walker that visits incoming nodes using [<--]",
+    "required_elements": [
+      "walker",
+      "visit",
+      "[<--]"
+    ],
+    "forbidden_elements": [],
+    "points": 25,
+    "hints": [
+      "Incoming edge navigation"
+    ]
+  },
+  {
+    "id": "walker_09",
+    "level": 5,
+    "category": "Walkers",
+    "task": "Create a walker with an exit ability",
+    "required_elements": [
+      "walker",
+      "can",
+      "with",
+      "exit"
+    ],
+    "forbidden_elements": [],
+    "points": 25,
+    "hints": [
+      "Walker exit abilities"
+    ]
+  },
+  {
+    "id": "walker_10",
+    "level": 5,
+    "category": "Walkers",
+    "task": "Create a walker that reports 'here' to return current node",
+    "required_elements": [
+      "walker",
+      "report",
+      "here"
+    ],
+    "forbidden_elements": [],
+    "points": 25,
+    "hints": [
+      "Reporting current node"
+    ]
+  },
+  {
+    "id": "advanced_01",
+    "level": 6,
+    "category": "Advanced Graph",
+    "task": "Create a walker that filters nodes by an attribute value (e.g., ?attr == value)",
+    "required_elements": [
+      "walker",
+      "visit",
+      "?",
+      "=="
+    ],
+    "forbidden_elements": [],
+    "points": 30,
+    "hints": [
+      "Attribute filtering syntax in visit statements"
+    ]
+  },
+  {
+    "id": "advanced_02",
+    "level": 6,
+    "category": "Advanced Graph",
+    "task": "Create a walker that filters by edge type using ->:EdgeType:->",
+    "required_elements": [
+      "walker",
+      "visit",
+      "->:",
+      ":->"
+    ],
+    "forbidden_elements": [],
+    "points": 30,
+    "hints": [
+      "Edge type filtering"
+    ]
+  },
+  {
+    "id": "advanced_03",
+    "level": 6,
+    "category": "Advanced Graph",
+    "task": "Create a multi-hop traversal that goes 3 levels deep (node --> --> -->)",
+    "required_elements": [
+      "walker",
+      "visit",
+      "-->",
+      "-->",
+      "-->"
+    ],
+    "forbidden_elements": [],
+    "points": 30,
+    "hints": [
+      "Multi-hop traversal syntax"
+    ]
+  },
+  {
+    "id": "advanced_04",
+    "level": 6,
+    "category": "Advanced Graph",
+    "task": "Create a walker that uses 'disengage' to exit early",
+    "required_elements": [
+      "walker",
+      "disengage"
+    ],
+    "forbidden_elements": [],
+    "points": 30,
+    "hints": [
+      "Walker control flow with disengage"
+    ]
+  },
+  {
+    "id": "advanced_05",
+    "level": 6,
+    "category": "Advanced Graph",
+    "task": "Create edge with an ability that triggers on walker entry",
+    "required_elements": [
+      "edge",
+      "can",
+      "with",
+      "entry"
+    ],
+    "forbidden_elements": [],
+    "points": 30,
+    "hints": [
+      "Edge abilities"
+    ]
+  },
+  {
+    "id": "advanced_06",
+    "level": 6,
+    "category": "Advanced Graph",
+    "task": "Create a walker with depth-first search using indexed visit :0:",
+    "required_elements": [
+      "walker",
+      "visit",
+      ":0:"
+    ],
+    "forbidden_elements": [],
+    "points": 30,
+    "hints": [
+      "Indexed visit for DFS"
+    ]
+  },
+  {
+    "id": "advanced_07",
+    "level": 6,
+    "category": "Advanced Graph",
+    "task": "Create a walker that visits multiple specific nodes in a list",
+    "required_elements": [
+      "walker",
+      "visit",
+      "["
+    ],
+    "forbidden_elements": [],
+    "points": 30,
+    "hints": [
+      "Multi-target visit"
+    ]
+  },
+  {
+    "id": "advanced_08",
+    "level": 6,
+    "category": "Advanced Graph",
+    "task": "Create a filter combining node type and attribute (e.g., `?Person: age > 18)",
+    "required_elements": [
+      "visit",
+      "`?",
+      ":"
+    ],
+    "forbidden_elements": [],
+    "points": 30,
+    "hints": [
+      "Combined type and attribute filtering"
+    ]
+  },
+  {
+    "id": "advanced_09",
+    "level": 6,
+    "category": "Advanced Graph",
+    "task": "Create a walker that uses edge attribute filtering (:EdgeType: weight > 5:)",
+    "required_elements": [
+      "visit",
+      ":",
+      ":"
+    ],
+    "forbidden_elements": [],
+    "points": 30,
+    "hints": [
+      "Edge attribute filtering"
+    ]
+  },
+  {
+    "id": "advanced_10",
+    "level": 6,
+    "category": "Advanced Graph",
+    "task": "Delete an edge between two nodes using 'del' operator",
+    "required_elements": [
+      "del",
+      "-->"
+    ],
+    "forbidden_elements": [],
+    "points": 30,
+    "hints": [
+      "Edge deletion syntax"
+    ]
+  },
+  {
+    "id": "ai_01",
+    "level": 7,
+    "category": "AI Integration",
+    "task": "Import Model from byllm module",
+    "required_elements": [
+      "import",
+      "from byllm",
+      "Model"
+    ],
+    "forbidden_elements": [],
+    "points": 35,
+    "hints": [
+      "Import syntax for byllm"
+    ]
+  },
+  {
+    "id": "ai_02",
+    "level": 7,
+    "category": "AI Integration",
+    "task": "Create a global LLM model instance with model name 'gpt-4o-mini'",
+    "required_elements": [
+      "glob",
+      "Model",
+      "model_name",
+      "gpt-4o-mini"
+    ],
+    "forbidden_elements": [],
+    "points": 35,
+    "hints": [
+      "Model initialization"
+    ]
+  },
+  {
+    "id": "ai_03",
+    "level": 7,
+    "category": "AI Integration",
+    "task": "Create an AI function using 'by llm()' that generates a greeting",
+    "required_elements": [
+      "def",
+      "by llm()",
+      "->"
+    ],
+    "forbidden_elements": [],
+    "points": 35,
+    "hints": [
+      "AI function syntax with by keyword"
+    ]
+  },
+  {
+    "id": "ai_04",
+    "level": 7,
+    "category": "AI Integration",
+    "task": "Create a semantic string using 'sem' keyword to describe an attribute",
+    "required_elements": [
+      "sem",
+      "="
+    ],
+    "forbidden_elements": [],
+    "points": 35,
+    "hints": [
+      "Semantic annotation syntax"
+    ]
+  },
+  {
+    "id": "ai_05",
+    "level": 7,
+    "category": "AI Integration",
+    "task": "Create an AI function that returns an enum type to constrain LLM output",
+    "required_elements": [
+      "enum",
+      "def",
+      "by llm()",
+      "->"
+    ],
+    "forbidden_elements": [],
+    "points": 35,
+    "hints": [
+      "Enum as return type for AI functions"
+    ]
+  },
+  {
+    "id": "ai_06",
+    "level": 7,
+    "category": "AI Integration",
+    "task": "Create an AI function with reasoning using by llm(method='Reason')",
+    "required_elements": [
+      "def",
+      "by llm(",
+      "method",
+      "Reason",
+      ")"
+    ],
+    "forbidden_elements": [],
+    "points": 35,
+    "hints": [
+      "Reasoning method in AI functions"
+    ]
+  },
+  {
+    "id": "ai_07",
+    "level": 7,
+    "category": "AI Integration",
+    "task": "Create an AI function with tools parameter for ReAct pattern",
+    "required_elements": [
+      "def",
+      "by llm(",
+      "tools",
+      ")"
+    ],
+    "forbidden_elements": [],
+    "points": 35,
+    "hints": [
+      "Tool-calling AI functions"
+    ]
+  },
+  {
+    "id": "ai_08",
+    "level": 7,
+    "category": "AI Integration",
+    "task": "Import Image from byllm for multimodal support",
+    "required_elements": [
+      "import",
+      "from byllm",
+      "Image"
+    ],
+    "forbidden_elements": [],
+    "points": 35,
+    "hints": [
+      "Multimodal imports"
+    ]
+  },
+  {
+    "id": "ai_09",
+    "level": 7,
+    "category": "AI Integration",
+    "task": "Create an AI method inside an object using by llm()",
+    "required_elements": [
+      "obj",
+      "def",
+      "by llm()"
+    ],
+    "forbidden_elements": [],
+    "points": 35,
+    "hints": [
+      "Context-aware AI methods in objects"
+    ]
+  },
+  {
+    "id": "ai_10",
+    "level": 7,
+    "category": "AI Integration",
+    "task": "Create an AI function that returns a custom object type",
+    "required_elements": [
+      "obj",
+      "def",
+      "by llm()",
+      "->"
+    ],
+    "forbidden_elements": [],
+    "points": 35,
+    "hints": [
+      "Structured outputs from AI functions"
+    ]
+  },
+  {
+    "id": "cloud_01",
+    "level": 8,
+    "category": "Cloud",
+    "task": "Create a walker with __specs__ that allows GET and POST methods",
+    "required_elements": [
+      "walker",
+      "__specs__",
+      "static has methods",
+      "get",
+      "post"
+    ],
+    "forbidden_elements": [],
+    "points": 40,
+    "hints": [
+      "Walker specs configuration",
+      "HTTP methods"
+    ]
+  },
+  {
+    "id": "cloud_02",
+    "level": 8,
+    "category": "Cloud",
+    "task": "Create a walker that disables authentication using __specs__",
+    "required_elements": [
+      "walker",
+      "__specs__",
+      "static has auth: bool",
+      "False"
+    ],
+    "forbidden_elements": [],
+    "points": 40,
+    "hints": [
+      "Auth configuration in specs"
+    ]
+  },
+  {
+    "id": "cloud_03",
+    "level": 8,
+    "category": "Cloud",
+    "task": "Create a walker with a custom path in __specs__",
+    "required_elements": [
+      "walker",
+      "__specs__",
+      "static has path: str"
+    ],
+    "forbidden_elements": [],
+    "points": 40,
+    "hints": [
+      "Custom endpoint path"
+    ]
+  },
+  {
+    "id": "cloud_04",
+    "level": 8,
+    "category": "Cloud",
+    "task": "Create a walker that marks all parameters as query params using as_query",
+    "required_elements": [
+      "walker",
+      "__specs__",
+      "static has as_query",
+      "*"
+    ],
+    "forbidden_elements": [],
+    "points": 40,
+    "hints": [
+      "Query parameter configuration"
+    ]
+  },
+  {
+    "id": "cloud_05",
+    "level": 8,
+    "category": "Cloud",
+    "task": "Create a private walker that won't auto-generate an endpoint",
+    "required_elements": [
+      "walker",
+      "__specs__",
+      "static has private: bool",
+      "True"
+    ],
+    "forbidden_elements": [],
+    "points": 40,
+    "hints": [
+      "Private walker configuration"
+    ]
+  },
+  {
+    "id": "cloud_06",
+    "level": 8,
+    "category": "Cloud",
+    "task": "Create an async walker using 'async walker' syntax",
+    "required_elements": [
+      "async walker"
+    ],
+    "forbidden_elements": [],
+    "points": 40,
+    "hints": [
+      "Async walker for background execution"
+    ]
+  },
+  {
+    "id": "cloud_07",
+    "level": 8,
+    "category": "Cloud",
+    "task": "Reference a walker by ID using &walker_id syntax",
+    "required_elements": [
+      "&"
+    ],
+    "forbidden_elements": [],
+    "points": 40,
+    "hints": [
+      "Walker reference operator"
+    ]
+  },
+  {
+    "id": "cloud_08",
+    "level": 8,
+    "category": "Cloud",
+    "task": "Create a webhook walker with __specs__ configuration",
+    "required_elements": [
+      "walker",
+      "__specs__"
+    ],
+    "forbidden_elements": [],
+    "points": 40,
+    "hints": [
+      "Webhook configuration"
+    ]
+  },
+  {
+    "id": "cloud_09",
+    "level": 8,
+    "category": "Cloud",
+    "task": "Connect a node to root for persistence using root ++>",
+    "required_elements": [
+      "root",
+      "++>"
+    ],
+    "forbidden_elements": [],
+    "points": 40,
+    "hints": [
+      "Root persistence pattern"
+    ]
+  },
+  {
+    "id": "cloud_10",
+    "level": 8,
+    "category": "Cloud",
+    "task": "Create a walker that returns typed response with proper return annotation",
+    "required_elements": [
+      "walker",
+      "->",
+      "return"
+    ],
+    "forbidden_elements": [],
+    "points": 40,
+    "hints": [
+      "Type-safe API responses"
+    ]
+  },
+  {
+    "id": "import_01",
+    "level": 9,
+    "category": "Imports",
+    "task": "Import a Python module using import statement",
+    "required_elements": [
+      "import",
+      ";"
+    ],
+    "forbidden_elements": [],
+    "points": 45,
+    "hints": [
+      "Python module imports"
+    ]
+  },
+  {
+    "id": "import_02",
+    "level": 9,
+    "category": "Imports",
+    "task": "Import specific symbols from a module using 'import from' syntax",
+    "required_elements": [
+      "import",
+      "from",
+      "{",
+      "}"
+    ],
+    "forbidden_elements": [],
+    "points": 45,
+    "hints": [
+      "Selective imports with from"
+    ]
+  },
+  {
+    "id": "import_03",
+    "level": 9,
+    "category": "Imports",
+    "task": "Include a Jac module using 'include' keyword",
+    "required_elements": [
+      "include"
+    ],
+    "forbidden_elements": [],
+    "points": 45,
+    "hints": [
+      "Jac module inclusion"
+    ]
+  },
+  {
+    "id": "import_04",
+    "level": 9,
+    "category": "Imports",
+    "task": "Import a module with an alias using 'as' keyword",
+    "required_elements": [
+      "import",
+      "as"
+    ],
+    "forbidden_elements": [],
+    "points": 45,
+    "hints": [
+      "Import aliasing"
+    ]
+  },
+  {
+    "id": "file_01",
+    "level": 9,
+    "category": "File Operations",
+    "task": "Open and read a file using 'with open() as' context manager",
+    "required_elements": [
+      "with",
+      "open(",
+      "as",
+      "{",
+      "}"
+    ],
+    "forbidden_elements": [],
+    "points": 45,
+    "hints": [
+      "File reading with context manager"
+    ]
+  },
+  {
+    "id": "file_02",
+    "level": 9,
+    "category": "File Operations",
+    "task": "Write to a file using open with 'w' mode",
+    "required_elements": [
+      "open(",
+      "w",
+      ".write("
+    ],
+    "forbidden_elements": [],
+    "points": 45,
+    "hints": [
+      "File writing"
+    ]
+  },
+  {
+    "id": "file_03",
+    "level": 9,
+    "category": "File Operations",
+    "task": "Load JSON from a file using json.load()",
+    "required_elements": [
+      "import",
+      "json",
+      "json.load("
+    ],
+    "forbidden_elements": [],
+    "points": 45,
+    "hints": [
+      "JSON file operations"
+    ]
+  },
+  {
+    "id": "impl_01",
+    "level": 9,
+    "category": "Implementation",
+    "task": "Create an implementation for a method using 'impl' keyword",
+    "required_elements": [
+      "impl",
+      ".",
+      "{",
+      "}"
+    ],
+    "forbidden_elements": [],
+    "points": 45,
+    "hints": [
+      "Implementation separation with impl"
+    ]
+  },
+  {
+    "id": "advanced_func_01",
+    "level": 9,
+    "category": "Advanced Functions",
+    "task": "Create a function using *args for variable arguments",
+    "required_elements": [
+      "def",
+      "*args"
+    ],
+    "forbidden_elements": [],
+    "points": 45,
+    "hints": [
+      "Variable positional arguments"
+    ]
+  },
+  {
+    "id": "advanced_func_02",
+    "level": 9,
+    "category": "Advanced Functions",
+    "task": "Create a function using **kwargs for keyword arguments",
+    "required_elements": [
+      "def",
+      "**kwargs"
+    ],
+    "forbidden_elements": [],
+    "points": 45,
+    "hints": [
+      "Variable keyword arguments"
+    ]
+  },
+  {
+    "id": "integration_01",
+    "level": 10,
+    "category": "Integration",
+    "task": "Create a complete graph with Person nodes, Friendship edges, and a walker to traverse",
+    "required_elements": [
+      "node Person",
+      "edge",
+      "walker",
+      "visit",
+      "spawn"
+    ],
+    "forbidden_elements": [],
+    "points": 50,
+    "hints": [
+      "Complete social graph pattern"
+    ]
+  },
+  {
+    "id": "integration_02",
+    "level": 10,
+    "category": "Integration",
+    "task": "Create a state machine using nodes for states and a walker for transitions",
+    "required_elements": [
+      "node",
+      "walker",
+      "visit",
+      "if"
+    ],
+    "forbidden_elements": [],
+    "points": 50,
+    "hints": [
+      "State machine pattern"
+    ]
+  },
+  {
+    "id": "integration_03",
+    "level": 10,
+    "category": "Integration",
+    "task": "Create error handling with try-except in a walker",
+    "required_elements": [
+      "walker",
+      "try",
+      "except",
+      "as"
+    ],
+    "forbidden_elements": [],
+    "points": 50,
+    "hints": [
+      "Exception handling"
+    ]
+  },
+  {
+    "id": "integration_04",
+    "level": 10,
+    "category": "Integration",
+    "task": "Create an async function using async/await",
+    "required_elements": [
+      "async def",
+      "await"
+    ],
+    "forbidden_elements": [],
+    "points": 50,
+    "hints": [
+      "Async syntax"
+    ]
+  },
+  {
+    "id": "integration_05",
+    "level": 10,
+    "category": "Integration",
+    "task": "Create a complete CRUD walker with create, read, update, delete operations",
+    "required_elements": [
+      "walker",
+      "def",
+      "save",
+      "root"
+    ],
+    "forbidden_elements": [],
+    "points": 50,
+    "hints": [
+      "CRUD pattern with persistence"
+    ]
+  },
+  {
+    "id": "integration_06",
+    "level": 10,
+    "category": "Integration",
+    "task": "Combine AI functions with graph traversal in a walker",
+    "required_elements": [
+      "walker",
+      "by llm()",
+      "visit"
+    ],
+    "forbidden_elements": [],
+    "points": 50,
+    "hints": [
+      "AI-powered graph traversal"
+    ]
+  },
+  {
+    "id": "integration_07",
+    "level": 10,
+    "category": "Integration",
+    "task": "Create a walker API endpoint that persists data to root",
+    "required_elements": [
+      "walker",
+      "__specs__",
+      "root",
+      "++>"
+    ],
+    "forbidden_elements": [],
+    "points": 50,
+    "hints": [
+      "API with automatic persistence"
+    ]
+  },
+  {
+    "id": "integration_08",
+    "level": 10,
+    "category": "Integration",
+    "task": "Implement BFS graph algorithm using walker with proper visit patterns",
+    "required_elements": [
+      "walker",
+      "visit",
+      "[-->]"
+    ],
+    "forbidden_elements": [],
+    "points": 50,
+    "hints": [
+      "Breadth-first search implementation"
+    ]
+  },
+  {
+    "id": "integration_09",
+    "level": 10,
+    "category": "Integration",
+    "task": "Create a multi-step workflow with node abilities and walker coordination",
+    "required_elements": [
+      "node",
+      "can",
+      "walker",
+      "visit",
+      "visitor"
+    ],
+    "forbidden_elements": [],
+    "points": 50,
+    "hints": [
+      "Complex workflow orchestration"
+    ]
+  },
+  {
+    "id": "integration_10",
+    "level": 10,
+    "category": "Integration",
+    "task": "Build a recommendation system using multi-hop traversal and filtering",
+    "required_elements": [
+      "walker",
+      "visit",
+      "-->",
+      "-->",
+      "`?"
+    ],
+    "forbidden_elements": [],
+    "points": 50,
+    "hints": [
+      "Friend-of-friend recommendation pattern"
+    ]
+  }
+]

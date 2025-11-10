@@ -1,0 +1,21 @@
+{{ "=" * 80 }}
+JAC LANGUAGE LLM BENCHMARK REPORT
+{{ "=" * 80 }}
+
+OVERALL SUMMARY
+{{ "-" * 80 }}
+Total Score:      {{ summary.total_score }}/{{ summary.total_max }} ({{ summary.overall_percentage }}%)
+Tests Completed:  {{ summary.tests_completed }}/{{ summary.tests_total }}
+
+CATEGORY BREAKDOWN
+{{ "-" * 80 }}
+{% for category, scores in summary.category_breakdown.items() -%}
+{{ "%-20s"|format(category) }} {{ "%6.2f"|format(scores.score) }}/{{ "%3d"|format(scores.max) }} ({{ "%5.1f"|format(scores.percentage) }}%) [{{ scores.count }} tests]
+{% endfor %}
+
+DIFFICULTY LEVEL BREAKDOWN
+{{ "-" * 80 }}
+{% for level, scores in summary.level_breakdown.items() -%}
+{{ "%-15s"|format(level) }} {{ "%6.2f"|format(scores.score) }}/{{ "%3d"|format(scores.max) }} ({{ "%5.1f"|format(scores.percentage) }}%) [{{ scores.count }} tests]
+{% endfor %}
+{{ "=" * 80 }}

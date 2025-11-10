@@ -1,93 +1,47 @@
-Jac: Python superset for AI-powered graph applications. Install: pip install jaclang. Python 3.12+ required. CLI: jac run file.jac (execute), jac serve file.jac (API server :8000), jac test file.jac. Entry: with entry {code}. Files: .jac interface, .impl.jac implementation, .test.jac tests. Syntax: semicolons end statements, braces {}, f"text {var}", # comments. Types mandatory: var: type = value.
-
+Jac: Python superset for AI-powered graph applications. Install: pip install jaclang. Python 3.12+ required. CLI: jac run file.jac (execute), jac serve file.jac (API server :8000), jac test file.jac. Entry: with entry {code}. Files: .jac interface, .impl.jac implementation, .test.jac tests. Syntax: semicolons end statements, braces {}, f"text {var}", # comments, #* multi-line *#. Types mandatory: var: type = value.
 Types: int str float bool any. Collections: list[T] dict[K,V] set[T] tuple[T1,T2]. Union: T1|T2. Optional: T|None. Enums: enum Status {PENDING, ACTIVE}; Status.ACTIVE. Callable: callable[[Args], Return].
-
-Control: if x > 90 {y = "A";} elif x > 80 {y = "B";} else {y = "C";}. while count < 10 {count += 1;}. for item in items {process(item);}. for i in range(5) {print(i);}. for idx, val in enumerate(items) {}. match status {case "active": process(); case _: error();}. match data {case {"type": "user", "id": uid}: load(uid); case _: invalid();}.
-
+Control: if x > 90 {y = "A";} elif x > 80 {y = "B";} else {y = "C";}. while count < 10 {count += 1;}. for item in items {process(item);}. for i in range(5) {print(i);}. for i = 0 to i < 10 by i += 1 {process(i);}. for idx, val in enumerate(items) {}. match status {case "active": process(); case _: error();}. match data {case {"type": "user", "id": uid}: load(uid); case _: invalid();}.
 Exceptions: try {result = op();} except ValueError as e {print(e);} except Exception {} finally {cleanup();}. raise ValueError("msg"). Custom: class MyError(Exception) {}; raise MyError("msg").
-
 Functions: def add(a: int, b: int) -> int {return a + b;}. Defaults: def greet(name: str = "World") -> str {return f"Hello {name}";}. Variadic: def sum_all(*nums: int) -> int {return sum(nums);}. Async: async def fetch() {data = await get_data(); return data;}. Lambda: square = lambda x: int: x * x. Decorators: @timer def func() {}.
-
-Objects: obj Person {has name: str; has age: int = 0; def greet(self) -> str {return f"Hi, I'm {self.name}";}}. Auto-constructor from has. Instantiate: p = Person(name="Alice", age=30). Inheritance: obj Dog(Animal) {def speak() -> str {return "bark";}}. Static: static has count: int = 0. Postinit: def postinit {self.conn = connect();}.
-
+Objects: obj Person {has name: str; has age: int = 0; def greet(self) -> str {return f"Hi, I'm {self.name}";}}. Auto-constructor from has. Instantiate: p = Person(name="Alice", age=30). Inheritance: obj Dog(Animal) {def speak() -> str {return "bark";}}. Access: :pub (public), :priv (private), :protect (protected). Static: static has count: int = 0. Postinit: def postinit {self.conn = connect();}. Global: glob max: int = 100; access via :g:max.
 Implementation separation: file.jac: obj Calculator {has val: int; def add(n: int) -> int;}. file.impl.jac: impl Calculator.add(n: int) -> int {self.val += n; return self.val;}. Auto-imported.
-
 Nodes: node User {has username: str; email: str; def validate() -> bool {return "@" in self.email;}; can process with Moderator entry {visitor.check(here.content);}}. Keywords: here=current node, visitor=walker, self=node. Abilities: can ability_name with WalkerType entry|exit {code}.
-
 Edges: edge Friendship {has strength: float; since: str;}. Generic: alice ++> bob (forward), alice <++> bob (bidirectional). Typed: alice +>:Friendship:strength=0.9:+> bob. Delete: alice del --> bob. Edge abilities: can ability with WalkerType entry|exit {}.
-
 Walkers: walker Crawler {has visited: list = []; max_depth: int = 3; can crawl with Page entry {here.fetch(); visit [here --> (`?Page)];}}. Spawn: root spawn Crawler(max_depth=5). Visit: visit [here -->] successors, visit [here <--] predecessors, visit [here --> (`?User)](?is_active) filtered, visit [->:Follows:->] by edge. Control: disengage exits, skip skips node. Report: report data; accumulates in list. Root: `root entry.
-
 Queries: [node -->] successors, [<-- node] predecessors. Type: [root --> (`?User)]. Attribute: [root --> (`?User)](?is_active), [user --> (`?Post)](?created > cutoff). Edge: [user -->:Follows:-> (`?User)], [user ->:Follows:notify==True:->]. Multi-hop: [user -->:Follows:-> (`?User) --> (`?Post)]. Combine filters. Edges: [node --->] outgoing, [<--- node] incoming.
-
 Persistence: root per-user anchor. Auto-persist if connected. save(node); commit() flushes all, commit(Type) specific. Example: user = [root --> (`?User)](?name == "Alice")[0]; user.age = 30; commit(user). MongoDB stores nodes/edges/walkers. References: friend = &"n::123abc"; friend.message = "Hi".
-
 byLLM: pip install byllm. import from byllm {Model, Image, Video}. llm = Model(model_name="gpt-4o", temperature=0.7). def summarize(text: str) -> str by llm(); result = summarize("text"). Methods: obj Article {def summary() -> str by llm();}. Reasoning: by llm(method='Reason') chain-of-thought. ReAct: by llm(method='ReAct', tools=[search_web]) tool use. Streaming: by llm(stream=True); for token in generate() {print(token)}. Structured: def extract(text: str) -> Person by llm(); enum Sentiment {POS, NEG}; def analyze(text: str) -> Sentiment by llm(). Context: docstrings auto-enhance. Semantic: sem ClassName.attr = "description". Additional: by llm(incl_info={"domain": "medical"}). Multimodal: img = Image("photo.jpg"); desc = describe_image(img). Options: temperature max_tokens top_k top_p verbose max_tries.
-
 Jac Cloud: jac serve main.jac → :8000, /docs Swagger. Endpoints: /walker/{name}, /walker/{name}/{node_id}. Config: walker create_user {has name: str; obj __specs__ {static has methods: list = ["post"]; auth: bool = True;}}. Call: POST /walker/create_user JSON {"name": "Alice"}. Methods: ["get","post","put","delete","patch"]. Auth: True=Bearer token (/user/login), False=disabled. Query params: as_query: list = ["query"] or "*". Custom path: path: str = "/api/custom". Private: private: bool = True. Response: {"status": 200, "reports": [], "returns": []}. File upload: has file: UploadFile.
-
 WebSocket: methods: ["websocket"]; connect ws://localhost:8000/websocket. Events: Walker {"type": "walker", "walker": "chat", "context": {"msg": "hi"}}, User {"type": "user", "root_ids": ["n::123"], "data": {}}, Channel {"type": "channel", "channel_ids": ["room1"], "data": {}}. Server: import from jac_cloud.plugin {WEBSOCKET_MANAGER as socket}; socket.notify_self(data); socket.notify_users([root], data); socket.notify_channels(["ch"], data); socket.notify_clients(["cl"], data).
-
 Webhooks: webhook: dict = {"type": "header", "name": "X-API-KEY"}. Call: POST /webhook/walker/handler header X-API-KEY: key. Generate: POST /webhook/generate-key {"name": "key1", "walkers": ["handler"], "expiration": {"count": 60, "interval": "days"}}. Manage: GET /webhook, PATCH /webhook/extend/{id}, DELETE /webhook/delete.
-
 Scheduler: schedule: dict = {"trigger": "cron", "hour": "9", "minute": "0", "save": True}. Cron: {"trigger": "cron", "hour": "0", "minute": "30"}. Interval: {"trigger": "interval", "seconds": 30} or minutes/hours/days. Date: {"trigger": "date", "run_date": "2025-12-31T23:59:59+00:00"}. Options: max_instances: 1, save: true.
-
 Async walkers: async walker heavy_task {can process with `root entry {compute();}}. result = root spawn heavy_task(data); task_id = result; task = &task_id; task.__jac__.status ("completed"|"running"|"failed"), task.__jac__.reports, task.__jac__.error.
-
 Task queue: import from jac_cloud.plugin.implementation {create_task}; task = create_task(process_item(item_id=id), item). Requires TASK_CONSUMER_CRON_SECOND env.
-
 Permissions: Levels: NoPerm, ReadPerm, ConnectPerm, WritePerm. Grant: _.allow_root(post, friend_root, "READ"), grant(post, ReadPerm). Revoke: _.disallow_root(post, friend_root), revoke(post). Check: _.check_read_access(node), _.check_write_access(node). Custom: def __jac_access__() -> AccessLevel {return ReadPerm if here.is_public else NoPerm;}.
-
 SSO: Env: SSO_{PLATFORM}_CLIENT_ID, SSO_{PLATFORM}_CLIENT_SECRET. Platforms: APPLE, GOOGLE, FACEBOOK, GITHUB, MICROSOFT, LINKEDIN. Callback: GET /sso/{provider}/register/callback?id_token={token} returns {"email": "...", "token": "jac_auth_token"}.
-
 Environment: DATABASE_HOST DATABASE_NAME DATABASE_PORT (MongoDB). REDIS_HOST REDIS_PORT REDIS_PASSWORD. TOKEN_SECRET TOKEN_ALGORITHM TOKEN_TIMEOUT. UV_HOST UV_PORT UV_WORKERS. SHOW_ENDPOINT_RETURNS DISABLE_AUTO_ENDPOINT REQUIRE_AUTH_BY_DEFAULT. LOGGER_NAME LOGGER_LEVEL LOGGER_FILE_PATH. TASK_CONSUMER_CRON_SECOND.
-
 Logging: JSON logs at /tmp/jac_cloud_logs/jac-cloud.log. Format: {"timestamp": "ISO8601", "level": "INFO", "message": "Request", "request": {}, "response": {}, "duration": 45}. View: tail -f /tmp/jac_cloud_logs/jac-cloud.log. Errors: grep '"level":"ERROR"' logfile.
-
 Testing: test test_name {assert condition; assert value == expected;}. Run: jac test file.jac. Examples: test create_user {u = User(name="test"); assert u.name == "test";}. test graph {root ++> Node(); assert len([root -->]) == 1;}.
-
 Object-Spatial Programming: Computation moves to data. Nodes=data locations with abilities. Edges=relationships with state. Walkers=mobile agents. Abilities=event-driven by walker arrivals. Execution order: location entry → walker entry → visits → walker exit → location exit. Queue: FIFO, visit adds, empty=deactivates.
-
 Graph algorithms BFS: walker BFS {has queue: list; visited: set = set(); can search with Node entry {if here not in self.visited {self.visited.add(here); self.queue.extend([here -->]);}; if self.queue {visit [self.queue.pop(0)];}}}. DFS: walker DFS {has visited: set = set(); can search with Node entry {if here not in self.visited {self.visited.add(here); for child in [here -->] {if child not in self.visited {visit [child];}}}}}. Shortest path: walker ShortestPath {has target_id: str; distances: dict; can search with Node entry {update_distances(); if here.id == self.target_id {report path(); disengage;}}}.
-
 Patterns RAG: node Document {has text: str; embedding: list;}. def embed_text(text: str) -> list; def find_similar(query_emb: list, docs: list) -> list; def answer_question(question: str, context: list[Document]) -> str by llm(). Usage: q_emb = embed_text(query); docs = [root --> (`?Document)]; similar = find_similar(q_emb, docs); answer = answer_question(query, similar).
-
 Patterns social: node User {}; edge Follow {has since: str;}; node Post {}. walker GetFeed {has posts: list = []; can collect with User entry {visit [here --> (`?Post)]; visit [here -->:Follow:-> (`?User) --> (`?Post)];}; can gather with Post entry {visitor.posts.append(here);}}.
-
 Patterns e-commerce: node Product {has name: str; price: float; stock: int;}; node Order {has status: str; total: float;}; edge Contains {has quantity: int;}. walker Checkout {has items: list; can process with `root entry {order = here ++> Order(status="pending", total=0); for item in self.items {product = &item["id"]; if product.stock >= item["qty"] {order +>:Contains:quantity=item["qty"]:+> product; order.total += product.price * item["qty"]; product.stock -= item["qty"];}}; order.status = "confirmed"; commit();}}.
-
 Patterns task: node Task {has title: str; status: str; priority: int;}; edge DependsOn {}. walker ScheduleTasks {has result: list = []; can schedule with Task entry {deps = [<-:DependsOn:<- here]; if all(d.status == "done" for d in deps) {if here.status == "pending" {here.status = "ready"; self.result.append(here);}}; visit [-->];}}.
-
 Patterns AI: Game level gen: def generate_level(prev: list[Level], difficulty: int) -> Level by llm(); def generate_map(level: Level) -> Map by llm(). Trading: def make_transaction(buyer: Person, seller: Person, item: Item) -> bool; def npc_chat(player: Person, npc: Person, history: list[Chat]) -> Chat by llm(method='ReAct', tools=[make_transaction]). Multimodal: enum QueryType {RAG, IMAGE, VIDEO}; def classify(query: str, has_files: bool) -> QueryType by llm(); walker Route routes to handlers.
-
 Common patterns: Singleton: walker GetConfig checks/creates Config node. Pagination: walker ListItems {has page: int = 1; per_page: int = 10; reports sliced items}. Caching: node Cache {has key: str; value: any; expires: float;}; walker checks expiry. Rate limiting: node RateLimit {has user_id: str; count: int; window_start: float;}. Audit: node AuditLog {has action: str; user_id: str; timestamp: float; details: dict;}. Soft delete: has is_deleted: bool = False; deleted_at: float | None. Versioning: node DocumentVersion tracks changes. Event sourcing: node Event {has type: str; data: dict; timestamp: float;}.
-
 Advanced patterns: Actor model (nodes=actors, edges=channels, walkers=messages). CQRS (separate Write/Read models). Saga (compensating transactions). Pub-sub (Event/Subscriber nodes).
-
 Performance: Filter early: [root -->](?value > 100) not [root -->] then filter. Type filters: [root --> (`?Item)]. Batch commits: save many, commit() once. Generators for large data. Cache: in-memory/Redis/DB. async def for I/O. Limit depth in walkers.
-
 Debugging: print(f"Node: {here.id}, Attrs: {here.__dict__}"). printgraph(node=root, depth=3); printgraph(node=root, dot_file="graph.dot"). walker Debug logs traversal. curl -X POST localhost:8000/walker/test. /docs Swagger UI. Logs: tail -f /tmp/jac_cloud_logs/jac-cloud.log.
-
 Integration: Python libs work directly. REST APIs: import requests; walker fetches/posts. Databases: import psycopg2; walker queries. Message queues: from pika import BlockingConnection.
-
 Migration from Python: class → obj/node. __init__ → has (auto-constructor). collections → nodes/edges. iteration → walker traversal. Example: class User with __init__ becomes obj User {has name: str; def greet() -> str {}}.
-
 Breaking changes v0.8+: impl ClassName.method {}. obj Child(Parent) {}. def for functions, can for abilities. visitor in nodes, here in walkers. lambda x: type: expr. ->:Edge:-> +>:Edge:+>. import from pkg {items}. perm_grant/perm_revoke. assert in tests. global x, nonlocal y. printgraph. Model(model_name="gpt-4o").
-
 Best practices: nodes=entities, obj=values, walkers=ops. .jac/.impl.jac/.test.jac separation. Type annotations mandatory. Validate at walker entry. try/except, report errors. Limit depth 5-10. Index at root. Batch commits. Cache expensive ops. async for heavy tasks. Auth for sensitive ops. Permissions for multi-user. Env vars for secrets. HTTPS production. Log JSON. Monitor. Document. Semantic strings for AI. Test AI varied inputs.
-
 Project structure: main.jac entry. models/ domain. utils/ helpers. tests/ .test.jac. Naming: lowercase_with_underscores.jac, PascalCase obj/node/edge/walker, snake_case functions, UPPER_CASE constants, _ prefix private.
-
 Keywords: with entry, has, can, def, impl, glob, obj, node, edge, walker, spawn, visit, disengage, skip, report, sem, by, `root, self, here, visitor, path, del, async/await, match/case, try/except/raise, import/from, for/while, if/elif/else, return, break/continue, and/or/not, in, is, lambda, type, enum.
-
 CLI: jac run file.jac, jac serve file.jac --host 0.0.0.0 --port 8000 --reload, jac test file.jac, jac build file.jac, jac format file.jac, jac check file.jac, jac clean, jac enter file.jac entrypoint args, jac tool ir ast/sym/py file.jac. Options: --verbose, --debug, --help, --version.
-
 Tools: jac-streamlit (pip install, jac streamlit app.jac, st.title/button/text_input, st.session_state, st.form). jaclang-extension VS Code (syntax, completion, errors, graph viz, debug). Jac-Lens (visual explorer). Jac Playground (web IDE).
-
 Deployment Docker: FROM python:3.12; COPY . /app; WORKDIR /app; RUN pip install -r requirements.txt; CMD ["jac", "serve", "app.jac", "--host", "0.0.0.0"]. Build: docker build -t myapp .. Run: docker run -p 8000:8000 myapp. Kubernetes: deployment.yaml (replicas, containers, env), ConfigMap, Secrets, Service, Ingress. kubectl apply -f deployment.yaml. kubectl scale deployment myapp --replicas=5.
-
 Utility APIs: GET /util/traverse?source=jid&detailed=bool&depth=int&node_types=Type1&edge_types=Edge1 returns {"nodes": [], "edges": []}. GET /util/traverse-stream streaming.
-
 Philosophy: Scale-agnostic (local/cloud same code). Object-Spatial (computation→data). AI-first (byLLM). Graph-native (nodes/edges/walkers). Python superset. Type-safe. Auto-API (walkers→endpoints). Per-user isolation (root). Event-driven (abilities). Bidirectional polymorphism. Zero config deployment.
-
 Quick ref: has name: type = val. glob name = val. def name(p) -> t {x}. obj N {has a; def m}. node N {has a; can ab}. edge E {has p}. walker W {has s; can ab}. n1 ++> n2. [n -->]. [e](?c). spawn w(). visit [n]. report v. import from p {i}. with entry {x}. test n {assert}. def f() -> t by llm(). lambda x: t: e. match v {case: a}. try {} except E {}. impl C.m() {}. `root, here, visitor, self, path. disengage, skip. del edge. save(o), commit().

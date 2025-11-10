@@ -1,0 +1,84 @@
+Jac Syntax Quick Reference
+
+== Basic Syntax ==
+
+- Variables:
+  - Declaration: `name: type = value;` (e.g., `age: int = 25;`)
+  - Global: `glob max_users: int = 100;`
+  - Accessing global: `:g: max_users;`
+- Data Types: `int`, `float`, `str`, `bool`, `list`, `dict`, `set`, `tuple`, `any`
+- Comments:
+  - Single-line: `# comment`
+  - Multi-line: `#* comment *#`
+- Control Flow:
+  - `if condition { ... } elif condition { ... } else { ... }`
+  - `for item in iterable { ... }`
+  - `for i = 0 to i < 10 by i += 1 { ... }`
+  - `while condition { ... }`
+- Functions:
+  - `def name(param: type) -> return_type { ... }`
+  - Anonymous (lambda): `lambda param: type: expression;`
+  - Async: `async def name() -> ...;` with `await`
+- Exception Handling: `try { ... } except Exception as e { ... }`
+
+== Object-Oriented Programming (OOP) ==
+
+- Objects (`obj`):
+  - `obj MyObject { has property: type = default; def method() -> ...; }`
+  - Automatic constructor: `my_obj = MyObject(property=value);`
+  - Inheritance: `obj SubObject(MyObject) { ... }`
+  - Access Control:
+    - `:pub` (public, default)
+    - `:priv` (private)
+    - `:protect` (protected)
+- Implementation Separation:
+  - Interface (`.jac`): `obj MyObject { def my_method() -> int; }`
+  - Implementation (`.impl.jac`): `impl MyObject.my_method { return 42; }`
+
+== Object-Spatial Programming (OSP) ==
+
+- Nodes (`node`):
+  - `node MyNode { has property: type; can ability with walker_type entry; }`
+  - Creation & Connection: `root ++> MyNode();`
+- Edges (`edge`):
+  - `edge MyEdge { has property: type; }`
+  - Connection with custom edge: `node1 +:MyEdge(property=value):+> node2;`
+- Walkers (`walker`):
+  - `walker MyWalker { has state: type; can ability with node_type entry; }`
+  - Spawning: `MyWalker() spawn start_node;`
+  - Traversal: `visit [-->];` (forward), `visit [<--];` (backward)
+  - Disengage: `disengage;`
+- Special Keywords:
+  - `here`: Current node in a walker's ability.
+  - `visitor`: The walker in a node's ability.
+  - `root`: The entry point of the graph.
+
+== Graph Traversal & Filtering ==
+
+- Get connected nodes: `[start_node -->]`
+- Get connected edges: `[edge start_node -->]`
+- Filter by Node Type: `[-->(`?NodeType)]`
+- Filter by Node Attribute: `[-->(`?NodeType: attribute > value)]`
+- Filter by Edge Type: `[->:EdgeType:->]`
+- Filter by Edge Attribute: `[->:EdgeType: attribute == value:->]`
+
+== AI Integration (byLLM) ==
+
+- Basic AI Function: `def my_ai_func(param: str) -> str by llm();`
+- Model Configuration: `glob llm = Model(model_name="gpt-4o", temperature=0.7);`
+- Multimodality:
+  - `import from byllm { Image, Video }`
+  - `def process_image(img: Image) -> str by llm();`
+- Context (`sem` strings):
+  - `obj MyObject { has my_prop: str; }`
+  - `sem MyObject.my_prop = "Semantic description";`
+- Tool-Calling (ReAct):
+  - `def my_tool() -> str { ... }`
+  - `def agent_func() -> str by llm(tools=[my_tool]);`
+- Streaming: `def stream_response() -> str by llm(stream=True);`
+
+== Miscellaneous ==
+
+- `with entry { ... }`: Main execution block for a Jac program.
+- `printgraph()`: Visualize the graph structure.
+- Testing: `test "description" { ... }` in a `.test.jac` file.

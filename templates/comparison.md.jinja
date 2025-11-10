@@ -1,0 +1,65 @@
+
+{{ "=" * 80 }}
+A/B Test Comparison
+{{ "=" * 80 }}
+
+{{ label1 }}: {{ dir1 }}
+  Files analyzed: {{ count1 }}
+  Scores parsed: {{ scores1|length }}
+{% if scores1 -%}
+  Individual scores: {{ scores1|map('round', 2)|list }}
+{% endif -%}
+  Average Score: {{ "%.2f"|format(avg1) }}
+
+{{ label2 }}: {{ dir2 }}
+  Files analyzed: {{ count2 }}
+  Scores parsed: {{ scores2|length }}
+{% if scores2 -%}
+  Individual scores: {{ scores2|map('round', 2)|list }}
+{% endif -%}
+  Average Score: {{ "%.2f"|format(avg2) }}
+
+{{ "=" * 80 }}
+OVERALL COMPARISON
+{{ "=" * 80 }}
+
+{% if not scores1 or not scores2 -%}
+Unable to compare: insufficient data
+{% else -%}
+{% set difference = avg2 - avg1 -%}
+{% set percentage_change = (difference / avg1 * 100) if avg1 != 0 else float('inf') -%}
+{% if difference > 0 -%}
+{{ label2 }} is better by {{ "%.2f"|format(difference) }} points ({{ "%+.2f"|format(percentage_change) }}%)
+{% elif difference < 0 -%}
+{{ label1 }} is better by {{ "%.2f"|format(-difference) }} points ({{ "%+.2f"|format(percentage_change) }}%)
+{% else -%}
+No difference in average scores.
+{% endif -%}
+
+{{ "=" * 80 }}
+CATEGORY BREAKDOWN COMPARISON
+{{ "=" * 80 }}
+
+{% if all_categories -%}
+
+{{ "%-25s"|format("Category") }} {{ "%15s"|format(label1[:15]) }} {{ "%15s"|format(label2[:15]) }} {{ "%12s"|format("Difference") }} {{ "%10s"|format("Change") }}
+{{ "-" * 80 }}
+{% for category in all_categories|sort -%}
+{% set avg_1 = category_averages_1.get(category, 0.0) -%}
+{% set avg_2 = category_averages_2.get(category, 0.0) -%}
+{% set diff = avg_2 - avg_1 -%}
+{% set pct_change = (diff / avg_1 * 100) if avg_1 != 0 else 0.0 -%}
+{% if diff|abs < 0.01 -%}
+{% set indicator = "=" -%}
+{% elif diff > 0 -%}
+{% set indicator = "✓" -%}
+{% else -%}
+{% set indicator = "✗" -%}
+{% endif -%}
+{{ "%-25s"|format(category) }} {{ "%15.2f"|format(avg_1) }} {{ "%15.2f"|format(avg_2) }} {{ "%11.2f"|format(diff) }} {{ "%9.2f"|format(pct_change) }}% {{ indicator }}
+{% endfor -%}
+{% else -%}
+No category data available for comparison
+{% endif -%}
+{{ "=" * 80 }}
+{% endif -%}

@@ -1,0 +1,106 @@
+# Jac Language Documentation Evaluation Report
+
+**Generated:** {{ timestamp }}
+
+---
+
+## Executive Summary
+
+*Score/KB is calculated using the original documentation file size from release/.*
+
+| Variant | Doc Size (KB) | Score | Max | Percentage | Score/KB |
+|---------|---------------|-------|-----|------------|----------|
+{% for data in summary_data -%}
+| {{ data.variant }} | {{ "%.2f"|format(data.size/1024) }} | {{ "%.2f"|format(data.score) }} | {{ data.max_score }} | {{ "%.2f"|format(data.percentage) }}% | {{ "%.2f"|format(data.score_per_kb) }} |
+{% endfor %}
+
+## Efficiency Rankings (Score per KB)
+
+{% for data in ranked_efficiency -%}
+{{ loop.index }}. **{{ data.variant }}** - {{ "%.2f"|format(data.score_per_kb) }} score/KB ({{ "%.2f"|format(data.score) }}/{{ data.max_score }} points, {{ data.size }} bytes)
+{% endfor %}
+
+## Absolute Score Rankings
+
+{% for data in ranked_score -%}
+{{ loop.index }}. **{{ data.variant }}** - {{ "%.2f"|format(data.score) }}/{{ data.max_score }} ({{ "%.2f"|format(data.percentage) }}%)
+{% endfor %}
+
+## Category Performance Comparison
+
+{% for category in categories|sort -%}
+### {{ category }}
+
+| Variant | Score | Max | Percentage |
+|---------|-------|-----|------------|
+{% for variant in variants -%}
+{% if variant in results and category in results[variant].summary.category_breakdown -%}
+{% set cat_data = results[variant].summary.category_breakdown[category] -%}
+| {{ variant }} | {{ "%.2f"|format(cat_data.score) }} | {{ cat_data.max }} | {{ "%.2f"|format(cat_data.percentage) }}% |
+{% endif -%}
+{% endfor %}
+
+{% endfor %}
+
+## Difficulty Level Comparison
+
+{% for level in levels|sort -%}
+### {{ level }}
+
+| Variant | Score | Max | Percentage |
+|---------|-------|-----|------------|
+{% for variant in variants -%}
+{% if variant in results and level in results[variant].summary.level_breakdown -%}
+{% set level_data = results[variant].summary.level_breakdown[level] -%}
+| {{ variant }} | {{ "%.2f"|format(level_data.score) }} | {{ level_data.max }} | {{ "%.2f"|format(level_data.percentage) }}% |
+{% endif -%}
+{% endfor %}
+
+{% endfor %}
+
+## Size Analysis
+
+*Note: Sizes are of the original documentation files in release/, not test outputs.*
+
+**Total combined size:** {{ total_size }} bytes ({{ "%.2f"|format(total_size/1024) }} KB)
+
+### Size Distribution
+
+| Variant | Size (bytes) | Size (KB) | Percentage |
+|---------|--------------|-----------|------------|
+{% for variant in variants -%}
+{% if variant in file_sizes -%}
+{% set size = file_sizes[variant] -%}
+{% set pct = (size / total_size * 100) if total_size > 0 else 0 -%}
+| {{ variant }} | {{ size }} | {{ "%.2f"|format(size/1024) }} | {{ "%.1f"|format(pct) }}% |
+{% endif -%}
+{% endfor %}
+
+## Best Performer Analysis
+
+- **Highest Score:** {{ best_overall.variant }} ({{ "%.2f"|format(best_overall.score) }}/{{ best_overall.max_score }})
+- **Most Efficient:** {{ best_efficiency.variant }} ({{ "%.2f"|format(best_efficiency.score_per_kb) }} score/KB)
+- **Smallest Size:** {{ smallest.variant }} ({{ smallest.size }} bytes)
+
+## Detailed Breakdown by Variant
+
+{% for variant in variants -%}
+{% if variant in results -%}
+{% set summary = results[variant].summary -%}
+### {{ variant.upper() }}
+
+- **Total Score:** {{ summary.total_score }}/{{ summary.total_max }} ({{ "%.2f"|format(summary.overall_percentage) }}%)
+- **Tests Completed:** {{ summary.tests_completed }}/{{ summary.tests_total }}
+- **Documentation Size:** {{ file_sizes[variant] }} bytes ({{ "%.2f"|format(file_sizes[variant]/1024) }} KB)
+- **Efficiency:** {{ "%.2f"|format(summary.total_score / (file_sizes[variant] / 1024)) }} score/KB
+
+#### Category Scores
+
+| Category | Score | Max | Percentage |
+|----------|-------|-----|------------|
+{% for cat, scores in summary.category_breakdown.items() -%}
+| {{ cat }} | {{ "%.2f"|format(scores.score) }} | {{ scores.max }} | {{ "%.2f"|format(scores.percentage) }}% |
+{% endfor %}
+
+{% endif -%}
+{% endfor %}
