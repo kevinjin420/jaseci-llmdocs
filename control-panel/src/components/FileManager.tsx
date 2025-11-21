@@ -35,17 +35,19 @@ interface Props {
   stashes: Stash[]
   onStash: () => void
   onClean: () => void
+  onClearDb: () => void
   onRefresh: () => void
   onDelete?: (filePath: string) => void
 }
 
-const API_BASE = 'http://localhost:5000/api'
+const API_BASE = 'http://localhost:5050/api'
 
 export default function FileManager({
   files,
   stashes,
   onStash,
   onClean,
+  onClearDb,
   onRefresh,
   onDelete
 }: Props) {
@@ -238,7 +240,10 @@ export default function FileManager({
             Stash Results
           </button>
           <button onClick={onClean} className="px-4 py-2.5 bg-red-900 text-white rounded text-sm font-semibold hover:bg-red-800 cursor-pointer">
-            Clean All (tests/*.txt)
+            Clean All Results
+          </button>
+          <button onClick={onClearDb} className="px-4 py-2.5 bg-red-950 text-white border border-red-800 rounded text-sm font-semibold hover:bg-red-900 cursor-pointer">
+            Clear Database
           </button>
         </div>
 

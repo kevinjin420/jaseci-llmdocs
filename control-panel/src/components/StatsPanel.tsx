@@ -5,7 +5,11 @@ interface Props {
 }
 
 export default function StatsPanel({ stats, apiKeys }: Props) {
-  if (!stats) return null
+  console.log('[StatsPanel] Rendering with stats:', stats)
+  if (!stats) {
+    console.log('[StatsPanel] No stats data, returning null')
+    return null
+  }
 
   const topCategories = Object.entries(stats.categories || {})
     .sort((a: any, b: any) => b[1].points - a[1].points)
@@ -21,28 +25,12 @@ export default function StatsPanel({ stats, apiKeys }: Props) {
         <h3 className="text-terminal-accent text-base mb-4 font-semibold">API Keys</h3>
         <div className="grid grid-cols-[repeat(auto-fit,minmax(100px,1fr))] gap-3">
           <div className={`flex items-center gap-2 px-4 py-3 rounded border text-sm ${
-            apiKeys.ANTHROPIC_API_KEY
+            apiKeys.OPENROUTER_API_KEY
               ? 'bg-green-950 border-terminal-accent text-terminal-accent'
               : 'bg-red-950 border-red-600 text-red-400'
           }`}>
-            <span className="text-sm">{apiKeys.ANTHROPIC_API_KEY ? 'OK' : 'Missing'}</span>
-            <span className="text-sm">Claude</span>
-          </div>
-          <div className={`flex items-center gap-2 px-4 py-3 rounded border text-sm ${
-            apiKeys.GEMINI_API_KEY
-              ? 'bg-green-950 border-terminal-accent text-terminal-accent'
-              : 'bg-red-950 border-red-600 text-red-400'
-          }`}>
-            <span className="text-sm">{apiKeys.GEMINI_API_KEY ? 'OK' : 'Missing'}</span>
-            <span className="text-sm">Gemini</span>
-          </div>
-          <div className={`flex items-center gap-2 px-4 py-3 rounded border text-sm ${
-            apiKeys.OPENAI_API_KEY
-              ? 'bg-green-950 border-terminal-accent text-terminal-accent'
-              : 'bg-red-950 border-red-600 text-red-400'
-          }`}>
-            <span className="text-sm">{apiKeys.OPENAI_API_KEY ? 'OK' : 'Missing'}</span>
-            <span className="text-sm">OpenAI</span>
+            <span className="text-sm">{apiKeys.OPENROUTER_API_KEY ? 'OK' : 'Missing'}</span>
+            <span className="text-sm">OpenRouter</span>
           </div>
         </div>
       </div>

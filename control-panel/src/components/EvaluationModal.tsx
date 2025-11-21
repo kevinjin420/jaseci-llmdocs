@@ -60,20 +60,19 @@ export default function EvaluationModal({ isOpen, onClose, results }: Props) {
 		"o1-mini": "O1 Mini",
 	};
 
-	// Parse metadata from filenames (format: variant-model-suite-timestamp.txt)
-	// Example: mini_v3-claude-sonnet-full-20251116_230045.txt
+	// Parse metadata from filenames (format: model-variant-suite-timestamp)
+	// Example: claude-sonnet-mini_v3-full-20251116_230045
 	const fileMetadata = Object.keys(results.results || {})
 		.map((filename) => {
-			const nameWithoutExt = filename.replace(".txt", "");
-			const parts = nameWithoutExt.split("-");
+			const parts = filename.split("-");
 
 			if (parts.length >= 4) {
 				// Find timestamp (last part with underscore)
 				const timestampIdx = parts.length - 1;
 				if (parts[timestampIdx].includes("_")) {
 					const suite = parts[timestampIdx - 1];
-					const variant = parts[0];
-					const model = parts.slice(1, timestampIdx - 1).join("-");
+					const variant = parts[timestampIdx - 2];
+					const model = parts.slice(0, timestampIdx - 2).join("-");
 					return { variant, model, suite };
 				}
 			}

@@ -4,11 +4,21 @@ import BenchmarkView from './components/BenchmarkView'
 import FileManager from './components/FileManager'
 import StatsPanel from './components/StatsPanel'
 
-const API_BASE = 'http://localhost:5000/api'
+const API_BASE = 'http://localhost:5050/api'
 
 interface Model {
-  alias: string
-  model_id: string
+  id: string
+  name: string
+  context_length: number
+  pricing?: {
+    prompt: string | number
+    completion: string | number
+  }
+  architecture?: {
+    tokenizer?: string
+    input_modalities?: string[]
+    output_modalities?: string[]
+  }
 }
 
 interface Variant {
@@ -151,6 +161,26 @@ function AppContent() {
     }
   }
 
+  const clearDatabase = async () => {
+    if (!confirm('Clear ALL data from the PostgreSQL database?\n\nThis will delete:\n- All benchmark results\n- All benchmark runs\n- All collections\n\nThis cannot be undone!')) return
+
+    try {
+      const res = await fetch(`${API_BASE}/clear-db`, { method: 'POST' })
+      const data = await res.json()
+
+      if (data.status === 'success') {
+        alert(data.message)
+        await fetchTestFiles()
+        await fetchStashes()
+      } else {
+        alert(`Failed: ${data.error}`)
+      }
+    } catch (error) {
+      console.error('Failed to clear database:', error)
+      alert('Failed to clear database')
+    }
+  }
+
   const deleteFile = async (filePath: string) => {
     if (!confirm(`Delete ${filePath.split('/').pop()}?`)) return
 
@@ -250,6 +280,7 @@ function AppContent() {
                   stashes={stashes}
                   onStash={stashResults}
                   onClean={cleanResults}
+                  onClearDb={clearDatabase}
                   onRefresh={() => {
                     fetchTestFiles()
                     fetchStashes()
@@ -278,7 +309,7 @@ function AppContent() {
         <div className="max-w-screen-2xl mx-auto flex justify-center gap-4 text-sm text-gray-600">
           <span>Jac Language LLM Documentation Benchmark Suite</span>
           <span>•</span>
-          <span>Backend: {window.location.hostname}:5000</span>
+          <span>Backend: {window.location.hostname}:5050</span>
         </div>
       </footer>
     </div>

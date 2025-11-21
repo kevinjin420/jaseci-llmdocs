@@ -50,20 +50,19 @@ export default function CompareModal({ isOpen, onClose, results }: Props) {
 		"o1-mini": "O1 Mini",
 	};
 
-	// Parse metadata from filenames
+	// Parse metadata from filenames (format: model-variant-suite-timestamp)
 	const parseMetadata = (filenames: string[]) => {
 		if (!filenames || filenames.length === 0) return null;
 
 		const filename = filenames[0];
-		const nameWithoutExt = filename.replace(".txt", "");
-		const parts = nameWithoutExt.split("-");
+		const parts = filename.split("-");
 
 		if (parts.length >= 4) {
 			const timestampIdx = parts.length - 1;
 			if (parts[timestampIdx].includes("_")) {
 				const suite = parts[timestampIdx - 1];
-				const variant = parts[0];
-				const model = parts.slice(1, timestampIdx - 1).join("-");
+				const variant = parts[timestampIdx - 2];
+				const model = parts.slice(0, timestampIdx - 2).join("-");
 
 				const displayModel = modelDisplayNames[model] || model;
 				const displayVariant = variant

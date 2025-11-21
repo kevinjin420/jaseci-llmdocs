@@ -2,8 +2,18 @@ import { useState, useEffect } from "react";
 import { io, Socket } from "socket.io-client";
 
 interface Model {
-	alias: string;
-	model_id: string;
+	id: string;
+	name: string;
+	context_length: number;
+	pricing?: {
+		prompt: string | number;
+		completion: string | number;
+	};
+	architecture?: {
+		tokenizer?: string;
+		input_modalities?: string[];
+		output_modalities?: string[];
+	};
 }
 
 interface Variant {
@@ -43,8 +53,8 @@ interface Props {
 	onBenchmarkComplete: () => void;
 }
 
-const API_BASE = "http://localhost:5000/api";
-const WS_BASE = "http://localhost:5000";
+const API_BASE = "http://localhost:5050/api";
+const WS_BASE = "http://localhost:5050";
 
 let socket: Socket | null = null;
 
@@ -56,7 +66,7 @@ export default function BenchmarkView({
 }: Props) {
 	const [selectedModel, setSelectedModel] = useState(() => {
 		const saved = localStorage.getItem("benchmarkModel");
-		return saved || models[0]?.alias || "";
+		return saved || models[0]?.id || "";
 	});
 	const [selectedVariant, setSelectedVariant] = useState(() => {
 		const saved = localStorage.getItem("benchmarkVariant");
@@ -364,11 +374,11 @@ export default function BenchmarkView({
 							value={selectedModel}
 							onChange={(e) => setSelectedModel(e.target.value)}
 							disabled={isRunning}
-							className="flex-1 max-w-[250px] px-3 py-2 bg-zinc-900 border border-terminal-border rounded text-gray-300 text-sm min-w-[120px] focus:outline-none focus:border-terminal-accent disabled:opacity-50 disabled:cursor-not-allowed"
+							className="flex-1 max-w-[400px] px-3 py-2 bg-zinc-900 border border-terminal-border rounded text-gray-300 text-sm min-w-[120px] focus:outline-none focus:border-terminal-accent disabled:opacity-50 disabled:cursor-not-allowed"
 						>
 							{models.map((m) => (
-								<option key={m.alias} value={m.alias}>
-									{m.alias}
+								<option key={m.id} value={m.id}>
+									{m.name}
 								</option>
 							))}
 						</select>
@@ -377,7 +387,7 @@ export default function BenchmarkView({
 							value={selectedVariant}
 							onChange={(e) => setSelectedVariant(e.target.value)}
 							disabled={isRunning}
-							className="flex-1 max-w-[250px] px-3 py-2 bg-zinc-900 border border-terminal-border rounded text-gray-300 text-sm min-w-[120px] focus:outline-none focus:border-terminal-accent disabled:opacity-50 disabled:cursor-not-allowed"
+							className="flex-1 max-w-[200px] px-3 py-2 bg-zinc-900 border border-terminal-border rounded text-gray-300 text-sm min-w-[120px] focus:outline-none focus:border-terminal-accent disabled:opacity-50 disabled:cursor-not-allowed"
 						>
 							{sortedVersions.map((version) => (
 								<optgroup
