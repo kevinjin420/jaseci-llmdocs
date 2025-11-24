@@ -35,6 +35,10 @@ export default function BenchmarkView({ models, variants, testFiles, onBenchmark
 		const saved = localStorage.getItem("benchmarkQueueSize");
 		return saved ? parseInt(saved) : 1;
 	});
+	const [batchSize, setBatchSize] = useState(() => {
+		const saved = localStorage.getItem("benchmarkBatchSize");
+		return saved ? parseInt(saved) : 45;
+	});
 	const [status, setStatus] = useState<BenchmarkStatus | null>(() => {
 		const saved = localStorage.getItem("benchmarkStatus");
 		return saved ? JSON.parse(saved) : null;
@@ -44,12 +48,14 @@ export default function BenchmarkView({ models, variants, testFiles, onBenchmark
 	});
 	const [selectedFile, setSelectedFile] = useState<string | null>(null);
 	const [results, setResults] = useState<any>(null);
+	const [rerunningBatches, setRerunningBatches] = useState<Set<string>>(new Set());
 
 	useEffect(() => localStorage.setItem("benchmarkModel", selectedModel), [selectedModel]);
 	useEffect(() => localStorage.setItem("benchmarkVariant", selectedVariant), [selectedVariant]);
 	useEffect(() => localStorage.setItem("benchmarkTemperature", temperature.toString()), [temperature]);
 	useEffect(() => localStorage.setItem("benchmarkSmallSuite", smallSuite.toString()), [smallSuite]);
 	useEffect(() => localStorage.setItem("benchmarkQueueSize", queueSize.toString()), [queueSize]);
+	useEffect(() => localStorage.setItem("benchmarkBatchSize", batchSize.toString()), [batchSize]);
 	useEffect(() => {
 		status ? localStorage.setItem("benchmarkStatus", JSON.stringify(status)) : localStorage.removeItem("benchmarkStatus");
 	}, [status]);
@@ -176,7 +182,7 @@ export default function BenchmarkView({ models, variants, testFiles, onBenchmark
 	const runBenchmark = async () => {
 		setStatus({ status: "running", progress: "Starting all runs...", completed: 0, total: queueSize });
 
-		const payload: any = { model: selectedModel, variant: selectedVariant, temperature };
+		const payload: any = { model: selectedModel, variant: selectedVariant, temperature, batch_size: batchSize };
 		if (smallSuite) payload.test_limit = 40;
 
 		const runIds: string[] = [];
@@ -276,6 +282,83 @@ export default function BenchmarkView({ models, variants, testFiles, onBenchmark
 		localStorage.removeItem("benchmarkStatus");
 	};
 
+	const rerunBatch = async (batchKey: string) => {
+		const savedRunIds = localStorage.getItem("benchmarkRunIds");
+		const runIds = savedRunIds ? JSON.parse(savedRunIds) : [runId];
+
+		const parts = batchKey.split(".");
+		let targetRunId: string;
+		let batchNum: number;
+
+		if (parts.length === 2) {
+			const runIndex = parseInt(parts[0]) - 1;
+			batchNum = parseInt(parts[1]);
+			targetRunId = runIds[runIndex];
+		} else {
+			batchNum = parseInt(batchKey);
+			targetRunId = runIds[0];
+		}
+
+		if (!targetRunId) {
+			console.error("No run ID found for batch rerun");
+			return;
+		}
+
+		setRerunningBatches(prev => new Set(prev).add(batchKey));
+
+		try {
+			const res = await fetch(`${API_BASE}/benchmark/rerun-batch`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ run_id: targetRunId, batch_num: batchNum }),
+			});
+			const data = await res.json();
+
+			if (!res.ok) {
+				console.error("Failed to start batch rerun:", data.error);
+				setRerunningBatches(prev => {
+					const next = new Set(prev);
+					next.delete(batchKey);
+					return next;
+				});
+				return;
+			}
+
+			const handleRerunUpdate = (updateData: any) => {
+				if (updateData.batch_num !== batchNum) return;
+
+				if (updateData.status === "completed" || updateData.status === "failed") {
+					setRerunningBatches(prev => {
+						const next = new Set(prev);
+						next.delete(batchKey);
+						return next;
+					});
+
+					if (updateData.status === "completed") {
+						setStatus(prev => {
+							if (!prev?.batch_statuses) return prev;
+							const newStatuses = { ...prev.batch_statuses };
+							newStatuses[batchKey] = { status: "completed", retry: 0, max_retries: 3 };
+							return { ...prev, batch_statuses: newStatuses };
+						});
+					}
+
+					socket?.off("batch_rerun_update", handleRerunUpdate);
+					onBenchmarkComplete();
+				}
+			};
+
+			socket?.on("batch_rerun_update", handleRerunUpdate);
+		} catch (e) {
+			console.error("Failed to rerun batch:", e);
+			setRerunningBatches(prev => {
+				const next = new Set(prev);
+				next.delete(batchKey);
+				return next;
+			});
+		}
+	};
+
 	const handleFileClick = async (filePath: string) => {
 		setSelectedFile(filePath);
 		try {
@@ -322,13 +405,19 @@ export default function BenchmarkView({ models, variants, testFiles, onBenchmark
 					setTemperature={setTemperature}
 					queueSize={queueSize}
 					setQueueSize={setQueueSize}
+					batchSize={batchSize}
+					setBatchSize={setBatchSize}
 					smallSuite={smallSuite}
 					setSmallSuite={setSmallSuite}
 					isRunning={isRunning}
 					onRun={runBenchmark}
 					onCancel={cancelBenchmark}
 				/>
-				<ProgressBar status={statusDisplay} />
+				<ProgressBar
+					status={statusDisplay}
+					onBatchClick={rerunBatch}
+					rerunningBatches={rerunningBatches}
+				/>
 			</div>
 
 			<div className="grid grid-cols-[280px_1fr] gap-6 min-h-[600px]">

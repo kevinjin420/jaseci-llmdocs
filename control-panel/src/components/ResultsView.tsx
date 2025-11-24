@@ -56,6 +56,62 @@ export default function ResultsView({ results }: Props) {
 									{results.summary.tests_completed}
 								</span>
 							</div>
+							{results.batch_size && (
+								<div className="flex justify-between px-3 py-2 bg-terminal-surface rounded border-l-2 border-terminal-accent">
+									<span className="text-gray-400 text-sm">Batch Size</span>
+									<span className="text-terminal-accent font-semibold text-sm">
+										{results.batch_size} ({results.num_batches} batches)
+									</span>
+								</div>
+							)}
+							{results.temperature !== undefined && (
+								<div className="flex justify-between px-3 py-2 bg-terminal-surface rounded border-l-2 border-terminal-accent">
+									<span className="text-gray-400 text-sm">Temperature</span>
+									<span className="text-terminal-accent font-semibold text-sm">
+										{results.temperature}
+									</span>
+								</div>
+							)}
+							{results.max_tokens && (
+								<div className="flex justify-between px-3 py-2 bg-terminal-surface rounded border-l-2 border-terminal-accent">
+									<span className="text-gray-400 text-sm">Max Tokens</span>
+									<span className="text-terminal-accent font-semibold text-sm">
+										{results.max_tokens}
+									</span>
+								</div>
+							)}
+							{results.model && (
+								<div className="flex justify-between px-3 py-2 bg-terminal-surface rounded border-l-2 border-terminal-accent">
+									<span className="text-gray-400 text-sm">Model</span>
+									<span className="text-terminal-accent font-semibold text-sm truncate ml-2" title={results.model_id}>
+										{results.model}
+									</span>
+								</div>
+							)}
+							{results.variant && (
+								<div className="flex justify-between px-3 py-2 bg-terminal-surface rounded border-l-2 border-terminal-accent">
+									<span className="text-gray-400 text-sm">Variant</span>
+									<span className="text-terminal-accent font-semibold text-sm">
+										{results.variant}
+									</span>
+								</div>
+							)}
+							{results.test_suite && (
+								<div className="flex justify-between px-3 py-2 bg-terminal-surface rounded border-l-2 border-terminal-accent">
+									<span className="text-gray-400 text-sm">Test Suite</span>
+									<span className="text-terminal-accent font-semibold text-sm">
+										{results.test_suite}
+									</span>
+								</div>
+							)}
+							{results.created_at && (
+								<div className="flex justify-between px-3 py-2 bg-terminal-surface rounded border-l-2 border-terminal-accent">
+									<span className="text-gray-400 text-sm">Created</span>
+									<span className="text-terminal-accent font-semibold text-sm">
+										{new Date(results.created_at * 1000).toLocaleString()}
+									</span>
+								</div>
+							)}
 						</div>
 					</div>
 

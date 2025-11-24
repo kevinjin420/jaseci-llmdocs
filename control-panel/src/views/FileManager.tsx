@@ -13,6 +13,8 @@ interface TestFile {
     variant: string
     test_suite: string
     total_tests: string
+    batch_size?: number
+    num_batches?: number
   }
 }
 
@@ -27,6 +29,7 @@ interface Stash {
     variant: string
     test_suite: string
     total_tests: string
+    batch_size?: number
   }
 }
 
@@ -78,6 +81,8 @@ export default function FileManager({
   const [selectedStashForCompare, setSelectedStashForCompare] = useState<string | null>(null)
   const [showCompareModal, setShowCompareModal] = useState(false)
   const [compareResults, setCompareResults] = useState<any>(null)
+  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set())
+  const [selectedCollections, setSelectedCollections] = useState<Set<string>>(new Set())
 
   const downloadGraph = async (url: string, filename: string, format: 'svg' | 'png') => {
     try {
@@ -95,6 +100,78 @@ export default function FileManager({
 
   const exportCollectionsGraph = (format: 'svg' | 'png') => {
     downloadGraph(`${API_BASE}/graph/collections`, `collections-benchmark.${format}`, format)
+  }
+
+  const toggleFileSelection = (runId: string) => {
+    setSelectedFiles(prev => {
+      const next = new Set(prev)
+      if (next.has(runId)) {
+        next.delete(runId)
+      } else {
+        next.add(runId)
+      }
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedFiles.size === files.length) {
+      setSelectedFiles(new Set())
+    } else {
+      setSelectedFiles(new Set(files.map(f => f.name)))
+    }
+  }
+
+  const stashSelected = async () => {
+    if (selectedFiles.size === 0) return
+    try {
+      const res = await fetch(`${API_BASE}/stash-selected`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ run_ids: Array.from(selectedFiles) })
+      })
+      if (res.ok) {
+        setSelectedFiles(new Set())
+        onRefresh()
+      }
+    } catch (error) {
+      console.error('Failed to stash selected files:', error)
+    }
+  }
+
+  const toggleCollectionSelection = (name: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setSelectedCollections(prev => {
+      const next = new Set(prev)
+      if (next.has(name)) {
+        next.delete(name)
+      } else {
+        next.add(name)
+      }
+      return next
+    })
+  }
+
+  const exportCollectionsCSV = async () => {
+    if (selectedCollections.size === 0) return
+    try {
+      const res = await fetch(`${API_BASE}/export-collections-csv`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ collections: Array.from(selectedCollections) })
+      })
+      if (res.ok) {
+        const blob = await res.blob()
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `collections-export-${new Date().toISOString().split('T')[0]}.csv`
+        link.click()
+        URL.revokeObjectURL(url)
+      }
+    } catch (error) {
+      console.error('Failed to export collections CSV:', error)
+    }
   }
 
   const sortedFiles = [...files].sort((a, b) => {
@@ -225,8 +302,13 @@ export default function FileManager({
       <div className="flex gap-2 mb-4 flex-wrap items-center justify-between">
         <div className="flex gap-2">
           <button onClick={onStash} className="px-4 py-2.5 bg-terminal-border text-gray-300 border border-gray-600 rounded text-sm font-semibold hover:bg-zinc-700 cursor-pointer">
-            Stash Uncategorized
+            Stash All
           </button>
+          {selectedFiles.size > 0 && (
+            <button onClick={stashSelected} className="px-4 py-2.5 bg-blue-900 text-white border border-blue-700 rounded text-sm font-semibold hover:bg-blue-800 cursor-pointer">
+              Stash Selected ({selectedFiles.size})
+            </button>
+          )}
           <div className="flex">
             <button onClick={() => exportCollectionsGraph('svg')} className="px-3 py-2.5 bg-blue-900 text-white border border-blue-700 rounded-l text-sm font-semibold hover:bg-blue-800 cursor-pointer">
               SVG
@@ -264,32 +346,49 @@ export default function FileManager({
             <span className="text-sm text-gray-600">Run a benchmark to generate test results</span>
           </div>
         ) : (
-          sortedFiles.map(file => (
-            <div
-              key={file.path}
-              className="grid grid-cols-[1fr_auto] gap-4 items-center p-3 mb-2 rounded border bg-zinc-900 border-terminal-border"
-            >
-              <div className="flex-1">
-                <div className="text-gray-300 font-medium mb-1 text-sm">{file.name}</div>
-                <div className="flex gap-4 text-xs text-gray-500">
-                  <span>{formatSize(file.size)}</span>
-                  <span>{formatDate(file.modified)}</span>
-                </div>
-              </div>
-
-              {onDelete && (
-                <button
-                  onClick={() => onDelete(file.path)}
-                  className="p-1.5 text-red-500 hover:text-red-400 hover:bg-red-950 border border-red-500 rounded transition-colors cursor-pointer"
-                  title="Delete file"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              )}
+          <>
+            <div className="flex items-center gap-2 mb-2 px-3 py-2 bg-zinc-800 rounded">
+              <input
+                type="checkbox"
+                checked={selectedFiles.size === files.length && files.length > 0}
+                onChange={toggleSelectAll}
+                className="w-4 h-4 cursor-pointer"
+              />
+              <span className="text-gray-400 text-sm">Select All</span>
             </div>
-          ))
+            {sortedFiles.map(file => (
+              <div
+                key={file.path}
+                className={`grid grid-cols-[auto_1fr_auto] gap-4 items-center p-3 mb-2 rounded border bg-zinc-900 ${selectedFiles.has(file.name) ? 'border-blue-500' : 'border-terminal-border'}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedFiles.has(file.name)}
+                  onChange={() => toggleFileSelection(file.name)}
+                  className="w-4 h-4 cursor-pointer"
+                />
+                <div className="flex-1">
+                  <div className="text-gray-300 font-medium mb-1 text-sm">{file.name}</div>
+                  <div className="flex gap-4 text-xs text-gray-500">
+                    <span>{formatSize(file.size)}</span>
+                    <span>{formatDate(file.modified)}</span>
+                  </div>
+                </div>
+
+                {onDelete && (
+                  <button
+                    onClick={() => onDelete(file.path)}
+                    className="p-1.5 text-red-500 hover:text-red-400 hover:bg-red-950 border border-red-500 rounded transition-colors cursor-pointer"
+                    title="Delete file"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            ))}
+          </>
         )}
       </div>
 
@@ -306,12 +405,22 @@ export default function FileManager({
         <div className="mt-8">
           <div className="flex justify-between items-center mb-4 pb-2 border-b border-terminal-border">
             <h3 className="text-terminal-accent text-lg m-0">Collections</h3>
-            <div className="flex items-center gap-2">
-              <label className="text-gray-400 text-sm">Sort by:</label>
-              <select value={stashSortBy} onChange={e => handleStashSortChange(e.target.value as any)} className="px-2 py-1.5 bg-terminal-surface border border-terminal-border rounded text-gray-300 text-sm cursor-pointer focus:outline-none focus:border-terminal-accent">
-                <option value="created">Time Stashed</option>
-                <option value="model-variant">Model + Variant</option>
-              </select>
+            <div className="flex items-center gap-4">
+              {selectedCollections.size > 0 && (
+                <button
+                  onClick={exportCollectionsCSV}
+                  className="px-3 py-1.5 bg-green-900 text-green-300 border border-green-700 rounded text-xs font-semibold hover:bg-green-800 cursor-pointer"
+                >
+                  Export CSV ({selectedCollections.size})
+                </button>
+              )}
+              <div className="flex items-center gap-2">
+                <label className="text-gray-400 text-sm">Sort by:</label>
+                <select value={stashSortBy} onChange={e => handleStashSortChange(e.target.value as any)} className="px-2 py-1.5 bg-terminal-surface border border-terminal-border rounded text-gray-300 text-sm cursor-pointer focus:outline-none focus:border-terminal-accent">
+                  <option value="created">Time Stashed</option>
+                  <option value="model-variant">Model + Variant</option>
+                </select>
+              </div>
             </div>
           </div>
           {[...stashes].sort((a, b) => {
@@ -355,7 +464,7 @@ export default function FileManager({
             }
 
             // Use metadata from API manifest
-            let metadata: { model: string; variant: string; suite: string; tests: string } | null = null
+            let metadata: { model: string; variant: string; suite: string; tests: string; batchSize?: number } | null = null
             if (stash.metadata) {
               const displayModel = modelDisplayNames[stash.metadata.model] || stash.metadata.model
               const displayVariant = stash.metadata.variant.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
@@ -365,18 +474,27 @@ export default function FileManager({
                 model: displayModel,
                 variant: displayVariant,
                 suite: displaySuite,
-                tests: stash.metadata.total_tests
+                tests: stash.metadata.total_tests,
+                batchSize: stash.metadata.batch_size
               }
             }
 
             return (
               <div key={stash.name} className="mb-2">
-                <div className="px-4 py-3 bg-zinc-900 border border-terminal-border rounded flex justify-between items-center">
-                  <button
-                    onClick={() => toggleStash(stash.name)}
-                    className="flex-1 text-left hover:opacity-80 transition-opacity cursor-pointer flex items-center gap-3"
-                  >
-                    <span className="text-gray-400 text-lg">{isExpanded ? '▼' : '▶'}</span>
+                <div className={`px-4 py-3 bg-zinc-900 border rounded flex justify-between items-center ${selectedCollections.has(stash.name) ? 'border-green-500' : 'border-terminal-border'}`}>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedCollections.has(stash.name)}
+                      onClick={(e) => toggleCollectionSelection(stash.name, e)}
+                      onChange={() => {}}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                    <button
+                      onClick={() => toggleStash(stash.name)}
+                      className="flex-1 text-left hover:opacity-80 transition-opacity cursor-pointer flex items-center gap-3"
+                    >
+                      <span className="text-gray-400 text-lg">{isExpanded ? '▼' : '▶'}</span>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <div className="text-gray-300 font-medium text-sm">{stash.name}</div>
@@ -388,6 +506,12 @@ export default function FileManager({
                             <span className="text-purple-400 font-semibold">{metadata.variant}</span>
                             <span>-</span>
                             <span className="text-orange-400 font-semibold">{metadata.suite}</span>
+                            {metadata.batchSize && (
+                              <>
+                                <span>-</span>
+                                <span className="text-cyan-400 font-semibold">batch {metadata.batchSize}</span>
+                              </>
+                            )}
                             <span>-</span>
                             <span className="text-terminal-accent font-semibold">x{stash.file_count}</span>
                           </div>
@@ -398,6 +522,7 @@ export default function FileManager({
                       </div>
                     </div>
                   </button>
+                  </div>
 
                   <div className="flex gap-2">
                     <button

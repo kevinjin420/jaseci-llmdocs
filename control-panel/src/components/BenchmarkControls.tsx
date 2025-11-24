@@ -11,6 +11,8 @@ interface Props {
 	setTemperature: (temp: number) => void;
 	queueSize: number;
 	setQueueSize: (size: number) => void;
+	batchSize: number;
+	setBatchSize: (size: number) => void;
 	smallSuite: boolean;
 	setSmallSuite: (small: boolean) => void;
 	isRunning: boolean;
@@ -29,6 +31,8 @@ export default function BenchmarkControls({
 	setTemperature,
 	queueSize,
 	setQueueSize,
+	batchSize,
+	setBatchSize,
 	smallSuite,
 	setSmallSuite,
 	isRunning,
@@ -146,6 +150,20 @@ export default function BenchmarkControls({
 					disabled={isRunning}
 					className="w-16 px-2 py-2 bg-zinc-900 border border-terminal-border rounded text-gray-300 text-sm focus:outline-none focus:border-terminal-accent disabled:opacity-50 disabled:cursor-not-allowed text-center"
 					title="Number of runs to queue"
+				/>
+
+				<span>batch</span>
+				<input
+					type="number"
+					min="1"
+					max="100"
+					step="1"
+					value={batchSize || ""}
+					onChange={(e) => setBatchSize(e.target.value === "" ? 0 : parseInt(e.target.value))}
+					onBlur={(e) => { if (!e.target.value || parseInt(e.target.value) < 1) setBatchSize(45); }}
+					disabled={isRunning}
+					className="w-16 px-2 py-2 bg-zinc-900 border border-terminal-border rounded text-gray-300 text-sm focus:outline-none focus:border-terminal-accent disabled:opacity-50 disabled:cursor-not-allowed text-center"
+					title="Tests per batch"
 				/>
 
 				<label className="flex items-center gap-2 px-3 py-2 bg-zinc-900 border border-terminal-border rounded text-gray-300 text-sm cursor-pointer hover:border-gray-600">

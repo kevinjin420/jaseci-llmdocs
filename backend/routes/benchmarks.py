@@ -20,6 +20,7 @@ def register_routes(app, socketio, running_benchmarks):
         temperature = data.get('temperature', 0.1)
         max_tokens = data.get('max_tokens', 16000)
         test_limit = data.get('test_limit')
+        batch_size = data.get('batch_size', 45)
 
         if not model or not variant:
             return jsonify({'error': 'model and variant are required'}), 400
@@ -61,7 +62,7 @@ def register_routes(app, socketio, running_benchmarks):
 
                 result = llm_service.run_benchmark_concurrent(
                     model, variant, temperature, max_tokens,
-                    test_limit=test_limit, progress_callback=progress_callback
+                    test_limit=test_limit, batch_size=batch_size, progress_callback=progress_callback
                 )
 
                 running_benchmarks[run_id] = {'status': 'completed', 'result': result, 'progress': 'Done'}
@@ -124,7 +125,20 @@ def register_routes(app, socketio, running_benchmarks):
                     'level_breakdown': eval_result.get('level_breakdown', {}),
                     'tests_completed': eval_result.get('tests_completed', 0)
                 },
-                'total_tests': result.get('total_tests', 0)
+                'run_id': result.get('run_id'),
+                'model': result.get('model'),
+                'model_id': result.get('model_id'),
+                'variant': result.get('variant'),
+                'temperature': result.get('temperature'),
+                'max_tokens': result.get('max_tokens'),
+                'test_limit': result.get('test_limit'),
+                'test_suite': result.get('test_suite'),
+                'total_tests': result.get('total_tests', 0),
+                'batch_size': result.get('batch_size'),
+                'num_batches': result.get('num_batches'),
+                'created_at': result.get('created_at'),
+                'evaluated_at': result.get('evaluated_at'),
+                'status': result.get('status')
             })
 
         category_breakdown = eval_results.get('category_breakdown', {})
@@ -139,8 +153,96 @@ def register_routes(app, socketio, running_benchmarks):
                 'level_breakdown': eval_results.get('level_breakdown', {}),
                 'tests_completed': tests_completed
             },
-            'total_tests': result.get('total_tests', 0)
+            'run_id': result.get('run_id'),
+            'model': result.get('model'),
+            'model_id': result.get('model_id'),
+            'variant': result.get('variant'),
+            'temperature': result.get('temperature'),
+            'max_tokens': result.get('max_tokens'),
+            'test_limit': result.get('test_limit'),
+            'test_suite': result.get('test_suite'),
+            'total_tests': result.get('total_tests', 0),
+            'batch_size': result.get('batch_size'),
+            'num_batches': result.get('num_batches'),
+            'created_at': result.get('created_at'),
+            'evaluated_at': result.get('evaluated_at'),
+            'status': result.get('status')
         })
+
+    @app.route('/api/benchmark/rerun-batch', methods=['POST'])
+    def rerun_batch():
+        data = request.json
+        run_id = data.get('run_id')
+        batch_num = data.get('batch_num')
+
+        if not run_id or batch_num is None:
+            return jsonify({'error': 'run_id and batch_num are required'}), 400
+
+        result = BenchmarkResultService.get_by_run_id(run_id)
+        if not result:
+            return jsonify({'error': 'Result not found'}), 404
+
+        model = result.get('model')
+        variant = result.get('variant')
+        temperature = result.get('temperature', 0.1)
+        max_tokens = result.get('max_tokens', 16000)
+        batch_size = result.get('batch_size', 45)
+        test_limit = result.get('test_limit')
+
+        rerun_id = f"rerun_{run_id}_{batch_num}"
+
+        def run_in_background():
+            try:
+                running_benchmarks[rerun_id] = {
+                    'status': 'running',
+                    'progress': f'Rerunning batch {batch_num}...',
+                    'original_run_id': run_id,
+                    'batch_num': batch_num
+                }
+                socketio.emit('batch_rerun_update', {
+                    'rerun_id': rerun_id,
+                    'run_id': run_id,
+                    'batch_num': batch_num,
+                    'status': 'running'
+                })
+
+                llm_service = LLMService()
+                batch_responses = llm_service.rerun_single_batch(
+                    model, variant, temperature, max_tokens,
+                    batch_num=batch_num, batch_size=batch_size, test_limit=test_limit
+                )
+
+                current_responses = result.get('responses', {})
+                current_responses.update(batch_responses)
+                BenchmarkResultService.update_responses(run_id, current_responses)
+
+                running_benchmarks[rerun_id] = {
+                    'status': 'completed',
+                    'progress': f'Batch {batch_num} completed',
+                    'responses': batch_responses
+                }
+                socketio.emit('batch_rerun_update', {
+                    'rerun_id': rerun_id,
+                    'run_id': run_id,
+                    'batch_num': batch_num,
+                    'status': 'completed',
+                    'num_responses': len(batch_responses)
+                })
+
+            except Exception as e:
+                app.logger.error(f'Batch rerun failed: {rerun_id} - {e}')
+                app.logger.error(traceback.format_exc())
+                running_benchmarks[rerun_id] = {'status': 'failed', 'error': str(e)}
+                socketio.emit('batch_rerun_update', {
+                    'rerun_id': rerun_id,
+                    'run_id': run_id,
+                    'batch_num': batch_num,
+                    'status': 'failed',
+                    'error': str(e)
+                })
+
+        threading.Thread(target=run_in_background).start()
+        return jsonify({'rerun_id': rerun_id, 'status': 'started', 'batch_num': batch_num})
 
     @app.route('/api/evaluate-collection', methods=['POST'])
     def evaluate_collection():

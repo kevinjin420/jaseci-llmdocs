@@ -2,9 +2,11 @@ import type { BenchmarkStatus } from "@/utils/types";
 
 interface Props {
 	status: BenchmarkStatus;
+	onBatchClick?: (batchKey: string) => void;
+	rerunningBatches?: Set<string>;
 }
 
-export default function ProgressBar({ status }: Props) {
+export default function ProgressBar({ status, onBatchClick, rerunningBatches }: Props) {
 	return (
 		<div
 			className={`mt-3 px-4 py-3 rounded ${
@@ -57,26 +59,43 @@ export default function ProgressBar({ status }: Props) {
 				<div className="flex gap-2 mt-2 flex-wrap">
 					{Object.entries(status.batch_statuses)
 						.sort(([a], [b]) => parseInt(a) - parseInt(b))
-						.map(([batchNum, bs]) => (
-							<div
-								key={batchNum}
-								className={`px-2 py-1 rounded text-xs font-mono ${
-									bs.status === "completed"
-										? "bg-green-900 text-green-300"
-										: bs.status === "failed"
-										? "bg-red-900 text-red-300"
+						.map(([batchNum, bs]) => {
+							const isRerunning = rerunningBatches?.has(batchNum);
+							const canClick = onBatchClick && bs.status !== "pending" && !isRerunning;
+							const getTitle = () => {
+								if (isRerunning) return "Rerunning...";
+								if (!canClick) return "";
+								if (bs.status === "running") return `Click to restart stuck batch ${batchNum}`;
+								return `Click to rerun batch ${batchNum}`;
+							};
+							return (
+								<button
+									key={batchNum}
+									onClick={() => canClick && onBatchClick(batchNum)}
+									disabled={!canClick}
+									className={`px-2 py-1 rounded text-xs font-mono transition-all ${
+										isRerunning
+											? "bg-purple-900 text-purple-300 animate-pulse"
+											: bs.status === "completed"
+											? "bg-green-900 text-green-300"
+											: bs.status === "failed"
+											? "bg-red-900 text-red-300"
+											: bs.status === "running" && bs.retry > 0
+											? "bg-yellow-900 text-yellow-300"
+											: bs.status === "running"
+											? "bg-blue-900 text-blue-300"
+											: "bg-zinc-800 text-gray-400"
+									} ${canClick ? "cursor-pointer hover:ring-2 hover:ring-white/30" : ""}`}
+									title={getTitle()}
+								>
+									{isRerunning
+										? `${batchNum}...`
 										: bs.status === "running" && bs.retry > 0
-										? "bg-yellow-900 text-yellow-300"
-										: bs.status === "running"
-										? "bg-blue-900 text-blue-300"
-										: "bg-zinc-800 text-gray-400"
-								}`}
-							>
-								{bs.status === "running" && bs.retry > 0
-									? `${batchNum}: ${bs.retry}/${bs.max_retries}`
-									: batchNum}
-							</div>
-						))}
+										? `${batchNum}: ${bs.retry}/${bs.max_retries}`
+										: batchNum}
+								</button>
+							);
+						})}
 				</div>
 			)}
 		</div>

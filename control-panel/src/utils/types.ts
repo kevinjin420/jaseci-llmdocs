@@ -28,6 +28,15 @@ export interface TestFile {
 	path: string;
 	size: number;
 	modified: number;
+	metadata?: {
+		model: string;
+		model_full: string;
+		variant: string;
+		test_suite: string;
+		total_tests: string;
+		batch_size?: number;
+		num_batches?: number;
+	};
 }
 
 export interface BatchStatus {

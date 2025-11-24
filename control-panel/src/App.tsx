@@ -39,6 +39,8 @@ interface TestFile {
     variant: string
     test_suite: string
     total_tests: string
+    batch_size?: number
+    num_batches?: number
   }
 }
 

@@ -195,7 +195,9 @@ Return a JSON object mapping each test ID to Jac code. Use \\n for newlines and 
             test_limit=test_limit,
             test_suite=test_suite_type,
             total_tests=len(tests_to_use),
-            responses=responses
+            responses=responses,
+            batch_size=len(tests_to_use),
+            num_batches=1
         )
 
         return {
@@ -347,3 +349,35 @@ Return a JSON object mapping each test ID to Jac code. Use \\n for newlines and 
             'failed_batches': failed,
             'errors': errors if errors else None
         }
+
+    def rerun_single_batch(
+        self,
+        model_id: str,
+        variant: str,
+        temperature: float,
+        max_tokens: int,
+        batch_num: int,
+        batch_size: int = 45,
+        test_limit: Optional[int] = None
+    ) -> Dict:
+        """Rerun a single batch and return the responses"""
+        doc_content = self.get_doc_content(variant)
+        if not doc_content:
+            raise ValueError(f"No documentation content found for variant '{variant}'")
+
+        tests_to_use = self.tests[:test_limit] if test_limit else self.tests
+        start_idx = (batch_num - 1) * batch_size
+        end_idx = min(start_idx + batch_size, len(tests_to_use))
+        batch = tests_to_use[start_idx:end_idx]
+
+        if not batch:
+            raise ValueError(f"Batch {batch_num} is empty or out of range")
+
+        _, responses, error, _ = self._run_batch(
+            model_id, doc_content, batch, temperature, max_tokens, batch_num
+        )
+
+        if error:
+            raise RuntimeError(f"Batch {batch_num} failed: {error}")
+
+        return responses

@@ -80,6 +80,19 @@ class BenchmarkResultService:
                 result.evaluated_at = time.time()
 
     @staticmethod
+    def update_responses(run_id: str, responses: Dict[str, str]):
+        """Update responses for a benchmark result"""
+        with get_db() as session:
+            result = session.query(BenchmarkResult).filter_by(run_id=run_id).first()
+            if result:
+                result.responses = responses
+                result.evaluation_results = None
+                result.total_score = None
+                result.max_score = None
+                result.percentage = None
+                result.evaluated_at = None
+
+    @staticmethod
     def get_by_run_id(run_id: str) -> Optional[Dict[str, Any]]:
         """Get benchmark result by run_id"""
         with get_db() as session:
@@ -226,6 +239,8 @@ class BenchmarkResultService:
                     'variant': r.variant,
                     'test_suite': r.test_suite,
                     'total_tests': r.total_tests,
+                    'batch_size': r.batch_size,
+                    'num_batches': r.num_batches,
                     'total_score': r.total_score,
                     'max_score': r.max_score,
                     'percentage': r.percentage,
@@ -479,7 +494,8 @@ class CollectionService:
                         'model_full': first_result.model,
                         'variant': first_result.variant,
                         'test_suite': first_result.test_suite,
-                        'total_tests': str(first_result.total_tests)
+                        'total_tests': str(first_result.total_tests),
+                        'batch_size': first_result.batch_size
                     }
 
                 result_list.append({

@@ -1,5 +1,7 @@
 """File route handlers"""
-from flask import jsonify, request
+from flask import jsonify, request, Response
+import csv
+import io
 import json
 from datetime import datetime
 from pathlib import Path
@@ -19,7 +21,9 @@ def _format_result(result, collection=None):
             'model_full': result['model'],
             'variant': result['variant'],
             'test_suite': result['test_suite'],
-            'total_tests': str(result.get('total_tests', 0))
+            'total_tests': str(result.get('total_tests', 0)),
+            'batch_size': result.get('batch_size'),
+            'num_batches': result.get('num_batches')
         },
         'db_id': result['id'],
         'run_id': result['run_id'],
@@ -47,6 +51,8 @@ def register_routes(app, socketio=None, running_benchmarks=None):
                     'variant': r.variant,
                     'test_suite': r.test_suite,
                     'total_tests': r.total_tests,
+                    'batch_size': r.batch_size,
+                    'num_batches': r.num_batches,
                     'total_score': r.total_score,
                     'max_score': r.max_score,
                     'percentage': r.percentage,
@@ -90,6 +96,22 @@ def register_routes(app, socketio=None, running_benchmarks=None):
                 'count': len(run_ids)
             })
 
+    @app.route('/api/stash-selected', methods=['POST'])
+    def stash_selected():
+        data = request.json
+        run_ids = data.get('run_ids', [])
+        if not run_ids:
+            return jsonify({'error': 'run_ids is required'}), 400
+
+        collection_name = f"collection-{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        BenchmarkResultService.add_to_collection(run_ids, collection_name)
+
+        return jsonify({
+            'status': 'success',
+            'collection_name': collection_name,
+            'count': len(run_ids)
+        })
+
     @app.route('/api/delete-file', methods=['POST'])
     def delete_file():
         data = request.json
@@ -110,3 +132,51 @@ def register_routes(app, socketio=None, running_benchmarks=None):
                 BenchmarkResult.collection_id.is_(None)
             ).delete()
         return jsonify({'status': 'success', 'deleted': deleted})
+
+    @app.route('/api/export-collections-csv', methods=['POST'])
+    def export_collections_csv():
+        data = request.json
+        collection_names = data.get('collections', [])
+        if not collection_names:
+            return jsonify({'error': 'collections is required'}), 400
+
+        rows = []
+        for collection_name in collection_names:
+            results = BenchmarkResultService.get_collection_results(collection_name)
+            for result in results:
+                rows.append({
+                    'collection': collection_name,
+                    'run_id': result.get('run_id'),
+                    'model': result.get('model'),
+                    'variant': result.get('variant'),
+                    'test_suite': result.get('test_suite'),
+                    'batch_size': result.get('batch_size'),
+                    'num_batches': result.get('num_batches'),
+                    'total_tests': result.get('total_tests'),
+                    'total_score': result.get('total_score'),
+                    'max_score': result.get('max_score'),
+                    'percentage': result.get('percentage'),
+                    'temperature': result.get('temperature'),
+                    'max_tokens': result.get('max_tokens'),
+                    'created_at': result.get('created_at'),
+                })
+
+        if not rows:
+            return jsonify({'error': 'No results found'}), 404
+
+        output = io.StringIO()
+        fieldnames = [
+            'collection', 'run_id', 'model', 'variant', 'test_suite',
+            'batch_size', 'num_batches', 'total_tests',
+            'total_score', 'max_score', 'percentage',
+            'temperature', 'max_tokens', 'created_at'
+        ]
+        writer = csv.DictWriter(output, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+        return Response(
+            output.getvalue(),
+            mimetype='text/csv',
+            headers={'Content-Disposition': 'attachment; filename=collections-export.csv'}
+        )
