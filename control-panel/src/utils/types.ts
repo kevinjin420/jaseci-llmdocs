@@ -46,7 +46,7 @@ export interface BatchStatus {
 }
 
 export interface BenchmarkStatus {
-	status: "idle" | "running" | "completed" | "failed";
+	status: "idle" | "running" | "evaluating" | "completed" | "failed";
 	progress?: string;
 	result?: any;
 	error?: string;
@@ -60,6 +60,10 @@ export interface BenchmarkStatus {
 	batches_total_global?: number;
 	current_batch_global?: number;
 	batch_statuses?: Record<string, BatchStatus>;
+	evaluating_count?: number;
+	total_evaluations?: number;
+	completed_evaluations?: number;
+	evaluation_statuses?: Record<string, "pending" | "running" | "completed" | "failed">;
 }
 
 export const API_BASE = "http://localhost:5050/api";

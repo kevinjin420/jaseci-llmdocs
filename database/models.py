@@ -58,7 +58,6 @@ class BenchmarkResult(Base):
     # Run configuration
     temperature = Column(Float, nullable=False)
     max_tokens = Column(Integer, nullable=False)
-    test_limit = Column(Integer, nullable=True)
 
     # Metadata
     total_tests = Column(Integer, nullable=False)
@@ -112,8 +111,6 @@ class BenchmarkRun(Base):
     # Configuration
     temperature = Column(Float, nullable=False)
     max_tokens = Column(Integer, nullable=False)
-    test_limit = Column(Integer, nullable=True)
-    concurrency = Column(Integer, nullable=False)
 
     # Status tracking
     status = Column(String(32), nullable=False, index=True)  # running, completed, failed

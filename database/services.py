@@ -46,7 +46,6 @@ class BenchmarkResultService:
                 variant=variant,
                 temperature=temperature,
                 max_tokens=max_tokens,
-                test_limit=None,
                 total_tests=total_tests,
                 batch_size=batch_size,
                 num_batches=num_batches,
@@ -281,8 +280,7 @@ class BenchmarkRunService:
         model_id: str,
         variant: str,
         temperature: float,
-        max_tokens: int,
-        concurrency: int
+        max_tokens: int
     ) -> int:
         """Create new benchmark run"""
         with get_db() as session:
@@ -293,8 +291,6 @@ class BenchmarkRunService:
                 variant=variant,
                 temperature=temperature,
                 max_tokens=max_tokens,
-                test_limit=None,
-                concurrency=concurrency,
                 status='running',
                 started_at=time.time()
             )

@@ -34,7 +34,7 @@ def register_routes(app, socketio, running_benchmarks):
                 llm_service = LLMService()
                 BenchmarkRunService.create(
                     run_id=run_id, model=model, model_id=model, variant=variant,
-                    temperature=temperature, max_tokens=max_tokens, concurrency=1
+                    temperature=temperature, max_tokens=max_tokens
                 )
 
                 def progress_callback(completed, total, message, batch_num=None, num_batches=None, failed=0, batch_statuses=None):

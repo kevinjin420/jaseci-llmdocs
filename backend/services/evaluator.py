@@ -73,6 +73,41 @@ class EvaluatorService:
 
         return is_valid, errors, warnings
 
+    def run_functional_test(self, code: str, harness: str) -> Tuple[bool, str]:
+        """
+        Run functional tests using jac test.
+        Combines generated code with harness code in a temporary file.
+        """
+        with tempfile.NamedTemporaryFile(
+            mode='w', suffix='.jac', delete=False
+        ) as f:
+            f.write(code + "\n\n" + harness)
+            temp_path = f.name
+
+        try:
+            # Use absolute path to jac binary in venv if available, otherwise assume in PATH
+            jac_cmd = os.path.abspath("venv/bin/jac")
+            if not os.path.exists(jac_cmd):
+                jac_cmd = "jac"
+
+            result = subprocess.run(
+                [jac_cmd, "test", temp_path],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            return result.returncode == 0, result.stdout + result.stderr
+
+        except subprocess.TimeoutExpired:
+            return False, "Functional test timed out"
+        except Exception as e:
+            return False, f"Functional test failed to run: {str(e)}"
+        finally:
+            try:
+                os.unlink(temp_path)
+            except:
+                pass
+
     def evaluate_code(self, code: str, test_case: Dict, use_jac_check: bool = True) -> Dict:
         """Evaluate generated code against test requirements with strict validation"""
         score = 0
@@ -84,8 +119,11 @@ class EvaluatorService:
             "required": 0.0,
             "forbidden": 0.0,
             "syntax": 0.0,
-            "jac_check": 0.0
+            "jac_check": 0.0,
+            "functional": 0.0
         }
+        
+        syntax_errors = 0
 
         required_found = 0
         for element in test_case["required_elements"]:
@@ -144,6 +182,37 @@ class EvaluatorService:
             penalties["syntax"] = syntax_penalty
             score = max(0, score - syntax_penalty)
 
+        # Functional Testing
+        if test_case.get("type") == "functional":
+            harness = test_case.get("test_harness", "")
+            # Only run functional tests if basic compilation passed (or wasn't checked)
+            if jac_valid:
+                func_passed, func_output = self.run_functional_test(code, harness)
+                if func_passed:
+                    passed_checks.append("[PASS] Functional tests passed")
+                else:
+                    # If functional tests fail, lose remaining points (or specific amount)
+                    # Current strategy: Functional correctness is paramount. 
+                    # If it fails, deduct substantial points, e.g., remaining score.
+                    # Let's say functional failure deducts 50% of max_score or resets score to 0?
+                    # To be consistent with "fluctuations", let's apply a penalty rather than zeroing.
+                    # If logic is wrong, code is not useful.
+                    # Let's penalize remaining score.
+                    func_penalty = score  # Wipe out remaining score if functionality fails
+                    penalties["functional"] = func_penalty
+                    score = 0
+                    failed_checks.append(f"[FAIL] Functional tests failed:\n{func_output[:500]}...") # Truncate output
+            else:
+                # If compilation failed, functional test is skipped and penalized implicitly 
+                # (score already reduced, maybe we should explicit fail functional too?)
+                # For now, assume if it doesn't compile, it's not functionally correct.
+                # But we already deducted for jac_check. Should we double dip?
+                # Yes, if it's a functional test case, it MUST work.
+                func_penalty = score
+                penalties["functional"] = func_penalty
+                score = 0
+                failed_checks.append("[FAIL] Functional tests skipped due to compilation error")
+
         return {
             "test_id": test_case["id"],
             "category": test_case["category"],
@@ -197,7 +266,7 @@ class EvaluatorService:
                 if category not in category_scores:
                     category_scores[category] = {
                         "score": 0, "max": 0, "count": 0,
-                        "penalties": {"required": 0, "forbidden": 0, "syntax": 0, "jac_check": 0}
+                        "penalties": {"required": 0, "forbidden": 0, "syntax": 0, "jac_check": 0, "functional": 0}
                     }
                 category_scores[category]["score"] += result["score"]
                 category_scores[category]["max"] += result["max_score"]
@@ -266,7 +335,7 @@ class EvaluatorService:
                 if category not in category_scores:
                     category_scores[category] = {
                         "score": 0, "max": 0, "count": 0,
-                        "penalties": {"required": 0, "forbidden": 0, "syntax": 0, "jac_check": 0}
+                        "penalties": {"required": 0, "forbidden": 0, "syntax": 0, "jac_check": 0, "functional": 0}
                     }
                 category_scores[category]["score"] += result["score"]
                 category_scores[category]["max"] += result["max_score"]

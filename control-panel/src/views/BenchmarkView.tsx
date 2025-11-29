@@ -89,7 +89,7 @@ export default function BenchmarkView({ models, variants, testFiles, onBenchmark
 		};
 
 		const setupSocketListener = (runIds: string[], initialRuns: Record<string, any>, onComplete: () => void) => {
-			const runState: Record<string, { batches: number; completed: number; done: boolean; failed: boolean; index: number }> = {};
+			const runState: Record<string, { batches: number; completed: number; done: boolean; failed: boolean; evaluating: boolean; index: number }> = {};
 			let totalBatches = 0, completedBatches = 0, runsCompleted = 0, runsFailed = 0;
 			let allBatchStatuses: Record<string, BatchStatus> = {};
 
@@ -105,7 +105,7 @@ export default function BenchmarkView({ models, variants, testFiles, onBenchmark
 				const run = initialRuns[id];
 				const numBatches = run?.num_batches || 0;
 				const batchNum = run?.batch_num || 0;
-				runState[id] = { batches: numBatches, completed: batchNum, done: false, failed: false, index };
+				runState[id] = { batches: numBatches, completed: batchNum, done: false, failed: false, evaluating: false, index };
 				totalBatches += numBatches;
 				completedBatches += batchNum;
 				if (run?.batch_statuses) {
@@ -121,6 +121,8 @@ export default function BenchmarkView({ models, variants, testFiles, onBenchmark
 				batches_completed_global: completedBatches,
 				batches_total_global: totalBatches || undefined,
 				batch_statuses: allBatchStatuses,
+				total_evaluations: runIds.length,
+				completed_evaluations: 0,
 			});
 
 			const handleUpdate = (updateData: any) => {
@@ -139,18 +141,35 @@ export default function BenchmarkView({ models, variants, testFiles, onBenchmark
 				if (updateData.batch_statuses) {
 					allBatchStatuses = { ...allBatchStatuses, ...prefixBatchStatuses(updateData.batch_statuses, state.index) };
 				}
+				
+				if (updateData.status === "evaluating") {
+					state.evaluating = true;
+				}
+
 				if (updateData.status === "completed" || updateData.status === "failed") {
 					if (!state.done) {
 						state.done = true;
+						state.evaluating = false;
 						runsCompleted++;
 						if (updateData.status === "failed") { state.failed = true; runsFailed++; }
 						onComplete();
 					}
 				}
 
+				const evaluatingCount = Object.values(runState).filter(s => s.evaluating).length;
+				const anyEvaluating = evaluatingCount > 0;
+				
+				// Only show "evaluating" as main status if everything is done generating
+				// (i.e. all runs are either completed, failed, or evaluating)
+				const allGenerationsDone = runIds.every(id => {
+					const s = runState[id];
+					return s.done || s.evaluating;
+				});
+
 				const finalStatus = runsCompleted === runIds.length
 					? (runsFailed > 0 ? "failed" : "completed")
-					: "running";
+					: (allGenerationsDone && anyEvaluating) ? "evaluating" : "running";
+
 				setStatus({
 					status: finalStatus,
 					progress: `${completedBatches}/${totalBatches || "?"}`,
@@ -159,6 +178,9 @@ export default function BenchmarkView({ models, variants, testFiles, onBenchmark
 					batches_completed_global: completedBatches,
 					batches_total_global: totalBatches || undefined,
 					batch_statuses: allBatchStatuses,
+					evaluating_count: evaluatingCount,
+					total_evaluations: runIds.length,
+					completed_evaluations: runsCompleted,
 				});
 
 				if (runsCompleted === runIds.length) {
@@ -176,13 +198,21 @@ export default function BenchmarkView({ models, variants, testFiles, onBenchmark
 	}, []);
 
 	const runBenchmark = async () => {
-		setStatus({ status: "running", progress: "Starting all runs...", completed: 0, total: queueSize });
+		setStatus({
+			status: "running",
+			progress: "Starting all runs...",
+			completed: 0,
+			total: queueSize,
+			total_evaluations: queueSize,
+			completed_evaluations: 0,
+		});
 
 		const payload: any = { model: selectedModel, variant: selectedVariant, temperature, batch_size: batchSize };
 
 		const runIds: string[] = [];
-		const runState: Record<string, { batches: number; completed: number; done: boolean; failed: boolean; index: number }> = {};
+		const runState: Record<string, { batches: number; completed: number; done: boolean; failed: boolean; evaluating: boolean; index: number }> = {};
 		let totalBatches = 0, completedBatches = 0, runsCompleted = 0, runsFailed = 0;
+		const currentEvalStatuses: Record<string, "pending" | "running" | "completed" | "failed"> = {};
 
 		const startPromises = Array.from({ length: queueSize }, async (_, i) => {
 			const res = await fetch(`${API_BASE}/benchmark/run`, {
@@ -192,7 +222,8 @@ export default function BenchmarkView({ models, variants, testFiles, onBenchmark
 			});
 			const data = await res.json();
 			runIds[i] = data.run_id;
-			runState[data.run_id] = { batches: 0, completed: 0, done: false, failed: false, index: i };
+			runState[data.run_id] = { batches: 0, completed: 0, done: false, failed: false, evaluating: false, index: i };
+			currentEvalStatuses[(i + 1).toString()] = "pending";
 			return data.run_id;
 		});
 
@@ -227,18 +258,41 @@ export default function BenchmarkView({ models, variants, testFiles, onBenchmark
 				if (data.batch_statuses) {
 					allBatchStatuses = { ...allBatchStatuses, ...prefixBatchStatuses(data.batch_statuses, state.index) };
 				}
+				
+				const evalKey = (state.index + 1).toString();
+				if (data.status === "evaluating") {
+					state.evaluating = true;
+					currentEvalStatuses[evalKey] = "running";
+				}
+
 				if (data.status === "completed" || data.status === "failed") {
 					if (!state.done) {
 						state.done = true;
+						state.evaluating = false;
 						runsCompleted++;
-						if (data.status === "failed") { state.failed = true; runsFailed++; }
+						if (data.status === "failed") { 
+							state.failed = true; 
+							runsFailed++; 
+							currentEvalStatuses[evalKey] = "failed";
+						} else {
+							currentEvalStatuses[evalKey] = "completed";
+						}
 						onBenchmarkComplete();
 					}
 				}
 
+				const evaluatingCount = Object.values(runState).filter(s => s.evaluating).length;
+				const anyEvaluating = evaluatingCount > 0;
+
+				const allGenerationsDone = runIds.every(id => {
+					const s = runState[id];
+					return s.done || s.evaluating;
+				});
+
 				const finalStatus = runsCompleted === queueSize
 					? (runsFailed > 0 ? "failed" : "completed")
-					: "running";
+					: (allGenerationsDone && anyEvaluating) ? "evaluating" : "running";
+
 				setStatus({
 					status: finalStatus,
 					progress: `${completedBatches}/${totalBatches || "?"}`,
@@ -247,6 +301,10 @@ export default function BenchmarkView({ models, variants, testFiles, onBenchmark
 					batches_completed_global: completedBatches,
 					batches_total_global: totalBatches || undefined,
 					batch_statuses: allBatchStatuses,
+					evaluating_count: evaluatingCount,
+					total_evaluations: queueSize,
+					completed_evaluations: runsCompleted,
+					evaluation_statuses: { ...currentEvalStatuses },
 				});
 
 				if (runsCompleted === queueSize) { cleanup(); resolve(); }
@@ -263,6 +321,9 @@ export default function BenchmarkView({ models, variants, testFiles, onBenchmark
 			total: queueSize,
 			batches_completed_global: completedBatches,
 			batches_total_global: totalBatches,
+			total_evaluations: queueSize,
+			completed_evaluations: queueSize,
+			evaluation_statuses: { ...currentEvalStatuses },
 		});
 		setRunId(null);
 		localStorage.removeItem("benchmarkRunIds");
