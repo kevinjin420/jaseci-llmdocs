@@ -66,6 +66,36 @@ export default function ResultsView({ results }: Props) {
 		document.body.removeChild(link);
 	};
 
+	// Calculate total penalties for the summary display
+	const totalPenaltyBreakdown = {
+		required: 0,
+		forbidden: 0,
+		syntax: 0,
+		jac_check: 0,
+		functional: 0,
+	};
+	
+	if (!results.results && results.summary && results.summary.category_breakdown) {
+		Object.values(results.summary.category_breakdown).forEach((category: any) => {
+			if (category.penalties) {
+				totalPenaltyBreakdown.required += category.penalties.required || 0;
+				totalPenaltyBreakdown.forbidden += category.penalties.forbidden || 0;
+				totalPenaltyBreakdown.syntax += category.penalties.syntax || 0;
+				totalPenaltyBreakdown.jac_check += category.penalties.jac_check || 0;
+				totalPenaltyBreakdown.functional += category.penalties.functional || 0;
+			}
+		});
+	}
+
+	const totalMaxPoints = results.summary?.total_max || 1; // Prevent division by zero
+	const totalPenaltyPercentages = {
+		required: (totalPenaltyBreakdown.required / totalMaxPoints) * 100,
+		forbidden: (totalPenaltyBreakdown.forbidden / totalMaxPoints) * 100,
+		syntax: (totalPenaltyBreakdown.syntax / totalMaxPoints) * 100,
+		jac_check: (totalPenaltyBreakdown.jac_check / totalMaxPoints) * 100,
+		functional: (totalPenaltyBreakdown.functional / totalMaxPoints) * 100,
+	};
+
 	return (
 		<div className="bg-terminal-surface border border-terminal-border rounded p-6 overflow-y-auto">
 			{!results.results && results.summary && (
@@ -169,6 +199,38 @@ export default function ResultsView({ results }: Props) {
 										{new Date(results.created_at * 1000).toLocaleString()}
 									</span>
 								</div>
+							)}
+						</div>
+					</div>
+
+					<div className="mb-6">
+						<h3 className="text-terminal-accent text-base mb-4 pb-2 border-b border-terminal-border">
+							Penalty Breakdown
+						</h3>
+						<div className="grid grid-cols-2 gap-3">
+							{Object.entries(totalPenaltyPercentages).map(([key, value]) => {
+								const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+								let colorClass = 'text-gray-400'; // Default color
+
+								if (value === 0) {
+									colorClass = 'text-terminal-accent'; // Green for 0% loss
+								} else if (value > 0 && value <= 5) {
+									colorClass = 'text-yellow-400'; // Yellow for low loss
+								} else if (value > 5 && value <= 15) {
+									colorClass = 'text-orange-400'; // Orange for medium loss
+								} else {
+									colorClass = 'text-red-400'; // Red for high loss
+								}
+								
+								return (
+									<div key={key} className="flex justify-between px-3 py-2 bg-zinc-900 rounded border-l-2 border-terminal-border">
+										<span className="text-gray-400 text-sm">{label} Lost</span>
+										<span className={`${colorClass} font-semibold text-sm`}>-{value.toFixed(1)}%</span>
+									</div>
+								);
+							})}
+							{Object.values(totalPenaltyPercentages).every(v => v === 0) && (
+								<div className="col-span-2 text-center text-gray-500 text-sm py-2">No penalties applied!</div>
 							)}
 						</div>
 					</div>

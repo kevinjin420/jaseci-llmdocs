@@ -38,6 +38,8 @@ class LLMService:
 
     def get_doc_content(self, variant: str) -> Optional[str]:
         """Fetch documentation content from URL via DocumentationService"""
+        if variant == "nodocs":
+            return ""
         return DocumentationService.get_variant(variant)
 
     def fetch_available_models(self) -> List[Dict]:
@@ -149,7 +151,7 @@ Return a JSON object mapping each test ID to Jac code. Use \\n for newlines and 
             max_tokens = self._get_max_tokens_for_model(model_id)
 
         doc_content = self.get_doc_content(variant)
-        if not doc_content:
+        if doc_content is None:
             raise ValueError(f"No documentation content found for variant '{variant}'")
 
         tests_to_use = self.tests
@@ -249,7 +251,7 @@ Return a JSON object mapping each test ID to Jac code. Use \\n for newlines and 
             max_tokens = self._get_max_tokens_for_model(model_id)
 
         doc_content = self.get_doc_content(variant)
-        if not doc_content:
+        if doc_content is None:
             raise ValueError(f"No documentation content found for variant '{variant}'")
 
         tests_to_use = self.tests
@@ -351,7 +353,7 @@ Return a JSON object mapping each test ID to Jac code. Use \\n for newlines and 
     ) -> Dict:
         """Rerun a single batch and return the responses"""
         doc_content = self.get_doc_content(variant)
-        if not doc_content:
+        if doc_content is None:
             raise ValueError(f"No documentation content found for variant '{variant}'")
 
         tests_to_use = self.tests
