@@ -45,3 +45,4 @@ jac-llmdocs-pipeline/output/
 # !jac-llmdocs-pipeline/output/test_2_merged/*.txt
 # !jac-llmdocs-pipeline/output/metrics/
 # !jac-llmdocs-pipeline/output/test_metrics/
+.aider*

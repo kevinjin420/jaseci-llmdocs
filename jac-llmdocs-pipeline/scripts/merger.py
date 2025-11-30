@@ -18,8 +18,15 @@ class MergeGroup:
 
 
 class DocumentMerger:
-    def __init__(self, condenser: LLMCondenser):
+    def __init__(self, condenser: LLMCondenser, config: Dict = None):
         self.condenser = condenser
+        self.config = config or {}
+
+        # Load merge prompt from config
+        prompt_path = self.config.get('prompts', {}).get('merge', 'config/merge_prompt.txt')
+        prompt_file = Path(__file__).parent.parent / prompt_path
+        with open(prompt_file, 'r') as f:
+            self.merge_prompt_template = f.read()
 
     def calculate_stages(self, total_files: int, merge_ratio: int) -> List[int]:
         """
@@ -112,24 +119,49 @@ class DocumentMerger:
         preserve_structure: bool = True
     ) -> CondensationResult:
         """
-        Condense merged content while preserving key information.
+        Condense merged content using merge-specific prompt.
 
-        For later stages, we want more aggressive condensation.
+        Uses the merge prompt template which focuses on eliminating redundancy
+        and consolidating information from multiple sources.
         """
-        if preserve_structure:
-            # Add instruction to preserve section structure
-            prompt_suffix = "\n\nIMPORTANT: Preserve the logical structure and main topics from all source documents."
-            # Temporarily modify the condenser's prompt
-            original_template = self.condenser.prompt_template
-            self.condenser.prompt_template = original_template + prompt_suffix
+        import time
 
-            result = self.condenser.condense(content, group_name)
+        start_time = time.time()
 
-            # Restore original template
-            self.condenser.prompt_template = original_template
-            return result
-        else:
-            return self.condenser.condense(content, group_name)
+        try:
+            # Use merge prompt instead of condensation prompt
+            merge_prompt = self.merge_prompt_template.replace('{content}', content)
+
+            # Call OpenRouter directly with merge prompt
+            condensed = self.condenser.condense_with_openrouter(content, merge_prompt)
+
+            original_tokens = self.condenser.estimate_tokens(content)
+            condensed_tokens = self.condenser.estimate_tokens(condensed)
+            compression_ratio = 1 - (condensed_tokens / original_tokens) if original_tokens > 0 else 0
+            processing_time = time.time() - start_time
+
+            return CondensationResult(
+                original_content=content,
+                condensed_content=condensed,
+                original_tokens=original_tokens,
+                condensed_tokens=condensed_tokens,
+                compression_ratio=compression_ratio,
+                processing_time=processing_time,
+                success=True
+            )
+
+        except Exception as e:
+            processing_time = time.time() - start_time
+            return CondensationResult(
+                original_content=content,
+                condensed_content="",
+                original_tokens=0,
+                condensed_tokens=0,
+                compression_ratio=0,
+                processing_time=processing_time,
+                success=False,
+                error=str(e)
+            )
 
     def process_group(
         self,
@@ -237,22 +269,23 @@ class DocumentMerger:
                 for i, group in enumerate(groups, 1)
             }
 
-            for future in tqdm(as_completed(future_to_group), total=len(groups), desc=f"Stage {stage_num}"):
+            pbar = tqdm(as_completed(future_to_group), total=len(groups), desc=f"Stage {stage_num}")
+            for future in pbar:
                 group_num, group = future_to_group[future]
                 try:
                     result = future.result()
 
                     if result['success']:
                         output_files.append(result['output_path'])
-                        print(f"  Group {result['group_num']}/{len(groups)}: "
+                        tqdm.write(f"  Group {result['group_num']}/{len(groups)}: "
                               f"{result['num_files']} files → "
                               f"{result['original_tokens']:,} → {result['condensed_tokens']:,} tokens "
                               f"({result['compression_ratio']:.1%})")
                     else:
-                        print(f"  Group {result['group_num']}/{len(groups)}: Failed - {result['error']}")
+                        tqdm.write(f"  Group {result['group_num']}/{len(groups)}: Failed - {result['error']}")
 
                 except Exception as e:
-                    print(f"  Group {group_num}/{len(groups)}: Exception - {str(e)}")
+                    tqdm.write(f"  Group {group_num}/{len(groups)}: Exception - {str(e)}")
 
         return output_files
 

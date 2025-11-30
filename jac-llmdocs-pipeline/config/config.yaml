@@ -1,5 +1,11 @@
 # JAC LLM Documentation Pipeline Configuration
 
+# Prompt files for each stage (edit these to tune pipeline behavior)
+prompts:
+  condensation: "config/condensation_prompt.txt"  # Stage 1: Initial compression
+  merge: "config/merge_prompt.txt"                # Stage 2: Merge condensed docs
+  ultra_compression: "config/reference_format_prompt.txt"  # Stage 3: Final reference format
+
 # Source documentation directory (can be absolute or relative to pipeline root)
 source_dir: "/home/kevinjin/jaseci-llmdocs/docs-new"
 
@@ -16,6 +22,10 @@ llm:
   api_key_env: "OPENROUTER_API_KEY"
   max_tokens: 4096
   temperature: 0.0
+
+  # Retry configuration for API errors
+  max_retries: 3  # Number of retry attempts for 500/502/503/504/429 errors
+  retry_delay: 2  # Initial delay in seconds (doubles with each retry)
 
 # Processing options
 processing:
@@ -90,3 +100,17 @@ merge:
 
   # Final output filename
   final_output: "jac_docs_final.txt"
+
+# Ultra-compression stage (reference format)
+ultra_compression:
+  # Enable ultra-compression after merge
+  enabled: true
+
+  # Number of compression passes (1 = format only, don't over-compress)
+  passes: 1
+
+  # Output filename for ultra-compressed reference doc
+  output_file: "jac_docs_ultra.txt"
+
+  # Output directory
+  output_dir: "/home/kevinjin/jaseci-llmdocs/jac-llmdocs-pipeline/output/3_ultra"

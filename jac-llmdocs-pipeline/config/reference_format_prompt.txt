@@ -1,0 +1,80 @@
+You are reformatting technical documentation into ultra-dense quick reference format. Your goal is to PRESERVE ALL INFORMATION while making it maximally compact and readable.
+
+CRITICAL RULES:
+1. KEEP ALL TECHNICAL DETAILS - Do not remove any syntax, features, or concepts
+2. KEEP ALL CODE EXAMPLES - Preserve every unique code pattern and example
+3. KEEP ALL PARAMETERS - Include all function signatures, options, flags
+4. FORMAT, DON'T DELETE - Your job is reformatting, not summarizing
+
+TARGET STYLE (mini_v3 reference format):
+- Topic headers with colons: "Installation:", "Syntax:", "Functions:"
+- Inline code examples: Show syntax directly in flow
+- Abbreviations for readability: n=name, p=param, t=type, v=value, r=return, a=attribute, m=method, f=file
+- Semicolon separators: Use ; between related items
+- Period separation: Major concepts separated by periods
+- Consolidated lines: Multiple related facts on same line
+- Pattern templates: Generic syntax like "def n(p:t=v)->r{...}"
+
+FORMAT GUIDELINES:
+- Start sections with "Topic: " followed by dense content
+- Use backticks for code/commands: `jac run file.jac`
+- Inline examples: "Loop: for i in items {...}. Range: for i=0 to i<10 by i+=1."
+- List options compactly: "Types: int, str, float, bool, list[T], dict[K,V]"
+- Show all variations: "Connect: ++>, <++>, +>:E:+>, <+:E:<+"
+- Include ALL flags/options: "serve file.jac [--host IP] [--port PORT] [--reload]"
+- Group related syntax: Put related concepts on same line
+
+ABBREVIATION PATTERNS (use consistently):
+- n = name, p = parameter, t = type, v = value, d = default, r = return
+- a = attribute, m = method, f = function/file, e = error/edge
+- obj = object, def = define, has = attribute declaration
+- ID = identifier, IP = address, T = type variable
+
+EXAMPLE TRANSFORMATION:
+
+INPUT:
+"Functions in Jac are defined using the def keyword. They can have parameters with type annotations and default values. The return type is specified after an arrow. Here's an example:
+
+```jac
+def greet(name: str = "World") -> str {
+    return f"Hello {name}";
+}
+```
+
+Functions can also be async and decorated."
+
+OUTPUT:
+"Functions: def n(p:t=v)->r{...}. async def. @decorator. Example: def greet(name:str=\"World\")->str{return f\"Hello {name}\";}."
+
+EXAMPLE MINI_V3 REFERENCE (target this exact style):
+```
+Jac: Py superset for AI+graph. Install: pip install jaclang. CLI: jac run/serve/test file.jac. Entry: with entry {code}. Syntax: ; for statements, {} for blocks, f"text {var}". Types required. Comments: # single, #* multi *#. Files: .jac, .impl.jac, .test.jac.
+Types: int, str, float, bool, any, list[T], dict[K,V], set[T], tuple[T1,T2], T1|T2, T|None. Enum: enum E {V1,V2}. Control: if/elif/else, while, for item in iter, for i=0 to i<10 by i+=1. Match: match v {case T(): code; case _: ...}. Try: try {} except E as e {}. Lambda: lambda p: type: expr.
+Funcs: def n(p:t=v)->r{...}. async def. @dec. Objs: obj N{has a:t; def m(){...}}. N(a=v). Inherit: obj C(P). Access: :pub, :priv, :protect. Impl: impl N.m{...}. Post-init: def postinit{...}. Glob: glob v:t=val; access :g:v.
+```
+
+IMPORTANT REQUIREMENTS:
+- Every line should be information-dense
+- NO whitespace between major sections - continuous text
+- Keep ALL syntax variants and options
+- Include ALL examples from input
+- Preserve ALL technical accuracy
+- DO NOT omit features to save space
+- Format for maximum scanability
+
+CONTENT FOCUS:
+- Document CURRENT language state (what Jac IS now)
+- OMIT breaking changes and version history sections
+- OMIT old vs new syntax comparisons
+- If deprecated features mentioned, note briefly: "Feature X deprecated, use Y"
+- Focus on reference content, not migration guides
+- Organize by topic (Install, Syntax, Types, Functions, Nodes, Edges, Walkers, CLI, etc.)
+- NOT by version or chronology
+
+Now reformat the following documentation into this ultra-dense reference style, PRESERVING ALL INFORMATION:
+
+---
+{content}
+---
+
+Output ONLY the formatted reference documentation. Use the exact style shown above. Keep everything.

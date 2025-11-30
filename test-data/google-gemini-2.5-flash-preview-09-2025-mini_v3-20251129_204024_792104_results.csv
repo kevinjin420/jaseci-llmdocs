@@ -1,0 +1,121 @@
+Test ID,Category,Level,Score,Max Score,Percentage,Required Penalty,Forbidden Penalty,Syntax Penalty,Jac Check Penalty
+L7_ai_byllm_01,AI Abilities,7,17.5,35,50%,17.5,0,0,0
+L7_ai_byllm_02,AI Abilities,7,17.5,35,50%,17.5,0,0,0
+L7_ai_byllm_03,AI Abilities,7,35,35,100%,0,0,0,0
+L10_ai_chat_01,AI Integration,10,28.42,55,51.67%,18.333333333333336,0,0,8.25
+L10_ai_classify_01,AI Integration,10,28.42,55,51.67%,18.333333333333336,0,0,8.25
+L10_ai_extract_01,AI Integration,10,33,55,60%,13.75,0,0,8.25
+L7_ai_obj_01,AI Objects,7,35,35,100%,0,0,0,0
+L7_ai_import_01,AI Setup,7,18.08,35,51.67%,11.666666666666668,0,0,5.25
+L7_ai_walker_01,AI Walkers,7,29.75,35,85%,0,0,0,5.25
+L8_cloud_path_01,API Paths,8,40,40,100%,0,0,0,0
+L10_api_crud_01,API Patterns,10,55,55,100%,0,0,0,0
+L10_api_auth_01,API Patterns,10,33,55,60%,13.75,0,0,8.25
+L10_api_paginate_01,API Patterns,10,55,55,100%,0,0,0,0
+L3_ability_01,Abilities,3,0,15,0%,15,0,0,2.25
+L6_spawn_01,Advanced Spawn,6,30,30,100%,0,0,0,0
+L7_ai_agent_01,Agents,7,0,35,0%,35,0,0,0
+L10_search_01,Algorithms,10,46.75,55,85%,0,0,0,8.25
+L10_search_02,Algorithms,10,19.25,55,35%,27.5,0,0,8.25
+L8_cloud_async_01,Async API,8,26.67,40,66.67%,13.333333333333336,0,0,0
+L6_async_01,Async Walker,6,25.5,30,85%,0,0,0,4.5
+L1_types_01,Basic Types,1,0,5,0%,5,0,0,0.75
+L1_types_02,Basic Types,1,5,5,100%,0,0,0,0
+L8_cloud_specs_01,Cloud Walker,8,40,40,100%,0,0,0,0
+L8_cloud_specs_02,Cloud Walker,8,40,40,100%,0,0,0,0
+L2_coll_01,Collections,2,8.5,10,85%,0,0,0,1.5
+L2_coll_02,Collections,2,5.17,10,51.67%,3.333333333333334,0,0,1.5
+L2_coll_03,Collections,2,8.5,10,85%,0,0,0,1.5
+L6_context_01,Context,6,25.5,30,85%,0,0,0,4.5
+L6_ignore_01,Control,6,25.5,30,85%,0,0,0,4.5
+L2_control_01,Control Flow,2,10,10,100%,0,0,0,0
+L2_control_02,Control Flow,2,10,10,100%,0,0,0,0
+L2_control_03,Control Flow,2,10,10,100%,0,0,0,0
+L2_control_04,Control Flow,2,10,10,100%,0,0,0,0
+L10_aggregate_01,Data Processing,10,35.75,55,65%,11,0,0,8.25
+L10_transform_01,Data Processing,10,33,55,60%,13.75,0,0,8.25
+L10_queue_01,Data Structures,10,46.75,55,85%,0,0,0,8.25
+L9_decorator_01,Decorators,9,38.25,45,85%,0,0,0,6.75
+L4_edge_01,Edges,4,20,20,100%,0,0,0,0
+L4_edge_02,Edges,4,17,20,85%,0,0,0,3
+L4_edge_03,Edges,4,17,20,85%,0,0,0,3
+L4_edge_04,Edges,4,0,20,0%,20,0,0,3
+L1_entry_01,Entry Points,1,5,5,100%,0,0,0,0
+L1_entry_02,Entry Points,1,1.75,5,35%,2.5,0,0,0.75
+L8_cloud_env_01,Environment,8,14,40,35%,20,0,0,6
+L3_error_01,Error Handling,3,15,15,100%,0,0,0,0
+L3_error_02,Error Handling,3,15,15,100%,0,0,0,0
+L10_event_01,Events,10,19.25,55,35%,27.5,0,0,8.25
+L10_plugin_01,Extensibility,10,10.08,55,18.33%,36.66666666666667,0,0,8.25
+L9_file_01,File I/O,9,38.25,45,85%,0,0,0,6.75
+L9_file_02,File I/O,9,38.25,45,85%,0,0,0,6.75
+L9_file_03,File I/O,9,38.25,45,85%,0,0,0,6.75
+L6_filter_01,Filtering,6,10.5,30,35%,15,0,0,4.5
+L6_filter_02,Filtering,6,25.5,30,85%,0,0,0,4.5
+L6_filter_03,Filtering,6,0,30,0%,30,0,0,4.5
+L10_fullstack_01,Full Stack,10,27,60,45%,24,0,0,9
+L2_func_01,Functions,2,8,10,80%,2,0,0,0
+L2_func_02,Functions,2,5,10,50%,5,0,0,0
+L2_func_03,Functions,2,3.5,10,35%,5,0,0,1.5
+L9_generator_01,Generators,9,45,45,100%,0,0,0,0
+L4_graph_01,Graph Structure,4,10.33,20,51.67%,6.666666666666668,0,0,3
+L4_graph_02,Graph Structure,4,17,20,85%,0,0,0,3
+L4_graph_03,Graph Structure,4,17,20,85%,0,0,0,3
+L9_import_01,Imports,9,38.25,45,85%,0,0,0,6.75
+L9_import_02,Imports,9,0,45,0%,45,0,0,6.75
+L9_import_03,Imports,9,38.25,45,85%,0,0,0,6.75
+L10_int_social_01,Integration,10,42.5,50,85%,0,0,0,7.5
+L10_int_social_02,Integration,10,30,50,60%,12.5,0,0,7.5
+L10_int_tree_01,Integration,10,30,50,60%,12.5,0,0,7.5
+L10_int_workflow_01,Integration,10,25.83,50,51.67%,16.66666666666667,0,0,7.5
+L8_cloud_logging_01,Logging,8,0,40,0%,40,0,0,6
+L10_multiagent_01,Multi-Agent,10,15,60,25%,36,0,0,9
+L7_ai_multi_01,Multimodal,7,12.25,35,35%,17.5,0,0,5.25
+L4_node_01,Nodes,4,20,20,100%,0,0,0,0
+L4_node_02,Nodes,4,10.33,20,51.67%,6.666666666666668,0,0,3
+L4_node_03,Nodes,4,20,20,100%,0,0,0,0
+L3_obj_01,Objects,3,15,15,100%,0,0,0,0
+L3_obj_02,Objects,3,7.75,15,51.67%,5,0,0,2.25
+L3_obj_03,Objects,3,15,15,100%,0,0,0,0
+L3_obj_04,Objects,3,15,15,100%,0,0,0,0
+L3_obj_05,Objects,3,7.5,15,50%,7.5,0,0,0
+L10_audit_01,Observability,10,46.75,55,85%,0,0,0,8.25
+L10_metrics_01,Observability,10,28.42,55,51.67%,18.333333333333336,0,0,8.25
+L10_migrate_01,Operations,10,36,60,60%,15,0,0,9
+L10_cache_01,Performance,10,28.42,55,51.67%,18.333333333333336,0,0,8.25
+L10_batch_01,Performance,10,28.42,55,51.67%,18.333333333333336,0,0,8.25
+L8_cloud_perm_01,Permissions,8,0,40,0%,40,0,0,6
+L9_persist_01,Persistence,9,45,45,100%,0,0,0,0
+L9_persist_02,Persistence,9,0,45,0%,45,0,0,0
+L7_ai_rag_01,RAG,7,35,35,100%,0,0,0,0
+L10_ws_realtime_01,Real-time,10,19.25,55,35%,27.5,0,0,8.25
+L10_ws_collab_01,Real-time,10,10.08,55,18.33%,36.66666666666667,0,0,8.25
+L6_ref_01,References,6,0,30,0%,30,0,0,0
+L6_ref_02,References,6,0,30,0%,30,0,0,4.5
+L6_report_01,Reporting,6,25.5,30,85%,0,0,0,4.5
+L10_error_01,Resilience,10,46.75,55,85%,0,0,0,8.25
+L8_cloud_schedule_01,Scheduler,8,40,40,100%,0,0,0,0
+L10_access_01,Security,10,39,60,65%,12,0,0,9
+L7_ai_semstr_01,Semantic Types,7,29.75,35,85%,0,0,0,5.25
+L1_strings_01,Strings,1,4.25,5,85%,0,0,0,0.75
+L1_strings_02,Strings,1,4.25,5,85%,0,0,0,0.75
+L1_comments_01,Syntax,1,5,5,100%,0,0,0,0
+L3_test_01,Testing,3,12.75,15,85%,0,0,0,2.25
+L3_test_02,Testing,3,12.75,15,85%,0,0,0,2.25
+L5_visit_01,Traversal,5,21.25,25,85%,0,0,0,3.75
+L5_visit_02,Traversal,5,4.58,25,18.33%,16.666666666666668,0,0,3.75
+L5_visit_03,Traversal,5,21.25,25,85%,0,0,0,3.75
+L5_visit_04,Traversal,5,21.25,25,85%,0,0,0,3.75
+L10_validate_01,Validation,10,10.08,55,18.33%,36.66666666666667,0,0,8.25
+L1_vars_01,Variables,1,2.58,5,51.67%,1.666666666666667,0,0,0.75
+L1_vars_02,Variables,1,1.75,5,35%,2.5,0,0,0.75
+L1_vars_03,Variables,1,4.25,5,85%,0,0,0,0.75
+L10_version_01,Versioning,10,19.25,55,35%,27.5,0,0,8.25
+L5_ability_01,Walker Abilities,5,25,25,100%,0,0,0,0
+L5_ability_02,Walker Abilities,5,25,25,100%,0,0,0,0
+L5_return_01,Walker Results,5,21.25,25,85%,0,0,0,3.75
+L5_walker_01,Walkers,5,25,25,100%,0,0,0,0
+L5_walker_02,Walkers,5,2.5,25,10%,18.75,0,0,3.75
+L5_walker_03,Walkers,5,25,25,100%,0,0,0,0
+L8_cloud_ws_01,WebSocket,8,14,40,35%,20,0,0,6
+L8_cloud_webhook_01,Webhooks,8,20,40,50%,20,0,0,0

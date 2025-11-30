@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 import os
+import sys
 import json
 import yaml
-import argparse
 import shutil
 from pathlib import Path
 from datetime import datetime
@@ -14,6 +14,7 @@ from tqdm import tqdm
 from parser import DocumentParser, DocFile, DocSection
 from condenser import LLMCondenser, CondensationResult
 from merger import DocumentMerger
+from ultra_compressor import UltraCompressor
 
 
 class CondensationPipeline:
@@ -212,10 +213,6 @@ class CondensationPipeline:
             'errors': self.errors
         }
 
-        report_path = self.metrics_dir / f"condensation_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        with open(report_path, 'w') as f:
-            json.dump(report, f, indent=2)
-
         print("\n" + "=" * 80)
         print("CONDENSATION REPORT")
         print("=" * 80)
@@ -228,7 +225,6 @@ class CondensationPipeline:
         print(f"  Compression ratio: {overall_ratio:.2%}")
         print(f"  Token reduction:   ~{total_original_tokens - total_condensed_tokens:,} ({(1-overall_ratio)*100:.1f}%)")
         print(f"\nOutput directory: {self.output_dir}")
-        print(f"Report saved: {report_path}")
 
         if self.errors:
             print(f"\nErrors encountered:")
@@ -259,7 +255,7 @@ def run_merge_stage(config: Dict, condenser: LLMCondenser) -> Path:
 
     print(f"Merge workers: {max_workers} (concurrent group processing per stage)")
 
-    merger = DocumentMerger(condenser)
+    merger = DocumentMerger(condenser, config)
 
     start_time = datetime.now()
 
@@ -303,11 +299,6 @@ def run_merge_stage(config: Dict, condenser: LLMCondenser) -> Path:
             }
         }
 
-        report_path = base_output_dir / f"merge_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        with open(report_path, 'w') as f:
-            json.dump(merge_report, f, indent=2)
-
-        print(f"\nMerge report saved: {report_path}")
         print(f"\nFinal document stats:")
         print(f"  Characters: {final_chars:,}")
         print(f"  Estimated tokens: ~{final_tokens:,}")
@@ -322,39 +313,109 @@ def run_merge_stage(config: Dict, condenser: LLMCondenser) -> Path:
         return None
 
 
+def run_ultra_compression_stage(config: Dict, condenser: LLMCondenser, merged_doc_path: Path) -> Path:
+    """Run ultra-compression stage to create reference-format documentation"""
+    ultra_config = config.get('ultra_compression', {})
+
+    if not ultra_config.get('enabled', False):
+        print("\nUltra-compression stage disabled in config (ultra_compression.enabled: false)")
+        return merged_doc_path
+
+    print("\n" + "=" * 80)
+    print("STARTING ULTRA-COMPRESSION STAGE")
+    print("=" * 80)
+
+    output_dir = Path(ultra_config.get('output_dir', './output/3_ultra'))
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    output_file = ultra_config.get('output_file', 'jac_docs_ultra.txt')
+    output_path = output_dir / output_file
+
+    passes = ultra_config.get('passes', 2)
+
+    print(f"Ultra-compression passes: {passes}")
+
+    start_time = datetime.now()
+
+    try:
+        # Initialize ultra-compressor with config
+        compressor = UltraCompressor(condenser, config)
+
+        # Read merged document
+        with open(merged_doc_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        # Compress with multiple passes
+        result = compressor.multi_pass_compress(
+            content,
+            passes=passes,
+            name=merged_doc_path.name
+        )
+
+        if result.success:
+            # Write output
+            with open(output_path, 'w', encoding='utf-8') as f:
+                f.write(result.content)
+
+            end_time = datetime.now()
+            processing_time = (end_time - start_time).total_seconds()
+
+            # Generate ultra-compression report
+            ultra_report = {
+                'timestamp': datetime.now().isoformat(),
+                'input_file': str(merged_doc_path),
+                'output_file': str(output_path),
+                'passes': passes,
+                'processing_time_seconds': processing_time,
+                'original_tokens': result.original_tokens,
+                'compressed_tokens': result.compressed_tokens,
+                'compression_ratio': result.compression_ratio
+            }
+
+            print(f"\nUltra-compressed document stats:")
+            print(f"  Original tokens: {result.original_tokens:,}")
+            print(f"  Compressed tokens: {result.compressed_tokens:,}")
+            print(f"  Compression ratio: {result.compression_ratio:.1%}")
+            print(f"  Processing time: {processing_time:.2f}s")
+
+            return output_path
+        else:
+            print(f"\nError during ultra-compression: {result.error}")
+            return merged_doc_path
+
+    except Exception as e:
+        print(f"\nError during ultra-compression: {e}")
+        import traceback
+        traceback.print_exc()
+        return merged_doc_path
+
+
 def main():
-    parser = argparse.ArgumentParser(description='JAC Documentation Condensation & Merge Pipeline')
-    parser.add_argument(
-        '--config',
-        type=str,
-        default='config/config.yaml',
-        help='Path to configuration file'
-    )
-    parser.add_argument(
-        '--sequential',
-        action='store_true',
-        help='Process files sequentially instead of in parallel'
-    )
-    parser.add_argument(
-        '--workers',
-        type=int,
-        default=16,
-        help='Number of parallel workers (default: 16)'
-    )
-    parser.add_argument(
-        '--condense-only',
-        action='store_true',
-        help='Only run condensation stage, skip merge'
-    )
-    parser.add_argument(
-        '--merge-only',
-        action='store_true',
-        help='Only run merge stage, skip condensation'
-    )
+    """
+    Run the documentation pipeline.
 
-    args = parser.parse_args()
+    Usage:
+        python pipeline.py       # Run all 3 stages
+        python pipeline.py 1     # Run only stage 1 (condensation)
+        python pipeline.py 2     # Run only stage 2 (merge)
+        python pipeline.py 3     # Run only stage 3 (ultra-compression)
+    """
+    # Parse stage argument
+    stage_to_run = None
+    if len(sys.argv) > 1:
+        try:
+            stage_to_run = int(sys.argv[1])
+            if stage_to_run not in [1, 2, 3]:
+                print(f"Error: Stage must be 1, 2, or 3 (got {stage_to_run})")
+                print("Usage: python pipeline.py [stage]")
+                print("  stage: 1=condensation, 2=merge, 3=ultra-compression (optional, default=all)")
+                return
+        except ValueError:
+            print(f"Error: Invalid stage argument '{sys.argv[1]}' (must be integer 1-3)")
+            print("Usage: python pipeline.py [stage]")
+            return
 
-    config_path = Path(__file__).parent.parent / args.config
+    config_path = Path(__file__).parent.parent / 'config' / 'config.yaml'
 
     if not config_path.exists():
         print(f"Error: Config file not found: {config_path}")
@@ -364,49 +425,87 @@ def main():
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
 
-    parallel_sections = config['processing'].get('parallel_sections', False)
-    section_workers = config['processing'].get('section_workers', 4)
+    # Get processing settings from config
+    parallel = config['processing'].get('parallel', True)
+    max_workers = config['processing'].get('max_workers', 16)
+    parallel_sections = config['processing'].get('parallel_sections', True)
+    section_workers = config['processing'].get('section_workers', 8)
 
     # Stage 1: Condensation
-    if not args.merge_only:
+    if stage_to_run is None or stage_to_run == 1:
         print("=" * 80)
         print("STAGE 1: CONDENSATION")
         print("=" * 80)
 
         pipeline = CondensationPipeline(str(config_path))
         condensation_report = pipeline.run(
-            parallel=not args.sequential,
-            max_workers=args.workers,
+            parallel=parallel,
+            max_workers=max_workers,
             parallel_sections=parallel_sections,
             section_workers=section_workers
         )
-    else:
-        # Check if condensed output exists
-        output_dir = Path(config['output_dir'])
-        if not output_dir.exists() or not list(output_dir.rglob("*.txt")):
-            print(f"Error: No condensed output found in {output_dir}")
-            print("Run without --merge-only first to generate condensed docs")
-            return
 
-        # Create condenser for merge stage
+        if stage_to_run == 1:
+            print("\n" + "=" * 80)
+            print("STAGE 1 COMPLETE")
+            print("=" * 80)
+            print(f"\nCondensed docs: {config['output_dir']}")
+            return
+    else:
+        # Create pipeline for stages 2 and 3
         pipeline = CondensationPipeline(str(config_path))
 
     # Stage 2: Merge
-    if not args.condense_only:
-        final_doc = run_merge_stage(config, pipeline.condenser)
+    if stage_to_run is None or stage_to_run == 2:
+        # Check if condensed output exists
+        if stage_to_run == 2:
+            output_dir = Path(config['output_dir'])
+            if not output_dir.exists() or not list(output_dir.rglob("*.txt")):
+                print(f"Error: No condensed output found in {output_dir}")
+                print("Run stage 1 first: python pipeline.py 1")
+                return
 
-        if final_doc:
+        merged_doc = run_merge_stage(config, pipeline.condenser)
+
+        if not merged_doc:
+            print("\nMerge stage failed")
+            return
+
+        if stage_to_run == 2:
             print("\n" + "=" * 80)
-            print("PIPELINE COMPLETE")
+            print("STAGE 2 COMPLETE")
             print("=" * 80)
-            print(f"\nFinal ultra-condensed document: {final_doc}")
-        else:
-            print("\nMerge stage skipped or failed")
+            print(f"\nMerged document: {merged_doc}")
+            return
     else:
-        print("\n" + "=" * 80)
-        print("CONDENSATION COMPLETE")
-        print("=" * 80)
-        print(f"\nCondensed docs: {config['output_dir']}")
+        # Find merged doc for stage 3
+        merge_config = config.get('merge', {})
+        base_output_dir = Path(merge_config.get('output_dir', './output/merged'))
+        final_output_name = merge_config.get('final_output', 'jac_documentation_final.txt')
+        merged_doc = base_output_dir / final_output_name
+
+        if not merged_doc.exists():
+            print(f"Error: Merged document not found: {merged_doc}")
+            print("Run stage 2 first: python pipeline.py 2")
+            return
+
+    # Stage 3: Ultra-compression
+    if stage_to_run is None or stage_to_run == 3:
+        final_doc = run_ultra_compression_stage(config, pipeline.condenser, merged_doc)
+
+        if stage_to_run == 3:
+            print("\n" + "=" * 80)
+            print("STAGE 3 COMPLETE")
+            print("=" * 80)
+            print(f"\nUltra-compressed reference doc: {final_doc}")
+            return
+
+    # All stages complete
+    print("\n" + "=" * 80)
+    print("PIPELINE COMPLETE")
+    print("=" * 80)
+    print(f"\nMerged document: {merged_doc}")
+    print(f"Ultra-compressed reference doc: {final_doc}")
 
 
 if __name__ == '__main__':

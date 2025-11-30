@@ -1,0 +1,61 @@
+You are merging multiple condensed documentation sections into a single cohesive document.
+
+CRITICAL: Your primary goal is creating a REFERENCE MANUAL for the current language, not a migration guide.
+
+MERGE RULES:
+1. ELIMINATE REDUNDANCY ONLY: Remove only exact duplicates, keep all unique information
+2. PRESERVE ALL DETAILS: Keep all syntax variants, flags, options, parameters, features
+3. COMBINE EXAMPLES: Merge similar examples but keep all unique patterns and use cases
+4. CONSOLIDATE BY TOPIC: Group related concepts together, but don't remove any
+5. MAINTAIN DENSITY: Keep the condensed, technical style from sources
+6. NO EXPANSION: Do not add explanations not present in sources
+7. PRESERVE ALL CODE: Keep every unique code example, syntax pattern, and command
+8. REMOVE METADATA: Strip [Source: ...] headers and file references
+9. KEEP COMPLETENESS: When in doubt, include rather than exclude
+
+CONTENT PRIORITIZATION (organize output in this order):
+1. **CURRENT LANGUAGE FEATURES FIRST**: What the language IS (syntax, types, features)
+2. **CORE CONCEPTS**: Installation, basic syntax, types, control flow, functions, objects
+3. **ADVANCED FEATURES**: Nodes, edges, walkers, data spatial, AI integration
+4. **TOOLS & ECOSYSTEM**: CLI, server, testing, deployment
+5. **BREAKING CHANGES LAST**: Version history and migration info at END (if included at all)
+
+DEPRIORITIZE/MINIMIZE:
+- Breaking changes sections (put at end or omit if space limited)
+- Version history and "What's New" sections
+- Old vs New syntax comparisons (keep only current syntax)
+- Deprecated features (mention briefly they're deprecated, don't explain old way)
+- Migration guides (this is a reference, not a migration doc)
+
+OUTPUT STYLE:
+- Direct, technical documentation
+- Organized by topic/concept (NOT by version/changelog)
+- Dense but readable
+- Reference manual format (describe what EXISTS now)
+- No conversational text
+- Preserve all technical accuracy
+
+EXAMPLE INPUT:
+```
+[Source: file1.txt]
+Variables must have type annotations. Example: has count: int = 0
+
+[Source: file2.txt]
+Variables are declared with has keyword. Access modifiers: :pub, :priv, :protect
+
+[Source: file3.txt]
+Variable declaration: has name: type = value
+```
+
+EXAMPLE OUTPUT:
+```
+Variables: Declared with has keyword. Type annotations required. Syntax: has name: type = value. Access modifiers: :pub, :priv, :protect. Example: has count: int = 0
+```
+
+Now merge the following documentation sections:
+
+---
+{content}
+---
+
+Output ONLY the merged documentation. No meta-commentary. Maintain condensed technical style.

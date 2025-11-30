@@ -44,7 +44,9 @@ class LLMCondenser:
         else:
             raise ValueError(f"Unsupported provider: {self.provider}")
 
-        prompt_file = Path(__file__).parent.parent / 'config' / 'condensation_prompt.txt'
+        # Load condensation prompt from config
+        prompt_path = config.get('prompts', {}).get('condensation', 'config/condensation_prompt.txt')
+        prompt_file = Path(__file__).parent.parent / prompt_path
         with open(prompt_file, 'r') as f:
             self.prompt_template = f.read()
 
@@ -67,8 +69,11 @@ class LLMCondenser:
 
         return content
 
-    def condense_with_openrouter(self, content: str) -> str:
-        prompt = self.prompt_template.replace('{content}', content)
+    def condense_with_openrouter(self, content: str, custom_prompt: str = None) -> str:
+        if custom_prompt:
+            prompt = custom_prompt
+        else:
+            prompt = self.prompt_template.replace('{content}', content)
 
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -87,25 +92,48 @@ class LLMCondenser:
             "temperature": self.llm_config.get('temperature', 0.0)
         }
 
-        try:
-            response = requests.post(
-                self.openrouter_url,
-                headers=headers,
-                json=data,
-                timeout=120
-            )
+        # Retry configuration
+        max_retries = self.llm_config.get('max_retries', 3)
+        retry_delay = self.llm_config.get('retry_delay', 2)
+        retryable_codes = [500, 502, 503, 504, 429]
 
-            if not response.ok:
-                error_detail = response.text
-                raise Exception(f"OpenRouter API error ({response.status_code}): {error_detail}")
+        for attempt in range(max_retries):
+            try:
+                response = requests.post(
+                    self.openrouter_url,
+                    headers=headers,
+                    json=data,
+                    timeout=120
+                )
 
-            result = response.json()
-            return result['choices'][0]['message']['content']
+                if not response.ok:
+                    error_detail = response.text
+                    status_code = response.status_code
 
-        except requests.exceptions.RequestException as e:
-            raise Exception(f"OpenRouter API error: {str(e)}")
-        except (KeyError, IndexError) as e:
-            raise Exception(f"OpenRouter response parsing error: {str(e)}, Response: {result}")
+                    # Check if this is a retryable error
+                    if status_code in retryable_codes and attempt < max_retries - 1:
+                        wait_time = retry_delay * (2 ** attempt)
+                        print(f"  OpenRouter API error ({status_code}), retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})...")
+                        time.sleep(wait_time)
+                        continue
+                    else:
+                        raise Exception(f"OpenRouter API error ({status_code}): {error_detail}")
+
+                result = response.json()
+                return result['choices'][0]['message']['content']
+
+            except requests.exceptions.RequestException as e:
+                if attempt < max_retries - 1:
+                    wait_time = retry_delay * (2 ** attempt)
+                    print(f"  OpenRouter request error, retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})...")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    raise Exception(f"OpenRouter API error: {str(e)}")
+            except (KeyError, IndexError) as e:
+                raise Exception(f"OpenRouter response parsing error: {str(e)}, Response: {result}")
+
+        raise Exception(f"OpenRouter API failed after {max_retries} attempts")
 
     def condense(self, content: str, section_title: str = "") -> CondensationResult:
         start_time = time.time()
