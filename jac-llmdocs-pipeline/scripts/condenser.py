@@ -30,7 +30,8 @@ class LLMCondenser:
     def __init__(self, config: Dict):
         self.config = config
         self.llm_config = config['llm']
-        self.condensation_config = config['condensation']
+        # Make condensation_config optional for new topic-based pipeline
+        self.condensation_config = config.get('condensation', {})
         self.provider = self.llm_config['provider']
 
         api_key_env = self.llm_config.get('api_key_env', 'OPENROUTER_API_KEY')
@@ -44,11 +45,14 @@ class LLMCondenser:
         else:
             raise ValueError(f"Unsupported provider: {self.provider}")
 
-        # Load condensation prompt from config
+        # Load condensation prompt from config (optional, for backward compatibility)
         prompt_path = config.get('prompts', {}).get('condensation', 'config/condensation_prompt.txt')
         prompt_file = Path(__file__).parent.parent / prompt_path
-        with open(prompt_file, 'r') as f:
-            self.prompt_template = f.read()
+        if prompt_file.exists():
+            with open(prompt_file, 'r') as f:
+                self.prompt_template = f.read()
+        else:
+            self.prompt_template = ""
 
     def estimate_tokens(self, text: str) -> int:
         return len(text) // 4
@@ -174,8 +178,10 @@ class LLMCondenser:
         if not result.success:
             return False
 
-        min_ratio = self.config['validation'].get('min_ratio', 0.15)
-        max_ratio = self.config['validation'].get('max_ratio', 0.5)
+        # Make validation config optional
+        validation_config = self.config.get('validation', {})
+        min_ratio = validation_config.get('min_ratio', 0.15)
+        max_ratio = validation_config.get('max_ratio', 0.5)
 
         if result.compression_ratio < min_ratio or result.compression_ratio > max_ratio:
             return False
@@ -184,6 +190,13 @@ class LLMCondenser:
             return False
 
         return True
+
+    def condense_text(self, content: str, custom_prompt: str) -> str:
+        """
+        Simple wrapper for topic-based pipeline.
+        Takes content and a custom prompt, returns condensed text.
+        """
+        return self.condense_with_openrouter(content, custom_prompt)
 
     def format_output(self, condensed: str, section_title: str = "") -> str:
         output_format = self.condensation_config.get('output_format', 'plain_text')

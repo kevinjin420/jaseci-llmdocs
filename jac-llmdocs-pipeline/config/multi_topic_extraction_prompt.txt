@@ -1,0 +1,67 @@
+You are extracting topic-specific documentation from programming language documentation.
+
+Your task is to identify and extract content for MULTIPLE topics from the provided documentation in a SINGLE pass.
+
+CRITICAL RULES:
+1. EXTRACT ALL RELEVANT INFORMATION - Do not summarize or condense
+2. PRESERVE ALL CODE EXAMPLES - Keep every code snippet
+3. PRESERVE ALL SYNTAX - Keep exact syntax definitions
+4. REMOVE ONLY IRRELEVANT CONTENT - Content unrelated to any topic
+5. OUTPUT STRUCTURED FORMAT - Use clear topic separators
+
+OUTPUT FORMAT:
+You must output content in this EXACT format:
+
+```
+===TOPIC: topic_name_1===
+[extracted content for topic 1, or NO_RELEVANT_CONTENT if nothing found]
+
+===TOPIC: topic_name_2===
+[extracted content for topic 2, or NO_RELEVANT_CONTENT if nothing found]
+
+===TOPIC: topic_name_3===
+[extracted content for topic 3, or NO_RELEVANT_CONTENT if nothing found]
+```
+
+FORMATTING RULES:
+- Remove ALL emojis and unicode symbols (▶️, ⏭️, ⬇️, ⏹️, 🔄, etc.)
+- Remove excessive markdown styling (bold, italics except in code)
+- Keep code blocks with language tags
+- Preserve technical terminology
+
+CRITICAL - NO RELEVANT CONTENT:
+- If a topic has NO relevant information, write ONLY: "NO_RELEVANT_CONTENT"
+- Do NOT write "I am sorry" or "I apologize" or "I cannot extract"
+- Do NOT explain why there's no content
+- WRONG: "I am sorry, but the provided documentation does not contain..."
+- CORRECT: "NO_RELEVANT_CONTENT"
+
+EXAMPLE OUTPUT:
+
+===TOPIC: Functions===
+Functions are defined with def keyword. Syntax: def name(param: type) -> return_type { body }
+
+Example:
+```jac
+def greet(name: str) -> str {
+    return f"Hello {name}";
+}
+```
+
+===TOPIC: Variables===
+NO_RELEVANT_CONTENT
+
+===TOPIC: Objects===
+Objects defined with obj keyword. Syntax: obj Name { has attr: type; def method() {} }
+
+---
+
+TOPICS TO EXTRACT:
+{topics}
+
+DOCUMENTATION:
+---
+{content}
+---
+
+Extract content for ALL topics listed above. Use the exact format shown. Output ONLY the structured extraction.

@@ -1,0 +1,115 @@
+You are extracting topic-specific documentation from programming language documentation.
+
+Your task is to identify and extract ALL content related to the specified topic(s) from the provided documentation, preserving complete technical accuracy and detail.
+
+CRITICAL RULES:
+1. EXTRACT ALL RELEVANT INFORMATION - Do not summarize or condense
+2. PRESERVE ALL CODE EXAMPLES - Keep every code snippet related to the topic
+3. PRESERVE ALL SYNTAX - Keep exact syntax definitions and patterns
+4. PRESERVE ALL DETAILS - Parameters, options, flags, edge cases, warnings
+5. REMOVE ONLY IRRELEVANT CONTENT - Content unrelated to the specified topic(s)
+6. MAINTAIN CONTEXT - Keep enough surrounding context to make examples understandable
+7. NO REFORMATTING - Keep original structure, just extract relevant sections
+
+EXTRACTION PROCESS:
+1. Read through the entire documentation
+2. Identify all sections, paragraphs, code examples related to the topic
+3. Extract these sections completely, preserving:
+   - All explanatory text
+   - All code examples
+   - All syntax definitions
+   - All parameters and options
+   - All warnings and notes
+   - All edge cases
+4. Remove only content that is completely unrelated to the topic
+5. If a section partially relates, include the entire section
+
+TOPIC RELEVANCE:
+- Extract content that directly discusses the topic
+- Extract content that shows examples of the topic
+- Extract content that explains how to use the topic
+- Extract content that shows the topic in context with other features
+- Extract content that shows common patterns with the topic
+- Extract content that warns about gotchas or edge cases with the topic
+
+WHAT TO REMOVE:
+- Content about completely different topics
+- Breaking changes UNLESS they directly affect the current topic syntax
+- Version history UNLESS it clarifies current behavior
+- Migration guides UNLESS they explain current syntax
+
+OUTPUT FORMAT:
+- Plain text with minimal markdown
+- Remove ALL emojis and unicode symbols (▶️, ⏭️, ⬇️, ⏹️, 🔄, etc.)
+- Remove excessive markdown styling (bold, italics unless in code)
+- Include section headers for organization
+- Keep code blocks with language tags
+- Preserve all technical terminology
+
+CRITICAL - NO RELEVANT CONTENT:
+- If the documentation contains NO information related to a topic, output ONLY: "NO_RELEVANT_CONTENT"
+- Do NOT write "I am sorry" or "I apologize" or "I cannot extract"
+- Do NOT explain why there's no content
+- WRONG: "I am sorry, but the provided documentation does not contain..."
+- CORRECT: "NO_RELEVANT_CONTENT"
+- If you find yourself typing an apology, STOP and just write: NO_RELEVANT_CONTENT
+
+EXAMPLE:
+
+TOPIC: Functions
+INPUT:
+```
+# Jac Language Overview
+
+Jac is a programming language. It has many features.
+
+## Functions
+
+Functions are defined with def keyword. Example:
+```jac
+def greet(name: str) -> str {
+    return f"Hello {name}";
+}
+```
+
+Functions can be async:
+```jac
+async def fetch_data() -> dict {
+    return await api_call();
+}
+```
+
+## Nodes
+
+Nodes are graph elements...
+```
+
+OUTPUT:
+```
+## Functions
+
+Functions are defined with def keyword. Example:
+```jac
+def greet(name: str) -> str {
+    return f"Hello {name}";
+}
+```
+
+Functions can be async:
+```jac
+async def fetch_data() -> dict {
+    return await api_call();
+}
+```
+```
+
+---
+
+TOPICS TO EXTRACT: {topics}
+
+DOCUMENTATION:
+---
+{content}
+---
+
+Extract ALL content related to the specified topic(s). Output ONLY the extracted documentation.

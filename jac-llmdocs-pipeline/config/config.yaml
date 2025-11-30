@@ -1,19 +1,14 @@
 # JAC LLM Documentation Pipeline Configuration
+# Topic-Based Architecture: Extract → Merge → Format
 
 # Prompt files for each stage (edit these to tune pipeline behavior)
 prompts:
-  condensation: "config/condensation_prompt.txt"  # Stage 1: Initial compression
-  merge: "config/merge_prompt.txt"                # Stage 2: Merge condensed docs
-  ultra_compression: "config/reference_format_prompt.txt"  # Stage 3: Final reference format
+  extraction: "config/extraction_prompt.txt"   # Stage 1: Extract topic-specific content
+  merge: "config/merge_prompt.txt"              # Stage 2: Merge within each topic
+  format: "config/format_prompt.txt"            # Stage 3: Final compact formatting
 
 # Source documentation directory (can be absolute or relative to pipeline root)
 source_dir: "/home/kevinjin/jaseci-llmdocs/docs-new"
-
-# Output directory for condensed documentation
-output_dir: "/home/kevinjin/jaseci-llmdocs/jac-llmdocs-pipeline/output/1_condensed"
-
-# Metrics and logs directory
-metrics_dir: "/home/kevinjin/jaseci-llmdocs/jac-llmdocs-pipeline/output/metrics"
 
 # LLM API Configuration
 llm:
@@ -52,65 +47,31 @@ processing:
   categories: null
   # categories: ["learn", "jac_book"]
 
-# Condensation settings
-condensation:
-  # Remove HTML tags and classes
-  strip_html: true
+# Stage 1: Topic Extraction
+extraction:
+  # Output directory for extracted topics (organized by topic)
+  output_dir: "/home/kevinjin/jaseci-llmdocs/jac-llmdocs-pipeline/output/1_extracted"
 
-  # Remove pedagogical language
-  remove_fluff: true
-
-  # Preserve code examples
-  preserve_code: true
-
-  # Target compression ratio (informational)
-  target_ratio: 0.3  # 70% reduction
-
-  # Output format
-  output_format: "plain_text"  # plain_text, markdown_minimal
-
-# Validation
-validation:
-  # Check for key concepts preservation
-  verify_concepts: true
-
-  # Minimum acceptable compression ratio
-  min_ratio: 0.10
-
-  # Maximum acceptable compression ratio (allow up to 90% for very small sections)
-  max_ratio: 0.90
-
-# Multi-stage merge configuration
+# Stage 2: Topic Merging
 merge:
-  # Enable multi-stage merge after condensation
-  enabled: true
-
-  # Merge ratio (how many files to combine per group)
-  # e.g., 4 means 4:1 ratio (4 files become 1)
-  ratio: 4
-
-  # Parallel workers for concurrent group processing within each stage
+  # Parallel workers for merging topics
   max_workers: 16
 
-  # Output directory for merged stages
+  # Output directory for merged topics (one file per topic)
   output_dir: "/home/kevinjin/jaseci-llmdocs/jac-llmdocs-pipeline/output/2_merged"
 
-  # Preserve document structure during merges
-  preserve_structure: true
+# Stage 3: Hierarchical Merge (NEW)
+hierarchical_merge:
+  # Output directory for intermediate and final merged files
+  output_dir: "/home/kevinjin/jaseci-llmdocs/jac-llmdocs-pipeline/output/3_hierarchical"
+  
+  # Number of files to merge into one per pass (e.g., 4 -> 1)
+  ratio: 4
 
-  # Final output filename
-  final_output: "jac_docs_final.txt"
-
-# Ultra-compression stage (reference format)
+# Stage 4: Final Formatting and Combining
 ultra_compression:
-  # Enable ultra-compression after merge
-  enabled: true
-
-  # Number of compression passes (1 = format only, don't over-compress)
-  passes: 1
-
-  # Output filename for ultra-compressed reference doc
-  output_file: "jac_docs_ultra.txt"
+  # Output filename for final reference doc
+  output_file: "jac_docs_final.txt"
 
   # Output directory
-  output_dir: "/home/kevinjin/jaseci-llmdocs/jac-llmdocs-pipeline/output/3_ultra"
+  output_dir: "/home/kevinjin/jaseci-llmdocs/jac-llmdocs-pipeline/output/4_final"

@@ -1,0 +1,90 @@
+Jac:statically-typed,object-spatial lang for graph-based AI.Models data as node objs & typed edge rels,traversed by walker entities.
+1.Core Archetypes:Compile to Python classes,support inheritance/polymorphism.Types:node,edge,walker,obj,enum,class.Syntax:<archetype_type> <Name>(<BaseArchetype>...){}.Inherits from `jaclang.lib.Obj/Node/Edge/Walker`.
+Members:
+-Attributes(`has`):`has <access_modifier> <name>: <type> = <default> by <modifier>;`.access_modifier::pub(d),:priv,:protect.modifier:postinit,static.No defaults=req constructor args.
+-Methods(`def`):`def <access_modifier> <name>(<param>: <type>,...) -> <return_type> { ... }`.access_modifier::pub(d),:priv,:protect.self:1st p for instance m.Can r multiple vs as tuple.
+-Abilities(`can`):Event handlers for walkers,exec automatically on events.Syntax:`can <name> with <event_specifier> { ... }`.event_specifier:<WalkerType> [entry|exit] (node/edge),entry (walker).self:current instance.here:interacting entity.visitor:visiting walker.
+Special Features:postinit():called after initial a assignment.impl <Archetype>.<method_name> { ... }:separates m decl from impl.__specs__:Static metadata for API config (e.g.,`static has methods: list = ["get", "post"];`).
+2.Graph Structure & Operations:root Node:Special,persistent global anchor.All persistent nodes must be reachable from root.Each user/session has isolated root.
+Spatial Operators (Connecting Nodes):`node_a <operator> node_b;` or `node_a <operator> [node_b, node_c];`.Ops:++>(src->tgt),<++(tgt->src),<++>(bidirectional),+>:<EdgeType>(<props>):+>(typed conn w/attrs).
+Deletion:`del <node_name>;` or `source del --> target;`.
+3.Graph Traversal & Querying (Walkers):Walkers traverse graph,exec can abilities.
+Declaration:`[async] walker <WalkerName> [: <ParentWalker>] { ... }`.async:exec in sep thread.
+Spawning:`[node_or_edge_ref] spawn <WalkerName>([args]);`.
+Traversal(`visit`):Directs walker movement.
+`visit [-->];`(All outgoing).`visit [<--><EdgeType>];`(Typed bidirectional).`visit [-->:EdgeType:property > value:->];`(Filtered by edge prop).`visit [--> (?NodeType)](?property == value);`(Filtered by node type/prop).`visit :<index>: connections;`(Order control::0: for DFS/stack,d for BFS/queue).
+Control:ignore:Excludes node/edge from traversal.disengage:Terminates traversal.report <data>;:Sends result back to spawning context or as API response.
+Declarative Querying:`[<start_node> <edge_pattern>]` r list of connected nodes.
+Path Collections(`P`):Ordered seq of connected nodes & edges.Syntax:`P = [p1, p2, ..., pk];`.Construction:`path(n_origin: Node, predicate: func(element: Node|Edge) -> bool, includeEdges: bool, direction: "outgoing"|"incoming"|"any") -> P;`.
+Walker Destination Queues(`Qw`):Internal FIFO queue for walker traversal.visit(w: Walker, target: Node|Edge|P) expands paths into Qw.
+4.Types & Variables:Statically typed w/type inference.
+Basic Types:int,float,str,bool,bytes,type,None,any.
+Collection Types:list[<type>],dict[<key_type>,<value_type>],set[<type>],tuple[<type>,...].
+Custom Types:obj,node,edge,walker,enum.
+Union Types:type1 | type2.
+Callable:callable[[<param_type1>,...],<return_type>].
+Variable Declaration:
+`has <name>: <type> [= <value>] [by <access_modifier>];`(Instance vars within archetypes).
+`let <name>: <type> [= <value>];`(Module-level scope).
+`glob <name>: <type> [= <value>];`(Global scope).
+Access Modifiers::pub(d),:priv,:protect.
+Scope Modifiers:global,nonlocal.
+5.Functions & Callables:
+Standard Functions(`def`):Syntax:`def <name>(<param>: <type> = <default>, /?, *, <kw_param>: <type>) -> <return_type> { <body> }`.Params:Positional-only(/),keyword-only(*),default vs.Vars:Local,Global (`glob <name>: <type> = <value>;` accessed via `:g:<name>`).Entry Point:`with entry { ... }` exec on `jac run`.
+Object Methods(`can`):Declared in archetypes,impl via impl.
+Lambda Expressions:`lambda <param>: <type>: <expression>;`.
+Generators:Functions that yield vs.
+Client Functions(`cl def`):Client-side exec (e.g.,browser UI),can r JSX elements.
+6.AI Integration(`byLLM`):Integrates LLMs for AI-powered funcs & multi-agent systems w/ReAct tool integration.
+LLM Model Initialization:`import from byllm.lib {Model}; glob <name> = Model(model_name: str, api_key: str = None, base_url: str = None, method: str = None, tools: list = None, hyperparams: dict = None);`.model_name:Req (e.g.,`"gpt-4o"`).method:LLM interaction strategy (e.g.,`'Reason'`,`'ReAct'`).tools:Funcs for ReAct agentic behavior.hyperparams:Model-specific params.
+AI-Integrated Functions & Agents:Funcs declared w/`by llm()` delegate exec to configured LLM.Syntax:`def <func_name>(<args>) -> <return_type> by <llm_instance>(method: str = "ReAct", tools: list[Callable] = [], stream: bool = False);`.llm_instance:Opt; specifies Model instance (d to `glob llm`).LLMs adhere to specified r types (e.g.,enum,dataclass).Stateful Agents:Maintain state by passing `chat_history: list[Chat]` as an arg.Tool Integration:`tools=[<tool_func>]` allows AI to call specified funcs.
+Multimodal AI:Supports `Image(<source>)` and `Video(path: str, fps: int = 1)` as input types.
+Semantic Strings(`sem`):Attaches natural lang desc to code elements for LLM interpretation.Syntax:`sem <object_path> = "description";`.Python:`@Jac.sem('<Class Semstring>', {'field1': '<field1 semstring>'})`.
+LLM Context:Object attrs,docstrings,and `incl_info` p provide context to LLM prompt.
+7.Control Flow:Uses `{}` for blocks,no `()` for conditions.
+Conditionals:`if <cond> { ... } elif <cond> { ... } else { ... }`.
+Pattern Matching:`match <target> { case <pattern> [if <guard>]: ... case _: ... }`.
+Loops:`for <item> in <collection> { ... }`,`for <init>; <cond>; <step> { ... }`,`while <cond> { ... } [else { ... }]`.
+Exception Handling:`try { ... } except <Type> as <e> { ... } finally { ... }`,`raise <ExceptionType>(<message>)`,`assert <condition>, <error_msg>`.
+Flow Control Keywords:break,continue,return [value].
+Walker Control:disengage,visit [pattern],report <value>,w => target (spawn inactive walker).
+Concurrency:`flow { ... }`(parallel exec),wait (synchronization).
+8.Decorators & Annotations:
+`@by`(LLM Integration):`def func(...) by llm(...)` or `@by(llm(...))` in Python.
+AST Node Decorators:Archetype,ImplDef,Ability nodes can have `decorators: Expr | None`.
+9.Imports & Modules:
+Python Imports:`from <module> import <name>`,`import <module>`.
+Jac Imports:`import from <module> { <name> }`,`import from <module> { * }`,`include <jac_module_name>;`(flattens namespace).Supports relative paths & string literals for special packages.
+10.Strings(`str`):
+Declaration:Single quotes `'`,double quotes `"`,triple quotes `"""`.
+F-Strings:Python-style `f"..."` for embedding expressions.
+Unicode:Full support.
+11.Jac Cloud:API & Deployment:Transforms Jac apps into production-ready API servers (RESTful,WebSocket,scheduled tasks).
+Quick Start:`pip install jac-cloud`,`jac serve <app.jac>`.Access at `http://localhost:8000` (app) and `/docs` (OpenAPI).
+Features:Auto REST API gen from walkers,token-based auth,SSO,Kubernetes/Docker deployment.
+Utility API:`GET /util/traverse`(Auth:Bearer Token; Params:source,detailed,depth).
+WebSocket Services:Real-time,bidirectional comm,channel-based messaging.
+12.Environment & Configuration:
+Sources:YAML files,Env Vars,Kubernetes ConfigMaps.
+SSO Configuration:`export SSO_<PLATFORM>_CLIENT_ID="<id>"`,`export SSO_<PLATFORM>_CLIENT_SECRET="<secret>"`.Platforms:GOOGLE,GITHUB,FACEBOOK,APPLE.
+13.Error Handling:
+Auto Type Validation:Invalid types r HTTP 400.
+Type Checker:Static analysis for type annotations,inference,etc.
+Keywords:try/except/finally,raise <cause> from <target>,assert <condition>, <error_msg>,report <message>.
+14.Testing:Zero-config,graph-aware testing framework.
+Test Block:`test <name> { ... }`(Auto-discovered by `jac test <file.jac>`).
+Assertions:`assert <condition>, "<error_message>";` or `check <condition>;`.
+Features:Graph-aware,walker testing,type-safe,performance measurement.
+15.Persistence & Isolation:Graph structure stored in session files.Each user/session has an isolated persistent root & graph space.
+16.Permissions & Security:
+Authentication:Token-based.
+Authorization:Role-Based Access Control (RBAC) via Kubernetes.
+Node Access Control:`_.allow_root(here, NodeAnchor.ref(target_root_id), access_level)`,`grant(node, <Permission>)`,`revoke(node)`.
+`__jac_access__`:Overridable func for custom access validation.
+17.Scheduler:Types:Cron-based,interval-based,one-time date triggers.Purpose:Automate recurring tasks.
+18.Logging:Purpose:Monitor deployments,comprehensive req/resp logging.Integration:Supports Elastic.
+19.Visualization & Debugging:
+`printgraph(start_node, depth, bfs, edge_type, dot_file, as_json)`:Built-in func to output graph data (DOT or JSON).
+CLI:`jac dot <filename.jac>`,`jac tool ir sym/ast/cfg. <file_path>`.
+Tools:VS Code Extension,Jac Playground,Jac Lens (PWA).
+Example:node Person { has name: str; } edge Friend { has since: int; } walker FindOldFriends { has min_year: int; can find_friends with entry { for friend_node in [here ->:Friend:since < self.min_year:->] { report friend_node.name; } } } with entry { alice = root ++> Person(name="Alice"); bob = root ++> Person(name="Bob"); charlie = root ++> Person(name="Charlie"); alice <+:Friend(since=2015):+> bob; alice <+:Friend(since=2022):+> charlie; FindOldFriends(min_year=2020) => alice; }

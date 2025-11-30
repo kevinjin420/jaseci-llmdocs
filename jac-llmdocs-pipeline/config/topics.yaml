@@ -1,0 +1,349 @@
+# Topic Categories for Documentation Extraction
+# Each topic will have its own directory in stage 1 output
+
+topics:
+  syntax:
+    name: "Core Syntax"
+    keywords:
+      - "syntax"
+      - "comments"
+      - "semicolon"
+      - "blocks"
+      - "indentation"
+      - "statements"
+      - "keywords"
+      - "operators"
+      - "expressions"
+
+  types:
+    name: "Types and Variables"
+    keywords:
+      - "types"
+      - "int"
+      - "str"
+      - "float"
+      - "bool"
+      - "list"
+      - "dict"
+      - "set"
+      - "tuple"
+      - "variables"
+      - "type annotations"
+      - "type hints"
+      - "enum"
+      - "any"
+
+  strings:
+    name: "Strings and Text"
+    keywords:
+      - "string"
+      - "f-string"
+      - "formatting"
+      - "interpolation"
+      - "raw strings"
+      - "multiline"
+
+  collections:
+    name: "Collections and Data Structures"
+    keywords:
+      - "list"
+      - "dict"
+      - "set"
+      - "tuple"
+      - "array"
+      - "collection"
+      - "iteration"
+      - "comprehension"
+
+  control_flow:
+    name: "Control Flow"
+    keywords:
+      - "if"
+      - "elif"
+      - "else"
+      - "while"
+      - "for"
+      - "loop"
+      - "match"
+      - "case"
+      - "break"
+      - "continue"
+      - "range"
+
+  functions:
+    name: "Functions and Callables"
+    keywords:
+      - "function"
+      - "def"
+      - "lambda"
+      - "parameters"
+      - "arguments"
+      - "return"
+      - "async def"
+      - "await"
+      - "yield"
+      - "generator"
+
+  objects:
+    name: "Objects and Classes"
+    keywords:
+      - "object"
+      - "obj"
+      - "class"
+      - "has"
+      - "attribute"
+      - "method"
+      - "inheritance"
+      - "postinit"
+      - "access modifiers"
+      - ":pub"
+      - ":priv"
+      - ":protect"
+      - "impl"
+
+  decorators:
+    name: "Decorators and Annotations"
+    keywords:
+      - "decorator"
+      - "@"
+      - "annotation"
+      - "@staticmethod"
+      - "@classmethod"
+
+  errors:
+    name: "Error Handling"
+    keywords:
+      - "try"
+      - "except"
+      - "raise"
+      - "exception"
+      - "error"
+      - "assert"
+      - "finally"
+
+  testing:
+    name: "Testing"
+    keywords:
+      - "test"
+      - "assert"
+      - ".test.jac"
+      - "jac test"
+      - "unit test"
+
+  nodes:
+    name: "Nodes"
+    keywords:
+      - "node"
+      - "graph node"
+      - "node definition"
+      - "node attributes"
+      - "node methods"
+
+  edges:
+    name: "Edges"
+    keywords:
+      - "edge"
+      - "connection"
+      - "++>"
+      - "<++>"
+      - "+>"
+      - "<+"
+      - "directed"
+      - "undirected"
+      - "edge attributes"
+
+  graphs:
+    name: "Graph Structure"
+    keywords:
+      - "graph"
+      - "root"
+      - "subgraph"
+      - "topology"
+      - "graph traversal"
+      - "graph operations"
+
+  walkers:
+    name: "Walkers"
+    keywords:
+      - "walker"
+      - "walk"
+      - "entry"
+      - "with entry"
+      - "walker definition"
+      - "walker execution"
+
+  traversal:
+    name: "Graph Traversal"
+    keywords:
+      - "visit"
+      - "revisit"
+      - "ignore"
+      - "disengage"
+      - "skip"
+      - "here"
+      - "traverse"
+      - "navigation"
+
+  abilities:
+    name: "Abilities and Interactions"
+    keywords:
+      - "ability"
+      - "can"
+      - "interaction"
+      - "spawn"
+      - "return"
+      - "report"
+
+  references:
+    name: "References and IDs"
+    keywords:
+      - "reference"
+      - "id"
+      - "ref"
+      - "&"
+      - "dereference"
+
+  context:
+    name: "Walker Context"
+    keywords:
+      - "context"
+      - "walker context"
+      - "state"
+      - "poppable"
+
+  filtering:
+    name: "Filtering and Selection"
+    keywords:
+      - "filter"
+      - "select"
+      - "where"
+      - "query"
+
+  ai_integration:
+    name: "AI Integration"
+    keywords:
+      - "AI"
+      - "byllm"
+      - "mtllm"
+      - "by llm"
+      - "llm"
+      - "model"
+      - "prompt"
+      - "semantic"
+
+  ai_abilities:
+    name: "AI Abilities"
+    keywords:
+      - "by llm"
+      - "ai function"
+      - "semantic function"
+
+  agents:
+    name: "AI Agents"
+    keywords:
+      - "agent"
+      - "multi-agent"
+      - "agent system"
+
+  multimodal:
+    name: "Multimodal AI"
+    keywords:
+      - "multimodal"
+      - "image"
+      - "vision"
+      - "audio"
+
+  api:
+    name: "API and REST"
+    keywords:
+      - "API"
+      - "REST"
+      - "endpoint"
+      - "route"
+      - "HTTP"
+      - "request"
+      - "response"
+      - "CRUD"
+      - "auth"
+      - "authentication"
+      - "pagination"
+
+  cloud:
+    name: "Cloud and Deployment"
+    keywords:
+      - "cloud"
+      - "deploy"
+      - "server"
+      - "jac serve"
+      - "host"
+      - "port"
+      - "production"
+
+  websocket:
+    name: "WebSocket and Real-time"
+    keywords:
+      - "websocket"
+      - "ws"
+      - "real-time"
+      - "live"
+      - "streaming"
+
+  logging:
+    name: "Logging and Debugging"
+    keywords:
+      - "log"
+      - "logging"
+      - "debug"
+      - "print"
+      - "trace"
+
+  permissions:
+    name: "Permissions and Security"
+    keywords:
+      - "permission"
+      - "access control"
+      - "security"
+      - "authorization"
+      - "role"
+
+  scheduler:
+    name: "Scheduling"
+    keywords:
+      - "schedule"
+      - "cron"
+      - "periodic"
+      - "timer"
+
+  environment:
+    name: "Environment and Config"
+    keywords:
+      - "environment"
+      - "env"
+      - "config"
+      - "settings"
+      - ".env"
+
+  imports:
+    name: "Imports and Modules"
+    keywords:
+      - "import"
+      - "include"
+      - "module"
+      - "package"
+      - ".jac"
+      - ".impl.jac"
+
+  versioning:
+    name: "Versioning"
+    keywords:
+      - "version"
+      - "migration"
+      - "upgrade"
+
+  entry_points:
+    name: "Entry Points"
+    keywords:
+      - "entry"
+      - "with entry"
+      - "main"
+      - "start"

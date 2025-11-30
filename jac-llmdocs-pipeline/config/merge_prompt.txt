@@ -1,61 +1,56 @@
-You are merging multiple condensed documentation sections into a single cohesive document.
+You are an expert technical writer creating an ULTRA-COMPACT reference manual.
 
-CRITICAL: Your primary goal is creating a REFERENCE MANUAL for the current language, not a migration guide.
+GOAL: EXTREME CONDENSATION & REDUNDANCY REMOVAL.
+The input contains repetitive documentation from multiple sources. Your job is to synthesize this into a SINGLE, DENSE, NON-REPETITIVE definition.
 
-MERGE RULES:
-1. ELIMINATE REDUNDANCY ONLY: Remove only exact duplicates, keep all unique information
-2. PRESERVE ALL DETAILS: Keep all syntax variants, flags, options, parameters, features
-3. COMBINE EXAMPLES: Merge similar examples but keep all unique patterns and use cases
-4. CONSOLIDATE BY TOPIC: Group related concepts together, but don't remove any
-5. MAINTAIN DENSITY: Keep the condensed, technical style from sources
-6. NO EXPANSION: Do not add explanations not present in sources
-7. PRESERVE ALL CODE: Keep every unique code example, syntax pattern, and command
-8. REMOVE METADATA: Strip [Source: ...] headers and file references
-9. KEEP COMPLETENESS: When in doubt, include rather than exclude
+COMPRESSION RULES:
+1.  **REMOVE ALL REDUNDANCY:** If a concept is explained twice, keep the best explanation and delete the rest. Never repeat information.
+2.  **MERGE EXAMPLES:** Do not list 5 examples of the same thing. Create ONE comprehensive example that demonstrates multiple features if possible.
+3.  **DENSE SYNTAX:** Use standard notation (e.g., `func(arg: type) -> ret`) instead of wordy descriptions.
+4.  **NO FLUFF:** Remove introductory text, "In this section...", "We will cover...", etc. Go straight to the facts.
+5.  **AGGRESSIVE MERGING:** Combine related points. Instead of 3 bullet points, write one concise sentence.
 
-CONTENT PRIORITIZATION (organize output in this order):
-1. **CURRENT LANGUAGE FEATURES FIRST**: What the language IS (syntax, types, features)
-2. **CORE CONCEPTS**: Installation, basic syntax, types, control flow, functions, objects
-3. **ADVANCED FEATURES**: Nodes, edges, walkers, data spatial, AI integration
-4. **TOOLS & ECOSYSTEM**: CLI, server, testing, deployment
-5. **BREAKING CHANGES LAST**: Version history and migration info at END (if included at all)
+PRIORITIZE:
+1.  **Syntax & API Signatures:** The exact code structure is most important.
+2.  **Critical Constraints:** What is allowed/forbidden.
+3.  **Minimal Examples:** Only enough to show usage.
 
-DEPRIORITIZE/MINIMIZE:
-- Breaking changes sections (put at end or omit if space limited)
-- Version history and "What's New" sections
-- Old vs New syntax comparisons (keep only current syntax)
-- Deprecated features (mention briefly they're deprecated, don't explain old way)
-- Migration guides (this is a reference, not a migration doc)
+DE-PRIORITIZE:
+1.  Tutorial-style explanations (how-to).
+2.  Background/Theory (why it works).
+3.  Marketing text (features, benefits).
 
-OUTPUT STYLE:
-- Direct, technical documentation
-- Organized by topic/concept (NOT by version/changelog)
-- Dense but readable
-- Reference manual format (describe what EXISTS now)
-- No conversational text
-- Preserve all technical accuracy
+OUTPUT FORMAT:
+-   Use Markdown.
+-   Use code blocks for syntax and examples.
+-   Use concise bullet points for features/rules.
 
 EXAMPLE INPUT:
 ```
-[Source: file1.txt]
-Variables must have type annotations. Example: has count: int = 0
+[Source: A]
+To declare a variable, use the 'has' keyword. It requires a type.
+Example: has x: int = 5;
 
-[Source: file2.txt]
-Variables are declared with has keyword. Access modifiers: :pub, :priv, :protect
-
-[Source: file3.txt]
-Variable declaration: has name: type = value
+[Source: B]
+Variables are defined with 'has'.
+has name: str = "Jaseci";
+You can also use access modifiers like :priv.
 ```
 
 EXAMPLE OUTPUT:
 ```
-Variables: Declared with has keyword. Type annotations required. Syntax: has name: type = value. Access modifiers: :pub, :priv, :protect. Example: has count: int = 0
+**Variable Declaration**
+Syntax: `has <name>: <type> = <value> by <access_modifier>;`
+Modifiers: `:pub` (default), `:priv`, `:protect`.
+Example:
+```jac
+has x: int = 5;
+has name: str = "Jaseci" by :priv;
 ```
 
-Now merge the following documentation sections:
-
 ---
+INPUT CONTENT:
 {content}
 ---
 
-Output ONLY the merged documentation. No meta-commentary. Maintain condensed technical style.
+Output ONLY the condensed reference documentation.

@@ -43,49 +43,82 @@ class UltraCompressor:
         self.condenser = condenser
         self.config = config
 
-        # Load ultra-compression prompt from config
-        prompt_path = config.get('prompts', {}).get('ultra_compression', 'config/reference_format_prompt.txt')
+        # Load format prompt (changed from ultra_compression to format)
+        prompt_path = config.get('prompts', {}).get('format', 'config/format_prompt.txt')
         prompt_file = Path(__file__).parent.parent / prompt_path
         with open(prompt_file, 'r') as f:
-            self.reference_prompt = f.read()
+            self.format_prompt = f.read()
 
     def _estimate_tokens(self, text: str) -> int:
         """Estimate token count (chars // 4)"""
         return len(text) // 4
 
-    def compress(self, content: str, name: str = "documentation") -> CompressionResult:
+    def final_cleanup(self, content: str) -> str:
         """
-        Apply ultra-compression to create reference-format docs.
+        Final cleanup step: strip all unnecessary whitespace and newlines.
+
+        This creates the most compact possible output by:
+        - Removing all newlines
+        - Collapsing multiple spaces to single space
+        - Stripping leading/trailing whitespace
+
+        Args:
+            content: Content to clean up
+
+        Returns:
+            Ultra-compact content with minimal whitespace
+        """
+        import re
+
+        # Replace all newlines with spaces
+        content = content.replace('\n', ' ')
+
+        # Replace all tabs with spaces
+        content = content.replace('\t', ' ')
+
+        # Collapse multiple spaces into single space
+        content = re.sub(r'\s+', ' ', content)
+
+        # Strip leading and trailing whitespace
+        content = content.strip()
+
+        return content
+
+    def format_content(self, content: str, name: str = "documentation") -> CompressionResult:
+        """
+        Format documentation into compact reference style.
+
+        NOTE: This only formats/compacts, it does NOT remove information.
 
         Args:
             content: The merged documentation content
             name: Name for this compression task
 
         Returns:
-            CompressionResult with compressed content and metrics
+            CompressionResult with formatted content and metrics
         """
-        print(f"\nUltra-compressing: {name}")
+        print(f"\nFormatting: {name}")
 
         original_tokens = self._estimate_tokens(content)
         print(f"  Input: {original_tokens:,} tokens")
 
-        # Build prompt with reference format template
-        prompt = self.reference_prompt.replace("{content}", content)
+        # Build prompt with format template
+        prompt = self.format_prompt.replace("{content}", content)
 
         try:
             # Use the condenser's OpenRouter API
-            compressed_content = self.condenser.condense_with_openrouter(content, prompt)
+            formatted_content = self.condenser.condense_with_openrouter(content, prompt)
 
-            compressed_tokens = self._estimate_tokens(compressed_content)
-            compression_ratio = 1 - (compressed_tokens / original_tokens) if original_tokens > 0 else 0
+            formatted_tokens = self._estimate_tokens(formatted_content)
+            compression_ratio = 1 - (formatted_tokens / original_tokens) if original_tokens > 0 else 0
 
-            print(f"  Output: {compressed_tokens:,} tokens ({compression_ratio:.1%} reduction)")
+            print(f"  Output: {formatted_tokens:,} tokens ({compression_ratio:.1%} reduction)")
 
             return CompressionResult(
                 original_tokens=original_tokens,
-                compressed_tokens=compressed_tokens,
+                compressed_tokens=formatted_tokens,
                 compression_ratio=compression_ratio,
-                content=compressed_content,
+                content=formatted_content,
                 success=True
             )
 
@@ -100,13 +133,13 @@ class UltraCompressor:
                 error=str(e)
             )
 
-    def compress_file(self, input_path: Path, output_path: Path) -> CompressionResult:
+    def format_file(self, input_path: Path, output_path: Path) -> CompressionResult:
         """
-        Compress a single file to reference format.
+        Format a single file to compact reference style.
 
         Args:
             input_path: Path to input merged document
-            output_path: Path to save ultra-compressed output
+            output_path: Path to save formatted output
 
         Returns:
             CompressionResult with metrics
@@ -115,8 +148,8 @@ class UltraCompressor:
         with open(input_path, 'r', encoding='utf-8') as f:
             content = f.read()
 
-        # Compress
-        result = self.compress(content, input_path.name)
+        # Format
+        result = self.format_content(content, input_path.name)
 
         # Write output
         if result.success:
@@ -127,60 +160,117 @@ class UltraCompressor:
 
         return result
 
-    def multi_pass_compress(
-        self,
-        content: str,
-        passes: int = 2,
-        name: str = "documentation"
-    ) -> CompressionResult:
+    def regex_format(self, content: str) -> str:
         """
-        Apply multiple compression passes for maximum density.
+        Apply regex-based formatting without LLM call.
 
-        Each pass further abbreviates and condenses the output.
+        Applies compact formatting using pattern matching:
+        - Remove excessive whitespace
+        - Condense common patterns
+        - No LLM API call needed
+        """
+        import re
+
+        # Remove markdown bold/italic (keep content)
+        content = re.sub(r'\*\*([^*]+)\*\*', r'\1', content)  # **bold** -> bold
+        content = re.sub(r'\*([^*]+)\*', r'\1', content)      # *italic* -> italic
+        content = re.sub(r'__([^_]+)__', r'\1', content)      # __bold__ -> bold
+        content = re.sub(r'_([^_]+)_', r'\1', content)        # _italic_ -> italic
+
+        # Condense headers to inline format
+        content = re.sub(r'^#+\s+(.+)$', r'\1:', content, flags=re.MULTILINE)
+
+        # Remove extra blank lines
+        content = re.sub(r'\n\s*\n\s*\n+', '\n\n', content)
+
+        # Clean up list markers
+        content = re.sub(r'^\s*[-*]\s+', '• ', content, flags=re.MULTILINE)
+
+        return content
+
+    def combine_and_format_topics(self, topics_dir: Path, output_file: Path) -> CompressionResult:
+        """
+        Combine all topic files and format into single final document.
 
         Args:
-            content: Input content
-            passes: Number of compression passes (default 2)
-            name: Name for logging
+            topics_dir: Directory containing topic files
+            output_file: Output path for final combined document
 
         Returns:
-            Final CompressionResult
+            CompressionResult with metrics
         """
+        import yaml
+
+        # Load topics config for ordering
+        topics_path = Path(__file__).parent.parent / "config" / "topics.yaml"
+        with open(topics_path, 'r') as f:
+            topics_config = yaml.safe_load(f)['topics']
+
         print(f"\n{'='*80}")
-        print(f"ULTRA-COMPRESSION: {passes} passes")
+        print(f"STAGE 3: FORMATTING AND COMBINING TOPICS")
         print(f"{'='*80}")
 
-        current_content = content
-        original_tokens = self._estimate_tokens(content)
+        # Read all topic files
+        topic_contents = {}
+        for topic_id in topics_config.keys():
+            topic_file = topics_dir / f"{topic_id}.txt"
+            if topic_file.exists():
+                with open(topic_file, 'r', encoding='utf-8') as f:
+                    content = f.read().strip()
+                    if content:
+                        topic_contents[topic_id] = content
 
-        for pass_num in range(1, passes + 1):
-            print(f"\n--- Pass {pass_num}/{passes} ---")
-            result = self.compress(current_content, f"{name} (pass {pass_num})")
+        if not topic_contents:
+            return CompressionResult(
+                original_tokens=0,
+                compressed_tokens=0,
+                compression_ratio=0,
+                content="",
+                success=False,
+                error="No topic files found"
+            )
 
-            if not result.success:
-                print(f"Pass {pass_num} failed: {result.error}")
-                return result
+        print(f"  Topics found: {len(topic_contents)}")
 
-            current_content = result.content
+        # Combine topics in order (preserving topic structure)
+        combined_parts = []
+        for topic_id, content in topic_contents.items():
+            combined_parts.append(content)
 
-        # Final metrics
-        final_tokens = self._estimate_tokens(current_content)
-        final_ratio = 1 - (final_tokens / original_tokens) if original_tokens > 0 else 0
+        combined_content = "\n\n".join(combined_parts)
+        original_tokens = self._estimate_tokens(combined_content)
+        print(f"  Combined size: {original_tokens:,} tokens")
 
-        print(f"\n{'='*80}")
-        print(f"ULTRA-COMPRESSION COMPLETE")
-        print(f"  Original: {original_tokens:,} tokens")
-        print(f"  Final: {final_tokens:,} tokens")
-        print(f"  Total reduction: {final_ratio:.1%}")
-        print(f"{'='*80}\n")
+        # Apply regex-based formatting (NO LLM CALL)
+        print(f"\nApplying regex-based formatting (no LLM call)...")
+        formatted_content = self.regex_format(combined_content)
+        after_format_tokens = self._estimate_tokens(formatted_content)
+        print(f"  After formatting: {after_format_tokens:,} tokens")
 
-        return CompressionResult(
+        # Apply final cleanup to remove all unnecessary whitespace and newlines
+        print(f"\nApplying final cleanup (removing whitespace and newlines)...")
+        cleaned_content = self.final_cleanup(formatted_content)
+        final_tokens = self._estimate_tokens(cleaned_content)
+
+        print(f"  After cleanup: {final_tokens:,} tokens")
+        print(f"  Total reduction: {1 - (final_tokens / original_tokens):.1%}")
+
+        result = CompressionResult(
             original_tokens=original_tokens,
             compressed_tokens=final_tokens,
-            compression_ratio=final_ratio,
-            content=current_content,
+            compression_ratio=1 - (final_tokens / original_tokens),
+            content=cleaned_content,
             success=True
         )
+
+        # Write output
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write(result.content)
+        print(f"\nFinal document saved: {output_file}")
+        print(f"{'='*80}\n")
+
+        return result
 
 
 def main():
@@ -223,8 +313,8 @@ def main():
     with open(input_file, 'r', encoding='utf-8') as f:
         content = f.read()
 
-    # Compress
-    result = compressor.multi_pass_compress(content, passes=passes, name=input_file.name)
+    # Format
+    result = compressor.format_content(content, name=input_file.name)
 
     # Write output
     if result.success:
@@ -232,7 +322,7 @@ def main():
             f.write(result.content)
         print(f"Output saved to: {output_file}")
     else:
-        print(f"Compression failed: {result.error}")
+        print(f"Formatting failed: {result.error}")
         sys.exit(1)
 
 
