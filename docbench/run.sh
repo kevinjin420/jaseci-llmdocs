@@ -10,7 +10,7 @@ else
   DEV_CMD="npm run dev"
 fi
 
-python3 api.py &
+python3 api.py "$@" &
 (cd control-panel && $DEV_CMD) &
 
 echo "Backend: http://localhost:5050"

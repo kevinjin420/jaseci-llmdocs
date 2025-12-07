@@ -36,6 +36,9 @@ export default function BenchmarkView({ models, variants, testFiles, onBenchmark
 		const saved = localStorage.getItem("benchmarkBatchSize");
 		return saved ? parseInt(saved) : 45;
 	});
+	const [customBatchSizes, setCustomBatchSizes] = useState(() => {
+		return localStorage.getItem("benchmarkCustomBatchSizes") || "";
+	});
 	const [status, setStatus] = useState<BenchmarkStatus | null>(() => {
 		const saved = localStorage.getItem("benchmarkStatus");
 		return saved ? JSON.parse(saved) : null;
@@ -52,6 +55,7 @@ export default function BenchmarkView({ models, variants, testFiles, onBenchmark
 	useEffect(() => localStorage.setItem("benchmarkTemperature", temperature.toString()), [temperature]);
 	useEffect(() => localStorage.setItem("benchmarkQueueSize", queueSize.toString()), [queueSize]);
 	useEffect(() => localStorage.setItem("benchmarkBatchSize", batchSize.toString()), [batchSize]);
+	useEffect(() => localStorage.setItem("benchmarkCustomBatchSizes", customBatchSizes), [customBatchSizes]);
 	useEffect(() => {
 		status ? localStorage.setItem("benchmarkStatus", JSON.stringify(status)) : localStorage.removeItem("benchmarkStatus");
 	}, [status]);
@@ -207,7 +211,18 @@ export default function BenchmarkView({ models, variants, testFiles, onBenchmark
 			completed_evaluations: 0,
 		});
 
-		const payload: any = { model: selectedModel, variant: selectedVariant, temperature, batch_size: batchSize };
+		const payload: any = { model: selectedModel, variant: selectedVariant, temperature };
+
+		if (customBatchSizes.trim()) {
+			const sizes = customBatchSizes.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0);
+			if (sizes.length > 0) {
+				payload.custom_batch_sizes = sizes;
+			} else {
+				payload.batch_size = batchSize;
+			}
+		} else {
+			payload.batch_size = batchSize;
+		}
 
 		const runIds: string[] = [];
 		const runState: Record<string, { batches: number; completed: number; done: boolean; failed: boolean; evaluating: boolean; index: number }> = {};
@@ -463,6 +478,8 @@ export default function BenchmarkView({ models, variants, testFiles, onBenchmark
 					setQueueSize={setQueueSize}
 					batchSize={batchSize}
 					setBatchSize={setBatchSize}
+					customBatchSizes={customBatchSizes}
+					setCustomBatchSizes={setCustomBatchSizes}
 					isRunning={isRunning}
 					onRun={runBenchmark}
 					onCancel={cancelBenchmark}

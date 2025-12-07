@@ -5,6 +5,7 @@ import traceback
 import uuid
 from pathlib import Path
 from backend.services import LLMService, EvaluatorService
+from backend.utils.logger import log_info, log_debug, log_error
 from database import BenchmarkRunService, BenchmarkResultService
 
 
@@ -20,6 +21,7 @@ def register_routes(app, socketio, running_benchmarks):
         temperature = data.get('temperature', 0.1)
         max_tokens = data.get('max_tokens', 16000)
         batch_size = data.get('batch_size', 45)
+        custom_batch_sizes = data.get('custom_batch_sizes')
 
         if not model or not variant:
             return jsonify({'error': 'model and variant are required'}), 400
@@ -61,12 +63,12 @@ def register_routes(app, socketio, running_benchmarks):
 
                 result = llm_service.run_benchmark_concurrent(
                     model, variant, temperature, max_tokens,
-                    batch_size=batch_size, progress_callback=progress_callback
+                    batch_size=batch_size, custom_batch_sizes=custom_batch_sizes, progress_callback=progress_callback
                 )
 
                 # Trigger evaluation immediately
                 actual_run_id = result.get('run_id', run_id)
-                print(f"[EVAL] Starting evaluation for {actual_run_id}", flush=True)
+                log_info(f"[EVAL] Starting evaluation for {actual_run_id}", min_verbosity=2)
                 socketio.emit('benchmark_update', {'run_id': run_id, 'status': 'evaluating', 'progress': 'Evaluating responses...'})
 
                 from database import BenchmarkResultService, TestCaseEvaluationService
@@ -74,14 +76,14 @@ def register_routes(app, socketio, running_benchmarks):
 
                 if result_data:
                     try:
-                        print(f"[EVAL] Setting evaluation status to 'evaluating' for {actual_run_id}", flush=True)
+                        log_debug(f"[EVAL] Setting evaluation status to 'evaluating' for {actual_run_id}", min_verbosity=3)
                         BenchmarkResultService.set_evaluation_status(actual_run_id, 'evaluating')
 
-                        print(f"[EVAL] Creating evaluator and evaluating responses...", flush=True)
+                        log_debug(f"[EVAL] Creating evaluator and evaluating responses...", min_verbosity=3)
                         evaluator = EvaluatorService()
                         eval_result = evaluator.evaluate_responses(result_data['responses'])
 
-                        print(f"[EVAL] Updating evaluation results: {eval_result['percentage']:.2f}%", flush=True)
+                        log_info(f"[EVAL] Updating evaluation results: {eval_result['percentage']:.2f}%", min_verbosity=2)
                         # Update evaluation
                         BenchmarkResultService.update_evaluation(
                             run_id=actual_run_id,
@@ -94,13 +96,13 @@ def register_routes(app, socketio, running_benchmarks):
                             percentage=eval_result['percentage']
                         )
 
-                        print(f"[EVAL] ✓ Evaluation completed successfully for {actual_run_id}", flush=True)
+                        log_info(f"[EVAL] Evaluation completed successfully for {actual_run_id}", min_verbosity=2)
                     except Exception as e:
-                        print(f"[EVAL] Evaluation failed for {actual_run_id}: {e}", flush=True)
+                        log_error(f"[EVAL] Evaluation failed for {actual_run_id}: {e}")
                         traceback.print_exc()
                         BenchmarkResultService.set_evaluation_status(actual_run_id, 'failed')
                 else:
-                    print(f"[EVAL] Could not find result data for {actual_run_id}", flush=True)
+                    log_error(f"[EVAL] Could not find result data for {actual_run_id}")
 
                 running_benchmarks[run_id] = {'status': 'completed', 'result': result, 'progress': 'Done'}
                 BenchmarkRunService.complete(run_id=actual_run_id, result_id=None)

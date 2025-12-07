@@ -10,6 +10,9 @@ from datetime import datetime
 import openai
 
 from database import BenchmarkResultService, DocumentationService
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class LLMService:
@@ -60,7 +63,7 @@ class LLMService:
             LLMService._models_cache = {m['id']: m for m in models}
             return models
         except Exception as e:
-            print(f"Warning: Failed to fetch models from OpenRouter: {e}")
+            logger.warning(f"Failed to fetch models from OpenRouter: {e}")
             return []
 
     def _get_model_data(self, model_id: str) -> Optional[Dict]:
@@ -242,6 +245,7 @@ Return a JSON object mapping each test ID to Jac code. Use \\n for newlines and 
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         batch_size: int = 45,
+        custom_batch_sizes: Optional[List[int]] = None,
         progress_callback: Optional[Callable] = None
     ) -> Dict:
         """Run batched benchmark with parallel API calls"""
@@ -255,13 +259,34 @@ Return a JSON object mapping each test ID to Jac code. Use \\n for newlines and 
             raise ValueError(f"No documentation content found for variant '{variant}'")
 
         tests_to_use = self.tests
-        num_batches = (len(tests_to_use) + batch_size - 1) // batch_size
 
-        batches = []
-        for i in range(num_batches):
-            start_idx = i * batch_size
-            end_idx = min(start_idx + batch_size, len(tests_to_use))
-            batches.append((i + 1, tests_to_use[start_idx:end_idx]))
+        if custom_batch_sizes and len(custom_batch_sizes) > 0:
+            total_custom = sum(custom_batch_sizes)
+            if total_custom > len(tests_to_use):
+                raise ValueError(f"Sum of custom batch sizes ({total_custom}) exceeds total tests ({len(tests_to_use)})")
+
+            batches = []
+            start_idx = 0
+            for i, size in enumerate(custom_batch_sizes):
+                end_idx = min(start_idx + size, len(tests_to_use))
+                batches.append((i + 1, tests_to_use[start_idx:end_idx]))
+                start_idx = end_idx
+                if start_idx >= len(tests_to_use):
+                    break
+
+            if start_idx < len(tests_to_use):
+                batches.append((len(batches) + 1, tests_to_use[start_idx:]))
+
+            num_batches = len(batches)
+            actual_batch_size = custom_batch_sizes[0] if custom_batch_sizes else batch_size
+        else:
+            num_batches = (len(tests_to_use) + batch_size - 1) // batch_size
+            batches = []
+            for i in range(num_batches):
+                start_idx = i * batch_size
+                end_idx = min(start_idx + batch_size, len(tests_to_use))
+                batches.append((i + 1, tests_to_use[start_idx:end_idx]))
+            actual_batch_size = batch_size
 
         batch_statuses = {i + 1: {"status": "pending", "retry": 0, "max_retries": 2} for i in range(num_batches)}
 
@@ -328,7 +353,7 @@ Return a JSON object mapping each test ID to Jac code. Use \\n for newlines and 
             max_tokens=max_tokens,
             total_tests=len(tests_to_use),
             responses=responses,
-            batch_size=batch_size,
+            batch_size=actual_batch_size,
             num_batches=num_batches
         )
 

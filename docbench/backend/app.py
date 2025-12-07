@@ -17,17 +17,34 @@ running_benchmarks = {}
 __all__ = ['create_app', 'create_socketio', 'running_benchmarks']
 
 
-def create_app():
-    """Create and configure Flask application"""
+def create_app(verbosity=1):
+    """Create and configure Flask application
+
+    Args:
+        verbosity: Logging verbosity level (1-4)
+            1 (-v): Basic - Frontend/backend + API communication (default)
+            2 (-vv): Detailed - Add batch progress and evaluation
+            3 (-vvv): Debug - Add detailed debugging info
+            4 (-vvvv): Full Debug - All logging
+    """
     app = Flask(__name__)
 
+    log_level_map = {
+        1: logging.INFO,
+        2: logging.INFO,
+        3: logging.DEBUG,
+        4: logging.DEBUG
+    }
+    log_level = log_level_map.get(verbosity, logging.DEBUG)
+
     logging.basicConfig(
-        level=logging.DEBUG,
+        level=log_level,
         format='[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
         handlers=[logging.StreamHandler(sys.stdout)]
     )
-    app.logger.setLevel(logging.DEBUG)
+    app.logger.setLevel(log_level)
     app.config['PROPAGATE_EXCEPTIONS'] = True
+    app.config['VERBOSITY'] = verbosity
 
     @app.errorhandler(Exception)
     def handle_exception(e):
@@ -49,34 +66,55 @@ def create_app():
 
     @app.before_request
     def log_request_info():
-        app.logger.debug('=' * 60)
-        app.logger.debug(f'REQUEST: {request.method} {request.path}')
-        app.logger.debug(f'Remote Address: {request.remote_addr}')
-        if request.args:
-            app.logger.debug(f'Query Params: {dict(request.args)}')
-        if request.is_json:
-            app.logger.debug(f'JSON Body: {request.get_json()}')
-        app.logger.debug('=' * 60)
+        verbosity = app.config.get('VERBOSITY', 1)
+
+        if verbosity >= 4:
+            app.logger.debug('=' * 60)
+            app.logger.debug(f'REQUEST: {request.method} {request.path}')
+            app.logger.debug(f'Remote Address: {request.remote_addr}')
+            if request.args:
+                app.logger.debug(f'Query Params: {dict(request.args)}')
+            if request.is_json:
+                app.logger.debug(f'JSON Body: {request.get_json()}')
+            app.logger.debug('=' * 60)
+        elif verbosity >= 1:
+            app.logger.info(f'{request.method} {request.path}')
 
     @app.after_request
     def log_response_info(response):
-        app.logger.debug(f'RESPONSE: {request.method} {request.path} - Status: {response.status_code}')
+        verbosity = app.config.get('VERBOSITY', 1)
+
+        if verbosity >= 4:
+            app.logger.debug(f'RESPONSE: {request.method} {request.path} - Status: {response.status_code}')
+        elif verbosity >= 1:
+            app.logger.info(f'{request.method} {request.path} - {response.status_code}')
+
         return response
 
     return app
 
 
-def create_socketio(app):
-    """Create and configure SocketIO"""
+def create_socketio(app, verbosity=1):
+    """Create and configure SocketIO
+
+    Args:
+        app: Flask app instance
+        verbosity: Logging verbosity level (1-4)
+    """
     import logging
 
-    # Create custom logger for SocketIO that filters PING/PONG
     socketio_logger = logging.getLogger('socketio')
     engineio_logger = logging.getLogger('engineio')
 
-    # Set to WARNING to suppress PING/PONG info messages
-    socketio_logger.setLevel(logging.WARNING)
-    engineio_logger.setLevel(logging.WARNING)
+    if verbosity >= 4:
+        socketio_logger.setLevel(logging.DEBUG)
+        engineio_logger.setLevel(logging.DEBUG)
+    elif verbosity >= 3:
+        socketio_logger.setLevel(logging.INFO)
+        engineio_logger.setLevel(logging.INFO)
+    else:
+        socketio_logger.setLevel(logging.WARNING)
+        engineio_logger.setLevel(logging.WARNING)
 
     return SocketIO(
         app,
