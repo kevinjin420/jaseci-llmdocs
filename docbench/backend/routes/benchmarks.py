@@ -75,7 +75,7 @@ def register_routes(app, socketio, running_benchmarks):
                 log_info(f"[EVAL] Starting evaluation for {actual_run_id}", min_verbosity=2)
                 socketio.emit('benchmark_update', {'run_id': run_id, 'status': 'evaluating', 'progress': 'Evaluating responses...'})
 
-                from database import BenchmarkResultService, TestCaseEvaluationService
+                from database import BenchmarkResultService
                 result_data = BenchmarkResultService.get_by_run_id(actual_run_id)
 
                 if result_data:

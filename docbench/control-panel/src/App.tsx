@@ -4,58 +4,8 @@ import BenchmarkView from '@/views/BenchmarkView'
 import FileManager from '@/views/FileManager'
 import StatsPanel from '@/views/StatsPanel'
 import VariantsView from '@/views/VariantsView'
-
-const API_BASE = 'http://localhost:5050/api'
-
-interface Model {
-  id: string
-  name: string
-  context_length: number
-  pricing?: {
-    prompt: string | number
-    completion: string | number
-  }
-  architecture?: {
-    tokenizer?: string
-    input_modalities?: string[]
-    output_modalities?: string[]
-  }
-}
-
-interface Variant {
-  name: string
-  url: string
-  size_bytes: number
-  size_kb: number
-}
-
-interface TestFile {
-  name: string
-  path: string
-  size: number
-  modified: number
-  metadata?: {
-    model: string
-    model_full: string
-    variant: string
-    total_tests: string
-    batch_size?: number
-    num_batches?: number;
-  }
-}
-
-interface Stash {
-  name: string
-  path: string
-  file_count: number
-  created: number
-  metadata?: {
-    model: string
-    model_full: string
-    variant: string
-    total_tests: string
-  }
-}
+import type { Model, Variant, TestFile, Stash } from '@/utils/types'
+import { API_BASE } from '@/utils/types'
 
 function AppContent() {
   const [models, setModels] = useState<Model[]>([])

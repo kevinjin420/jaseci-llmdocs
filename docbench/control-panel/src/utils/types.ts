@@ -39,6 +39,20 @@ export interface TestFile {
 	};
 }
 
+export interface Stash {
+	name: string;
+	path: string;
+	file_count: number;
+	created: number;
+	metadata?: {
+		model: string;
+		model_full: string;
+		variant: string;
+		total_tests: string;
+		batch_size?: number;
+	};
+}
+
 export interface BatchStatus {
 	status: "pending" | "running" | "completed" | "failed";
 	retry: number;
@@ -68,3 +82,15 @@ export interface BenchmarkStatus {
 
 export const API_BASE = "http://localhost:5050/api";
 export const WS_BASE = "http://localhost:5050";
+
+export const MODEL_DISPLAY_NAMES: Record<string, string> = {
+	"claude-sonnet": "Claude Sonnet 4.5",
+	"claude-opus": "Claude Opus 4",
+	"claude-haiku": "Claude Haiku 3.5",
+	"gemini-flash": "Gemini 2.0 Flash",
+	"gemini-pro": "Gemini 2.5 Pro",
+	"gpt-4": "GPT-4o",
+	"gpt-4-mini": "GPT-4o Mini",
+	"o1": "O1",
+	"o1-mini": "O1 Mini",
+};

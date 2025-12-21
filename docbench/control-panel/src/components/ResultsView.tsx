@@ -3,9 +3,6 @@ interface Props {
 }
 
 export default function ResultsView({ results }: Props) {
-	console.log('ResultsView render - results:', results ? 'has data' : 'null')
-	console.log('ResultsView - has summary?', !!results?.summary)
-
 	if (!results) {
 		return (
 			<div className="bg-terminal-surface border border-terminal-border rounded p-6 overflow-y-auto">
@@ -32,7 +29,7 @@ export default function ResultsView({ results }: Props) {
 			"Jac Check Penalty",
 		];
 
-		const rows = [];
+		const rows: (string | number)[][] = [];
 		Object.values(results.summary.category_breakdown).forEach((category: any) => {
 			if (category.tests) {
 				category.tests.forEach((test: any) => {

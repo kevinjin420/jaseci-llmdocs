@@ -15,8 +15,7 @@ from .models import (
     Collection,
     BenchmarkResult,
     BenchmarkRun,
-    DocumentationVariant,
-    TestCaseEvaluation
+    DocumentationVariant
 )
 
 
@@ -561,62 +560,3 @@ class CollectionService:
                 session.query(Collection).filter_by(name=name).delete()
 
 
-class TestCaseEvaluationService:
-    """Service for managing individual test case evaluations"""
-
-    @staticmethod
-    def save_evaluations(
-        benchmark_result_id: int,
-        evaluations: List[Dict[str, Any]]
-    ):
-        """Save multiple test case evaluations"""
-        with get_db() as session:
-            # Delete existing evaluations for this result
-            session.query(TestCaseEvaluation).filter_by(
-                benchmark_result_id=benchmark_result_id
-            ).delete()
-
-            # Add new evaluations
-            for eval_data in evaluations:
-                evaluation = TestCaseEvaluation(
-                    benchmark_result_id=benchmark_result_id,
-                    test_id=eval_data['test_id'],
-                    test_category=eval_data.get('test_category'),
-                    test_level=eval_data.get('test_level'),
-                    test_description=eval_data.get('test_description'),
-                    code_response=eval_data['code_response'],
-                    passed=eval_data['passed'],
-                    score=eval_data['score'],
-                    max_score=eval_data['max_score'],
-                    passed_checks=eval_data.get('passed_checks', []),
-                    failed_checks=eval_data.get('failed_checks', []),
-                    evaluation_details=eval_data.get('evaluation_details'),
-                    evaluated_at=time.time()
-                )
-                session.add(evaluation)
-
-    @staticmethod
-    def get_by_benchmark_result(benchmark_result_id: int) -> List[Dict[str, Any]]:
-        """Get all test case evaluations for a benchmark result"""
-        with get_db() as session:
-            evaluations = session.query(TestCaseEvaluation).filter_by(
-                benchmark_result_id=benchmark_result_id
-            ).all()
-
-            return [
-                {
-                    'test_id': e.test_id,
-                    'test_category': e.test_category,
-                    'test_level': e.test_level,
-                    'test_description': e.test_description,
-                    'code_response': e.code_response,
-                    'passed': e.passed,
-                    'score': e.score,
-                    'max_score': e.max_score,
-                    'passed_checks': e.passed_checks,
-                    'failed_checks': e.failed_checks,
-                    'evaluation_details': e.evaluation_details,
-                    'evaluated_at': e.evaluated_at
-                }
-                for e in evaluations
-            ]

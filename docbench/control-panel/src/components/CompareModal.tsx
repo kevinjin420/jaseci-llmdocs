@@ -1,7 +1,6 @@
 import { useRef, useState } from "react";
 import { toBlob } from "html-to-image";
-
-const API_BASE = "http://localhost:5050/api";
+import { API_BASE, MODEL_DISPLAY_NAMES } from "@/utils/types";
 
 interface CompareResult {
 	status: string;
@@ -41,20 +40,6 @@ export default function CompareModal({ isOpen, onClose, results }: Props) {
 
 	const { stash1, stash2, all_categories } = results;
 
-	// Model display name mappings
-	const modelDisplayNames: Record<string, string> = {
-		"claude-sonnet": "Claude Sonnet 4.5",
-		"claude-opus": "Claude Opus 4",
-		"claude-haiku": "Claude Haiku 3.5",
-		"gemini-flash": "Gemini 2.0 Flash",
-		"gemini-pro": "Gemini 2.5 Pro",
-		"gpt-4": "GPT-4o",
-		"gpt-4-mini": "GPT-4o Mini",
-		o1: "O1",
-		"o1-mini": "O1 Mini",
-	};
-
-	// Parse metadata from filenames (format: model-variant-timestamp)
 	const parseMetadata = (filenames: string[]) => {
 		if (!filenames || filenames.length === 0) return null;
 
@@ -67,7 +52,7 @@ export default function CompareModal({ isOpen, onClose, results }: Props) {
 				const variant = parts[timestampIdx - 1];
 				const model = parts.slice(0, timestampIdx - 1).join("-");
 
-				const displayModel = modelDisplayNames[model] || model;
+				const displayModel = MODEL_DISPLAY_NAMES[model] || model;
 				const displayVariant = variant
 					.replace(/_/g, " ")
 					.replace(/\b\w/g, (l) => l.toUpperCase());

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Variant } from '@/utils/types'
+import { API_BASE } from '@/utils/types'
 
 interface Props {
   variants: Variant[]
@@ -17,7 +18,7 @@ export default function VariantsView({ variants, onRefresh }: Props) {
     setIsSubmitting(true)
 
     try {
-      const response = await fetch('http://localhost:5050/api/variants', {
+      const response = await fetch(`${API_BASE}/variants`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -46,7 +47,7 @@ export default function VariantsView({ variants, onRefresh }: Props) {
     }
 
     try {
-      const response = await fetch(`http://localhost:5050/api/variants/${encodeURIComponent(variantName)}`, {
+      const response = await fetch(`${API_BASE}/variants/${encodeURIComponent(variantName)}`, {
         method: 'DELETE'
       })
 

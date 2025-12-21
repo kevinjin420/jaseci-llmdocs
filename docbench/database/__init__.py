@@ -13,8 +13,7 @@ from .services import (
     BenchmarkResultService,
     BenchmarkRunService,
     DocumentationService,
-    CollectionService,
-    TestCaseEvaluationService
+    CollectionService
 )
 
 __all__ = [
@@ -29,6 +28,5 @@ __all__ = [
     'BenchmarkResultService',
     'BenchmarkRunService',
     'DocumentationService',
-    'CollectionService',
-    'TestCaseEvaluationService'
+    'CollectionService'
 ]

@@ -1,34 +1,8 @@
 import { useState } from 'react'
 import EvaluationModal from '@/components/EvaluationModal'
 import CompareModal from '@/components/CompareModal'
-
-interface TestFile {
-  name: string
-  path: string
-  size: number
-  modified: number
-  metadata?: {
-    model: string
-    model_full: string
-    variant: string
-    total_tests: string
-    batch_size?: number
-    num_batches?: number
-  }
-}
-
-interface Stash {
-  name: string
-  path: string
-  file_count: number
-  created: number
-  metadata?: {
-    model: string
-    model_full: string
-    variant: string
-    total_tests: string
-  }
-}
+import type { TestFile, Stash } from '@/utils/types'
+import { API_BASE, MODEL_DISPLAY_NAMES } from '@/utils/types'
 
 interface Props {
   files: TestFile[]
@@ -39,8 +13,6 @@ interface Props {
   onRefresh: () => void
   onDelete?: (filePath: string) => void
 }
-
-const API_BASE = 'http://localhost:5050/api'
 
 export default function FileManager({
   files,
@@ -447,23 +419,9 @@ export default function FileManager({
             const isExpanded = expandedStashes.has(stash.name)
             const files = stashFiles.get(stash.name) || []
 
-            // Model display name mappings
-            const modelDisplayNames: Record<string, string> = {
-              'claude-sonnet': 'Claude Sonnet 4.5',
-              'claude-opus': 'Claude Opus 4',
-              'claude-haiku': 'Claude Haiku 3.5',
-              'gemini-flash': 'Gemini 2.0 Flash',
-              'gemini-pro': 'Gemini 2.5 Pro',
-              'gpt-4': 'GPT-4o',
-              'gpt-4-mini': 'GPT-4o Mini',
-              'o1': 'O1',
-              'o1-mini': 'O1 Mini'
-            }
-
-            // Use metadata from API manifest
             let metadata: { model: string; variant: string; tests: string; batchSize?: number } | null = null
             if (stash.metadata) {
-              const displayModel = modelDisplayNames[stash.metadata.model] || stash.metadata.model
+              const displayModel = MODEL_DISPLAY_NAMES[stash.metadata.model] || stash.metadata.model
               const displayVariant = stash.metadata.variant.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
 
               metadata = {

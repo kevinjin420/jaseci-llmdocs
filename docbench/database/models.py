@@ -154,48 +154,6 @@ class DocumentationVariant(Base):
     is_active = Column(Boolean, nullable=False, default=True)
 
 
-class TestCaseEvaluation(Base):
-    """Individual test case evaluation results"""
-    __tablename__ = 'test_case_evaluations'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-
-    # Foreign key to parent benchmark result
-    benchmark_result_id = Column(Integer, ForeignKey('benchmark_results.id', ondelete='CASCADE'), nullable=False, index=True)
-
-    # Test identification
-    test_id = Column(String(256), nullable=False, index=True)
-    test_category = Column(String(128), nullable=True, index=True)
-    test_level = Column(String(32), nullable=True, index=True)
-    test_description = Column(Text, nullable=True)
-
-    # Generated response
-    code_response = Column(Text, nullable=False)
-
-    # Evaluation results
-    passed = Column(Boolean, nullable=False, index=True)
-    score = Column(Float, nullable=False)
-    max_score = Column(Float, nullable=False)
-
-    # Detailed checks
-    passed_checks = Column(get_json_type(), nullable=True)
-    failed_checks = Column(get_json_type(), nullable=True)
-
-    # Additional evaluation details
-    evaluation_details = Column(get_json_type(), nullable=True)
-
-    # Timestamps
-    evaluated_at = Column(Float, nullable=False, index=True)
-
-    # Relationship
-    benchmark_result = relationship('BenchmarkResult', backref='test_evaluations')
-
-    __table_args__ = (
-        Index('idx_test_benchmark', 'benchmark_result_id', 'test_id'),
-        Index('idx_test_category', 'test_category'),
-    )
-
-
 # Database connection configuration
 def get_database_url() -> str:
     """Get database URL from environment"""

@@ -1,7 +1,6 @@
 import { useRef, useState } from "react";
 import { toBlob } from "html-to-image";
-
-const API_BASE = "http://localhost:5050/api";
+import { API_BASE, MODEL_DISPLAY_NAMES } from "@/utils/types";
 
 interface EvaluationResult {
 	status: string;
@@ -48,19 +47,6 @@ export default function EvaluationModal({ isOpen, onClose, results }: Props) {
 		([_, result]: [string, any]) => result.summary && !result.error
 	);
 
-	// Model display name mappings
-	const modelDisplayNames: Record<string, string> = {
-		"claude-sonnet": "Claude Sonnet 4.5",
-		"claude-opus": "Claude Opus 4",
-		"claude-haiku": "Claude Haiku 3.5",
-		"gemini-flash": "Gemini 2.0 Flash",
-		"gemini-pro": "Gemini 2.5 Pro",
-		"gpt-4": "GPT-4o",
-		"gpt-4-mini": "GPT-4o Mini",
-		o1: "O1",
-		"o1-mini": "O1 Mini",
-	};
-
 	// Parse metadata from filenames (format: model-variant-timestamp)
 	// Example: claude-sonnet-mini_v3-20251116_230045
 	const fileMetadata = Object.keys(results.results || {})
@@ -92,9 +78,8 @@ export default function EvaluationModal({ isOpen, onClose, results }: Props) {
 	const commonMetadata =
 		allSameMetadata && fileMetadata.length > 0 ? fileMetadata[0] : null;
 
-	// Format display names
 	const getDisplayModel = (model: string) =>
-		modelDisplayNames[model] || model;
+		MODEL_DISPLAY_NAMES[model] || model;
 	const getDisplayVariant = (variant: string) => {
 		// Convert mini_v3 -> Mini v3, core_v2 -> Core v2
 		return variant

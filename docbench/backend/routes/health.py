@@ -1,15 +1,10 @@
 """Health route handlers"""
 from flask import jsonify
-import os
 from database import get_db
 from database.models import BenchmarkResult, BenchmarkRun, Collection
 
 
 def register_routes(app, socketio=None, running_benchmarks=None):
-
-    @app.route('/api/env-status', methods=['GET'])
-    def env_status():
-        return jsonify({'keys': {'OPENROUTER_API_KEY': bool(os.getenv('OPENROUTER_API_KEY'))}})
 
     @app.route('/api/running', methods=['GET'])
     def get_running():
