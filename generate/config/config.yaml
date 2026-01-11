@@ -1,12 +1,12 @@
 # Prompt files for each stage
 prompts:
-  extraction: "config/stage1_extract_prompt.txt"   # Stage 1
-  merge: "config/stage2_merge_prompt.txt"          # Stage 2
-  reduce: "config/stage3_reduce_prompt.txt"        # Stage 3
-  compress: "config/stage4_compress_prompt.txt"    # Stage 4
+  extraction: "config/stage1_extract_prompt.txt"
+  merge: "config/merge_prompt.txt"
+  reduce: "config/merge_prompt.txt"
+  compress: "config/stage4_compress_prompt.txt"
 
-# Source documentation directory (can be absolute or relative to pipeline root)
-source_dir: "/home/kevinjin/jaseci-llmdocs/docs-new"
+# Source documentation directory (fetched from github.com/jaseci-labs/jaseci)
+source_dir: "docs/docs/docs"
 
 # LLM API Configuration
 llm:
@@ -15,80 +15,54 @@ llm:
   api_key_env: "OPENROUTER_API_KEY"
   max_tokens: 4096
   temperature: 0.0
-
   max_retries: 3
-  retry_delay: 2  # Initial delay in seconds
+  retry_delay: 2
 
 # Processing options
 processing:
-  # Process files in parallel
   parallel: true
-  max_workers: 16  # Increased for OpenRouter's high rate limits
-
-  # Process sections within files in parallel
+  max_workers: 16
   parallel_sections: true
   section_workers: 8
-
-  # Chunk size for large files (lines)
   chunk_size: 500
-
-  # Skip files matching these patterns
   skip_patterns:
     - "*.html"
     - "*.css"
     - "*.js"
     - "index.md"
     - "README.md"
-
-  # Categories to process (null = all)
   categories: null
-  # categories: ["learn", "jac_book"]
+
+# Validation settings
+validation:
+  min_size_ratio: 0.15
+  required_pattern_ratio: 0.6
+  critical_patterns:
+    - "++>"
+    - "-->"
+    - "by llm("
+    - "with entry"
+    - "spawn"
+    - "has .*:"
 
 # Stage 1: Topic Extraction
 extraction:
-  # Output directory for extracted topics (organized by topic)
   output_dir: "output/1_extracted"
-  
-  # Optional: Override LLM for this stage
-  # llm:
-  #   model: "google/gemini-2.5-flash"
-  #   temperature: 0.1
 
 # Stage 2: Topic Merging
 merge:
-  # Parallel workers for merging topics
   max_workers: 16
-
-  # Output directory for merged topics (one file per topic)
   output_dir: "output/2_merged"
-
-  # Optional: Override LLM for this stage
-  # llm:
-  #   model: "anthropic/claude-sonnet-4.5"
-  #   temperature: 0.1
+  max_chunk_size: 15000
 
 # Stage 3: Hierarchical Merge
 hierarchical_merge:
-  # Output directory for intermediate and final merged files
   output_dir: "output/3_hierarchical"
-  
-  # Number of files to merge into one per pass (e.g., 4 -> 1)
-  ratio: 2
+  ratio: 4
+  max_passes: 2
+  min_pattern_ratio: 0.7
 
-  # Optional: Override LLM for this stage
-  # llm:
-  #   model: "openai/gpt-5.1"
-    # temperature: 0.1
-
-# Stage 4: Final Formatting and Combining
+# Stage 4: Final Minification (deterministic, no LLM)
 ultra_compression:
-  # Output filename for final reference doc
   output_file: "jac_docs_final.txt"
-
-  # Output directory
   output_dir: "output/4_final"
-
-  # Optional: Override LLM for this stage
-  # llm:
-  #   model: "google/gemini-3-pro-preview"
-  #   temperature: 0.0

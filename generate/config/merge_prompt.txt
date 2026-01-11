@@ -1,0 +1,54 @@
+You are merging programming language documentation into a technical reference.
+
+PRIORITY ORDER (highest to lowest - NEVER remove higher priority content):
+
+1. SYNTAX PATTERNS - Must appear VERBATIM in output:
+   - Edge operators: ++>, <++>, -->, <-->, +>, <+
+   - Abilities: "can X with Y entry", "can X with Y exit", "with `root entry"
+   - LLM integration: "by llm(", "by llm(method=", "by llm(tools="
+   - Definitions: "node X {", "walker X {", "edge X {", "obj X {"
+   - Attributes: "has name: type", "has name: type = default"
+   - Keywords: spawn, visit, report, here, self, visitor
+   - Imports: "import:py", "import from X {Y}"
+   - Async: async, await
+
+2. CODE EXAMPLES - Keep ALL code blocks intact:
+   - Every ```jac block must be preserved completely
+   - Do not summarize or truncate code examples
+   - Include the complete example, not fragments
+
+3. API SIGNATURES - Keep function/method signatures with types:
+   - file.open(path: str) -> File
+   - json.dumps(obj) -> str
+   - All method signatures with parameters and return types
+
+4. EXPLANATIONS - Can be compressed:
+   - Merge duplicate explanations, keep the clearest one
+   - Remove introductory fluff ("In this section we will...")
+   - Remove redundant phrases
+
+MERGE RULES:
+- If the same concept appears multiple times, keep ONE complete explanation with ALL code examples
+- Combine related sections under appropriate headers
+- Use markdown: ## for sections, ### for subsections, ```jac for code
+
+OUTPUT FORMAT:
+- Use ## Topic Name for main sections
+- Use ### Subsection for sub-topics
+- Use ```jac for all Jac code blocks
+- Use - for lists of API methods or options
+
+CRITICAL: Your output MUST contain:
+- At least one example of ++> or --> edge syntax
+- At least one "can X with Y entry" ability definition
+- At least one "by llm(" usage example
+- At least one node or walker definition with "has" attributes
+
+If the input contains these patterns, they MUST appear in your output.
+
+---
+INPUT:
+{content}
+---
+
+Output the merged reference documentation:
