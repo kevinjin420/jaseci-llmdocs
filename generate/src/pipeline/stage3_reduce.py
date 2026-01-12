@@ -1,13 +1,14 @@
 import math
 from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from .llm import LLM
 from .validator import Validator
 
 
 class Reducer:
-    def __init__(self, llm: LLM, config: dict):
+    def __init__(self, llm: LLM, config: dict, on_progress=None):
         self.llm = llm
+        self.on_progress = on_progress or (lambda *a: None)
         self.in_dir = Path(config.get('merge', {}).get('output_dir', 'output/2_merged'))
         self.out_dir = Path(config.get('hierarchical_merge', {}).get('output_dir', 'output/3_hierarchical'))
         self.out_dir.mkdir(parents=True, exist_ok=True)
@@ -31,15 +32,20 @@ class Reducer:
         if not files:
             return None
 
-        print(f"Stage 3: Reducing {len(files)} files (Ratio {ratio}:1, max {self.max_passes} passes)...")
         current = [f.read_text() for f in files]
         combined_input = "\n\n".join(current)
+
+        total_work = self.max_passes + 1
+        completed = 0
+
+        self.on_progress(0, total_work, "Starting reduction...")
 
         pass_num = 0
         while len(current) > 1 and pass_num < self.max_passes:
             pass_num += 1
             target_count = max(1, math.ceil(len(current) / ratio))
-            print(f"  Pass {pass_num}: {len(current)} -> {target_count}")
+
+            self.on_progress(completed, total_work, f"Pass {pass_num}: {len(current)} -> {target_count}")
 
             groups = ["\n\n".join(current[i:i+ratio]) for i in range(0, len(current), ratio)]
 
@@ -49,32 +55,27 @@ class Reducer:
             next_level = [r for r in next_level if r and r.strip()]
 
             if not next_level:
-                print(f"  Pass {pass_num} produced empty output, stopping")
                 break
 
             combined_output = "\n\n".join(next_level)
             result = self.validator.validate(combined_input, combined_output)
 
             if not result.is_valid:
-                print(f"  Pass {pass_num} validation failed: {result.issues}")
-                if result.missing_patterns:
-                    print(f"    Missing patterns: {result.missing_patterns[:5]}")
-                print(f"  Stopping reduction early to preserve content")
                 break
 
-            print(f"    Size: {len(combined_input)} -> {len(combined_output)} ({result.size_ratio:.1%})")
             current = next_level
             combined_input = combined_output
+            completed += 1
+            self.on_progress(completed, total_work, f"Pass {pass_num} complete")
 
         if len(current) > 1:
-            print(f"  Final merge: combining {len(current)} remaining files...")
+            self.on_progress(completed, total_work, f"Final merge: {len(current)} files")
             final = self.merge_group("\n\n".join(current))
             if final and final.strip():
                 final_result = self.validator.validate(combined_input, final)
                 if final_result.is_valid:
                     current = [final]
                 else:
-                    print(f"  Final merge lost content, keeping {len(current)} separate sections")
                     current = [combined_input]
             else:
                 current = [combined_input]
@@ -82,13 +83,14 @@ class Reducer:
         out_path = self.out_dir / "unified_doc.txt"
         output = current[0] if len(current) == 1 else "\n\n".join(current)
         out_path.write_text(output)
-        print(f"  Saved to {out_path} ({len(output)} chars)")
+
+        self.on_progress(total_work, total_work, "Reduction complete")
+
         return {'success': True, 'output_path': str(out_path)}
 
     def merge_group(self, content):
         try:
             result = self.llm.query(content, self.prompt)
             return result if result else content
-        except Exception as e:
-            print(f"  Merge error: {e}")
+        except Exception:
             return content

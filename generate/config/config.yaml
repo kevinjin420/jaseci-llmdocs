@@ -6,12 +6,12 @@ prompts:
   compress: "config/stage4_compress_prompt.txt"
 
 # Source documentation directory (fetched from github.com/jaseci-labs/jaseci)
-source_dir: "docs/docs/docs"
+source_dir: "docs"
 
 # LLM API Configuration
 llm:
   provider: "openrouter"
-  model: "google/gemini-2.5-flash"
+  model: "google/gemini-3-flash-preview"
   api_key_env: "OPENROUTER_API_KEY"
   max_tokens: 4096
   temperature: 0.0

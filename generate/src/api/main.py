@@ -87,6 +87,19 @@ async def run_pipeline():
     return {"error": "Runner not initialized"}
 
 
+@app.post("/api/run/{stage}")
+async def run_stage(stage: str):
+    valid_stages = ["fetch", "extract", "merge", "reduce", "compress"]
+    if stage not in valid_stages:
+        return {"error": f"Invalid stage. Must be one of: {valid_stages}"}
+    if runner:
+        if runner.is_running:
+            return {"error": "Pipeline already running"}
+        asyncio.create_task(runner.run_stage(stage))
+        return {"status": "started", "stage": stage}
+    return {"error": "Runner not initialized"}
+
+
 @app.get("/api/stages")
 async def get_stages():
     if runner:

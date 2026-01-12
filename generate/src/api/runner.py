@@ -28,6 +28,9 @@ class StageMetrics:
     file_count: int = 0
     files: list = field(default_factory=list)
     error: Optional[str] = None
+    progress: int = 0
+    progress_total: int = 0
+    progress_message: str = ""
 
     @property
     def duration(self) -> float:
@@ -58,11 +61,12 @@ class PipelineRunner:
         self.broadcast = broadcast
         self.is_running = False
         self.validator = Validator()
+        self.loop = None
 
         self.sanitized_dir = self.root / "output" / "0_sanitized"
 
         self.stages: dict[str, StageMetrics] = {
-            "sanitize": StageMetrics(name="Sanitization"),
+            "fetch": StageMetrics(name="Fetch & Sanitize"),
             "extract": StageMetrics(name="Topic Extraction"),
             "merge": StageMetrics(name="Topic Merging"),
             "reduce": StageMetrics(name="Hierarchical Reduction"),
@@ -80,6 +84,27 @@ class PipelineRunner:
             "data": data
         })
 
+    def _make_progress_callback(self, stage_name: str):
+        stage = self.stages[stage_name]
+
+        def callback(current: int, total: int, message: str = ""):
+            stage.progress = current
+            stage.progress_total = total
+            stage.progress_message = message
+
+            if self.loop:
+                asyncio.run_coroutine_threadsafe(
+                    self.emit("progress", {
+                        "stage": stage_name,
+                        "current": current,
+                        "total": total,
+                        "message": message
+                    }),
+                    self.loop
+                )
+
+        return callback
+
     def get_status(self) -> dict:
         return {
             "is_running": self.is_running,
@@ -89,7 +114,7 @@ class PipelineRunner:
         }
 
     def get_metrics(self) -> dict:
-        total_input = self.stages["sanitize"].input_size
+        total_input = self.stages["fetch"].input_size
         total_output = self.stages["compress"].output_size
 
         return {
@@ -109,6 +134,7 @@ class PipelineRunner:
             return
 
         self.is_running = True
+        self.loop = asyncio.get_event_loop()
         self.overall_start = time.time()
 
         for stage in self.stages.values():
@@ -116,6 +142,8 @@ class PipelineRunner:
             stage.start_time = None
             stage.end_time = None
             stage.files = []
+            stage.progress = 0
+            stage.progress_total = 0
 
         await self.emit("pipeline_start", {"source": str(self.src)})
 
@@ -124,7 +152,7 @@ class PipelineRunner:
             if out.exists():
                 shutil.rmtree(out)
 
-            await self._run_sanitize()
+            await self._run_fetch()
             await self._run_extract()
             await self._run_merge()
             await self._run_reduce()
@@ -138,11 +166,45 @@ class PipelineRunner:
         finally:
             self.is_running = False
 
-    async def _run_sanitize(self):
-        stage = self.stages["sanitize"]
+    async def run_stage(self, stage_name: str):
+        if self.is_running:
+            return
+
+        self.is_running = True
+        self.loop = asyncio.get_event_loop()
+
+        stage = self.stages[stage_name]
+        stage.status = "pending"
+        stage.start_time = None
+        stage.end_time = None
+        stage.files = []
+        stage.progress = 0
+        stage.progress_total = 0
+
+        await self.emit("pipeline_start", {"source": str(self.src), "single_stage": stage_name})
+
+        try:
+            stage_methods = {
+                "fetch": self._run_fetch,
+                "extract": self._run_extract,
+                "merge": self._run_merge,
+                "reduce": self._run_reduce,
+                "compress": self._run_compress,
+            }
+
+            await stage_methods[stage_name]()
+            await self.emit("pipeline_complete", {"stage": stage_name, "metrics": stage.to_dict()})
+
+        except Exception as e:
+            await self.emit("pipeline_error", {"error": str(e), "stage": stage_name})
+        finally:
+            self.is_running = False
+
+    async def _run_fetch(self):
+        stage = self.stages["fetch"]
         stage.status = "running"
         stage.start_time = time.time()
-        await self.emit("stage_start", {"stage": "sanitize"})
+        await self.emit("stage_start", {"stage": "fetch"})
 
         try:
             source_files = list(self.src.rglob("*.md"))
@@ -164,7 +226,7 @@ class PipelineRunner:
             stage.status = "complete"
             stage.end_time = time.time()
             await self.emit("stage_complete", {
-                "stage": "sanitize",
+                "stage": "fetch",
                 "metrics": stage.to_dict(),
                 "stats": {
                     "total": stats["total_files"],
@@ -178,7 +240,7 @@ class PipelineRunner:
             stage.status = "error"
             stage.error = str(e)
             stage.end_time = time.time()
-            await self.emit("stage_error", {"stage": "sanitize", "error": str(e)})
+            await self.emit("stage_error", {"stage": "fetch", "error": str(e)})
             raise
 
     async def _run_extract(self):
@@ -192,7 +254,12 @@ class PipelineRunner:
             stage.input_size = sum(f.stat().st_size for f in source_files)
             stage.file_count = len(source_files)
 
-            extractor = Extractor(LLM(self.cfg, self.cfg.get('extraction')), self.cfg)
+            progress_cb = self._make_progress_callback("extract")
+            extractor = Extractor(
+                LLM(self.cfg, self.cfg.get('extraction')),
+                self.cfg,
+                on_progress=progress_cb
+            )
             await asyncio.to_thread(
                 extractor.run, self.sanitized_dir, self.cfg['processing'].get('skip_patterns')
             )
@@ -229,7 +296,12 @@ class PipelineRunner:
             stage.input_size = sum(f.stat().st_size for f in in_files)
             stage.file_count = len(in_files)
 
-            merger = Merger(LLM(self.cfg, self.cfg.get('merge')), self.cfg)
+            progress_cb = self._make_progress_callback("merge")
+            merger = Merger(
+                LLM(self.cfg, self.cfg.get('merge')),
+                self.cfg,
+                on_progress=progress_cb
+            )
             await asyncio.to_thread(merger.run)
 
             out_dir = self.root / self.cfg['merge']['output_dir']
@@ -264,7 +336,12 @@ class PipelineRunner:
             stage.input_size = sum(f.stat().st_size for f in in_files)
             stage.file_count = len(in_files)
 
-            reducer = Reducer(LLM(self.cfg, self.cfg.get('hierarchical_merge')), self.cfg)
+            progress_cb = self._make_progress_callback("reduce")
+            reducer = Reducer(
+                LLM(self.cfg, self.cfg.get('hierarchical_merge')),
+                self.cfg,
+                on_progress=progress_cb
+            )
             result = await asyncio.to_thread(
                 reducer.run, self.cfg['hierarchical_merge']['ratio']
             )

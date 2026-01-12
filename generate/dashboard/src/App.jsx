@@ -14,7 +14,26 @@ function formatDuration(seconds) {
   return `${Math.floor(seconds / 60)}m ${(seconds % 60).toFixed(0)}s`
 }
 
-function StageCard({ stage, isActive }) {
+function ProgressBar({ current, total, message }) {
+  const percent = total > 0 ? (current / total) * 100 : 0
+
+  return (
+    <div className="mt-3">
+      <div className="flex justify-between text-xs text-zinc-400 mb-1">
+        <span className="truncate max-w-[70%]">{message || 'Processing...'}</span>
+        <span>{current}/{total}</span>
+      </div>
+      <div className="h-2 bg-zinc-700 rounded-full overflow-hidden">
+        <div
+          className="h-full bg-blue-500 transition-all duration-200"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+    </div>
+  )
+}
+
+function StageCard({ stage, stageKey, isActive, progress, onRun, disabled }) {
   const statusColors = {
     pending: 'bg-zinc-700',
     running: 'bg-blue-600 animate-pulse',
@@ -22,33 +41,55 @@ function StageCard({ stage, isActive }) {
     error: 'bg-red-600',
   }
 
+  const showProgress = stage.status === 'running' && progress?.total > 0
+
   return (
-    <div className={`p-4 rounded-lg border ${isActive ? 'border-blue-500 bg-zinc-800' : 'border-zinc-700 bg-zinc-900'}`}>
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="font-medium text-white">{stage.name}</h3>
-        <span className={`px-2 py-1 rounded text-xs text-white ${statusColors[stage.status]}`}>
-          {stage.status}
-        </span>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 text-sm">
-        <div className="text-zinc-400">Input:</div>
-        <div className="text-white">{formatBytes(stage.input_size)}</div>
-
-        <div className="text-zinc-400">Output:</div>
-        <div className="text-white">{formatBytes(stage.output_size)}</div>
-
-        <div className="text-zinc-400">Ratio:</div>
-        <div className={`${stage.compression_ratio < 0.5 ? 'text-green-400' : 'text-white'}`}>
-          {stage.input_size > 0 ? `${(stage.compression_ratio * 100).toFixed(0)}%` : '-'}
+    <div className={`rounded-lg border ${isActive ? 'border-blue-500 bg-zinc-800' : 'border-zinc-700 bg-zinc-900'}`}>
+      <button
+        onClick={() => onRun(stageKey)}
+        disabled={disabled}
+        className={`w-full px-3 py-2 text-xs font-medium rounded-t-lg border-b border-zinc-700 transition ${
+          disabled
+            ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+            : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white cursor-pointer'
+        }`}
+      >
+        Run Stage
+      </button>
+      <div className="p-4">
+        <div className="mb-3">
+          <h3 className="font-medium text-white">{stage.name}</h3>
+          <span className={`inline-block mt-1 px-2 py-0.5 rounded text-xs text-white ${statusColors[stage.status]}`}>
+            {stage.status}
+          </span>
         </div>
 
-        <div className="text-zinc-400">Duration:</div>
-        <div className="text-white">{formatDuration(stage.duration)}</div>
+      {showProgress ? (
+        <ProgressBar
+          current={progress.current}
+          total={progress.total}
+          message={progress.message}
+        />
+      ) : (
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <div className="text-zinc-400">Input:</div>
+          <div className="text-white">{formatBytes(stage.input_size)}</div>
 
-        <div className="text-zinc-400">Files:</div>
-        <div className="text-white">{stage.file_count || stage.files?.length || 0}</div>
-      </div>
+          <div className="text-zinc-400">Output:</div>
+          <div className="text-white">{formatBytes(stage.output_size)}</div>
+
+          <div className="text-zinc-400">Ratio:</div>
+          <div className={`${stage.compression_ratio < 0.5 ? 'text-green-400' : 'text-white'}`}>
+            {stage.input_size > 0 ? `${(stage.compression_ratio * 100).toFixed(0)}%` : '-'}
+          </div>
+
+          <div className="text-zinc-400">Duration:</div>
+          <div className="text-white">{formatDuration(stage.duration)}</div>
+
+          <div className="text-zinc-400">Files:</div>
+          <div className="text-white">{stage.file_count || stage.files?.length || 0}</div>
+        </div>
+      )}
 
       {stage.files?.length > 0 && stage.status === 'complete' && (
         <details className="mt-3">
@@ -74,6 +115,7 @@ function StageCard({ stage, isActive }) {
           {stage.error}
         </div>
       )}
+      </div>
     </div>
   )
 }
@@ -114,7 +156,10 @@ function LogEntry({ event }) {
     stage_start: 'text-cyan-400',
     stage_complete: 'text-green-400',
     stage_error: 'text-red-400',
+    progress: 'text-zinc-500',
   }
+
+  if (event.event === 'progress') return null
 
   return (
     <div className="text-xs font-mono py-1 border-b border-zinc-800">
@@ -129,12 +174,13 @@ function App() {
   const [connected, setConnected] = useState(false)
   const [running, setRunning] = useState(false)
   const [stages, setStages] = useState({
-    sanitize: { name: 'Sanitization', status: 'pending', input_size: 0, output_size: 0, files: [], compression_ratio: 1 },
+    fetch: { name: 'Fetch & Sanitize', status: 'pending', input_size: 0, output_size: 0, files: [], compression_ratio: 1 },
     extract: { name: 'Topic Extraction', status: 'pending', input_size: 0, output_size: 0, files: [], compression_ratio: 1 },
     merge: { name: 'Topic Merging', status: 'pending', input_size: 0, output_size: 0, files: [], compression_ratio: 1 },
     reduce: { name: 'Hierarchical Reduction', status: 'pending', input_size: 0, output_size: 0, files: [], compression_ratio: 1 },
     compress: { name: 'Final Minification', status: 'pending', input_size: 0, output_size: 0, files: [], compression_ratio: 1 },
   })
+  const [progress, setProgress] = useState({})
   const [validation, setValidation] = useState(null)
   const [logs, setLogs] = useState([])
   const [metrics, setMetrics] = useState(null)
@@ -154,16 +200,32 @@ function App() {
 
       ws.onmessage = (e) => {
         const msg = JSON.parse(e.data)
-        setLogs(prev => [...prev.slice(-99), msg])
+
+        if (msg.event !== 'progress') {
+          setLogs(prev => [...prev.slice(-99), msg])
+        }
 
         if (msg.event === 'pipeline_start') {
           setRunning(true)
           setValidation(null)
+          setProgress({})
         }
 
         if (msg.event === 'pipeline_complete' || msg.event === 'pipeline_error') {
           setRunning(false)
+          setProgress({})
           if (msg.data) setMetrics(msg.data)
+        }
+
+        if (msg.event === 'progress') {
+          setProgress(prev => ({
+            ...prev,
+            [msg.data.stage]: {
+              current: msg.data.current,
+              total: msg.data.total,
+              message: msg.data.message
+            }
+          }))
         }
 
         if (msg.event === 'stage_start') {
@@ -178,6 +240,11 @@ function App() {
             ...prev,
             [msg.data.stage]: { ...prev[msg.data.stage], ...msg.data.metrics, status: 'complete' }
           }))
+          setProgress(prev => {
+            const next = { ...prev }
+            delete next[msg.data.stage]
+            return next
+          })
           if (msg.data.validation) {
             setValidation(msg.data.validation)
           }
@@ -203,7 +270,7 @@ function App() {
   const runPipeline = async () => {
     setLogs([])
     setStages({
-      sanitize: { name: 'Sanitization', status: 'pending', input_size: 0, output_size: 0, files: [], compression_ratio: 1 },
+      fetch: { name: 'Fetch & Sanitize', status: 'pending', input_size: 0, output_size: 0, files: [], compression_ratio: 1 },
       extract: { name: 'Topic Extraction', status: 'pending', input_size: 0, output_size: 0, files: [], compression_ratio: 1 },
       merge: { name: 'Topic Merging', status: 'pending', input_size: 0, output_size: 0, files: [], compression_ratio: 1 },
       reduce: { name: 'Hierarchical Reduction', status: 'pending', input_size: 0, output_size: 0, files: [], compression_ratio: 1 },
@@ -211,6 +278,7 @@ function App() {
     })
     setValidation(null)
     setMetrics(null)
+    setProgress({})
 
     try {
       await fetch('/api/run', { method: 'POST' })
@@ -219,8 +287,16 @@ function App() {
     }
   }
 
+  const runStage = async (stageKey) => {
+    try {
+      await fetch(`/api/run/${stageKey}`, { method: 'POST' })
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
   const activeStage = Object.keys(stages).find(k => stages[k].status === 'running')
-  const totalInput = stages.sanitize.input_size
+  const totalInput = stages.fetch.input_size
   const totalOutput = stages.compress.output_size
   const overallRatio = totalInput > 0 ? totalOutput / totalInput : 0
 
@@ -276,7 +352,15 @@ function App() {
 
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
           {Object.entries(stages).map(([key, stage]) => (
-            <StageCard key={key} stage={stage} isActive={activeStage === key} />
+            <StageCard
+              key={key}
+              stageKey={key}
+              stage={stage}
+              isActive={activeStage === key}
+              progress={progress[key]}
+              onRun={runStage}
+              disabled={running || !connected}
+            />
           ))}
         </div>
 

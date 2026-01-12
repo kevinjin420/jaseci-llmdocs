@@ -1,8 +1,0 @@
-# Versioning
-
-# Versioning
-
-## Jaclang and Jac-Scale
-
--   **Jaclang 0.9.0 / Jac-Scale 0.1.0 (Unreleased)**: Initial release of Jac-Scale, a scalable runtime framework for distributed Jac applications.
--   **Version Bumping**: When updating Jac, Jac-Cloud, or ByLLM, remember to also update the `jaclang` requirement in `jac-cloud` and `byllm`.

@@ -1,15 +1,16 @@
 import re
 import yaml
+import threading
 from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor
-from tqdm import tqdm
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from .llm import LLM
 from .validator import Validator
 
 
 class Merger:
-    def __init__(self, llm: LLM, config: dict):
+    def __init__(self, llm: LLM, config: dict, on_progress=None):
         self.llm = llm
+        self.on_progress = on_progress or (lambda *a: None)
         self.in_dir = Path(config.get('extraction', {}).get('output_dir', 'output/1_extracted'))
         self.out_dir = Path(config.get('merge', {}).get('output_dir', 'output/2_merged'))
         self.out_dir.mkdir(parents=True, exist_ok=True)
@@ -26,13 +27,25 @@ class Merger:
         with open(root / "config/topics.yaml") as f:
             self.topics = yaml.safe_load(f)['topics']
 
+        self.completed = 0
+        self.total = 0
+        self.progress_lock = threading.Lock()
+
     def run(self):
         self.out_dir.mkdir(parents=True, exist_ok=True)
         files = [f for f in self.in_dir.glob("*.md") if f.stat().st_size > 0]
-        print(f"Stage 2: Merging {len(files)} topics...")
+        self.total = len(files)
+        self.completed = 0
+
+        self.on_progress(0, self.total, "Starting merge...")
 
         with ThreadPoolExecutor(max_workers=16) as pool:
-            list(tqdm(pool.map(self.process, files), total=len(files)))
+            futures = {pool.submit(self.process, f): f for f in files}
+            for future in as_completed(futures):
+                future.result()
+                with self.progress_lock:
+                    self.completed += 1
+                    self.on_progress(self.completed, self.total, futures[future].stem)
 
     def process(self, path: Path):
         topic = path.stem
@@ -43,33 +56,28 @@ class Merger:
             if merged:
                 result = self.validator.validate(content, merged)
                 if not result.is_valid:
-                    tqdm.write(f"  {topic}: Validation failed ({result.issues}), using fallback")
                     merged = self.fallback_merge(content)
 
                 (self.out_dir / f"{topic}.txt").write_text(f"# {name}\n\n{merged}")
-        except Exception as e:
-            print(f"Error {topic}: {e}")
+        except Exception:
+            pass
 
     def merge_content(self, text: str, topic: str) -> str:
         if len(text) < 20000:
             return self.llm.query(text, f"Topic: {topic}\n\n{self.prompt}")
 
-        tqdm.write(f"  Topic '{topic}' large ({len(text)} chars), splitting...")
         chunks = self.smart_chunk(text)
-
         merged_parts = []
-        with ThreadPoolExecutor(max_workers=8) as pool:
-            futures = []
-            for chunk in chunks:
-                futures.append(pool.submit(self.llm.query, chunk, f"Topic: {topic}\n\n{self.prompt}"))
 
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            futures = [pool.submit(self.llm.query, chunk, f"Topic: {topic}\n\n{self.prompt}") for chunk in chunks]
             for f in futures:
                 try:
                     result = f.result()
                     if result and result.strip():
                         merged_parts.append(result)
-                except Exception as e:
-                    tqdm.write(f"  Chunk merge failed: {e}")
+                except Exception:
+                    pass
 
         if not merged_parts:
             return self.fallback_merge(text)
@@ -77,7 +85,6 @@ class Merger:
         return "\n\n".join(merged_parts)
 
     def smart_chunk(self, text: str) -> list:
-        """Split text into chunks, never breaking code blocks."""
         code_block_pattern = r'```[\s\S]*?```'
         code_blocks = []
 
@@ -118,7 +125,6 @@ class Merger:
         return text
 
     def _split_preserving_code_blocks(self, text: str, code_blocks: list) -> list:
-        """Fallback: split on paragraph boundaries, never mid-code-block."""
         paragraphs = re.split(r'\n\n+', text)
         chunks = []
         current = []
@@ -146,7 +152,6 @@ class Merger:
         return chunks if chunks else [text]
 
     def fallback_merge(self, text: str) -> str:
-        """Fallback: simple deduplication without LLM."""
         lines = text.split('\n')
         seen = set()
         result = []
