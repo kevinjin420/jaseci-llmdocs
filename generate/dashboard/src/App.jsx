@@ -129,6 +129,7 @@ function App() {
   const [connected, setConnected] = useState(false)
   const [running, setRunning] = useState(false)
   const [stages, setStages] = useState({
+    sanitize: { name: 'Sanitization', status: 'pending', input_size: 0, output_size: 0, files: [], compression_ratio: 1 },
     extract: { name: 'Topic Extraction', status: 'pending', input_size: 0, output_size: 0, files: [], compression_ratio: 1 },
     merge: { name: 'Topic Merging', status: 'pending', input_size: 0, output_size: 0, files: [], compression_ratio: 1 },
     reduce: { name: 'Hierarchical Reduction', status: 'pending', input_size: 0, output_size: 0, files: [], compression_ratio: 1 },
@@ -202,6 +203,7 @@ function App() {
   const runPipeline = async () => {
     setLogs([])
     setStages({
+      sanitize: { name: 'Sanitization', status: 'pending', input_size: 0, output_size: 0, files: [], compression_ratio: 1 },
       extract: { name: 'Topic Extraction', status: 'pending', input_size: 0, output_size: 0, files: [], compression_ratio: 1 },
       merge: { name: 'Topic Merging', status: 'pending', input_size: 0, output_size: 0, files: [], compression_ratio: 1 },
       reduce: { name: 'Hierarchical Reduction', status: 'pending', input_size: 0, output_size: 0, files: [], compression_ratio: 1 },
@@ -218,7 +220,7 @@ function App() {
   }
 
   const activeStage = Object.keys(stages).find(k => stages[k].status === 'running')
-  const totalInput = stages.extract.input_size
+  const totalInput = stages.sanitize.input_size
   const totalOutput = stages.compress.output_size
   const overallRatio = totalInput > 0 ? totalOutput / totalInput : 0
 
@@ -272,7 +274,7 @@ function App() {
           </div>
         )}
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
           {Object.entries(stages).map(([key, stage]) => (
             <StageCard key={key} stage={stage} isActive={activeStage === key} />
           ))}

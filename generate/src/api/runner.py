@@ -9,6 +9,7 @@ from dataclasses import dataclass, field, asdict
 from datetime import datetime
 
 from ..pipeline.llm import LLM
+from ..pipeline.sanitizer import Sanitizer
 from ..pipeline.stage1_extract import Extractor
 from ..pipeline.stage2_merge import Merger
 from ..pipeline.stage3_reduce import Reducer
@@ -58,7 +59,10 @@ class PipelineRunner:
         self.is_running = False
         self.validator = Validator()
 
+        self.sanitized_dir = self.root / "output" / "0_sanitized"
+
         self.stages: dict[str, StageMetrics] = {
+            "sanitize": StageMetrics(name="Sanitization"),
             "extract": StageMetrics(name="Topic Extraction"),
             "merge": StageMetrics(name="Topic Merging"),
             "reduce": StageMetrics(name="Hierarchical Reduction"),
@@ -85,7 +89,7 @@ class PipelineRunner:
         }
 
     def get_metrics(self) -> dict:
-        total_input = self.stages["extract"].input_size
+        total_input = self.stages["sanitize"].input_size
         total_output = self.stages["compress"].output_size
 
         return {
@@ -120,6 +124,7 @@ class PipelineRunner:
             if out.exists():
                 shutil.rmtree(out)
 
+            await self._run_sanitize()
             await self._run_extract()
             await self._run_merge()
             await self._run_reduce()
@@ -133,6 +138,49 @@ class PipelineRunner:
         finally:
             self.is_running = False
 
+    async def _run_sanitize(self):
+        stage = self.stages["sanitize"]
+        stage.status = "running"
+        stage.start_time = time.time()
+        await self.emit("stage_start", {"stage": "sanitize"})
+
+        try:
+            source_files = list(self.src.rglob("*.md"))
+            stage.input_size = sum(f.stat().st_size for f in source_files)
+            stage.file_count = len(source_files)
+
+            sanitizer = Sanitizer(self.cfg)
+            stats = await asyncio.to_thread(
+                sanitizer.run, self.src, self.sanitized_dir
+            )
+
+            out_files = list(self.sanitized_dir.rglob("*.md"))
+            stage.output_size = sum(f.stat().st_size for f in out_files)
+            stage.files = [
+                {"name": f["path"], "size": f["cleaned_size"]}
+                for f in stats.get("files", [])[:20]
+            ]
+
+            stage.status = "complete"
+            stage.end_time = time.time()
+            await self.emit("stage_complete", {
+                "stage": "sanitize",
+                "metrics": stage.to_dict(),
+                "stats": {
+                    "total": stats["total_files"],
+                    "kept": stats["kept_files"],
+                    "excluded": stats["excluded_files"],
+                    "empty": stats["empty_files"]
+                }
+            })
+
+        except Exception as e:
+            stage.status = "error"
+            stage.error = str(e)
+            stage.end_time = time.time()
+            await self.emit("stage_error", {"stage": "sanitize", "error": str(e)})
+            raise
+
     async def _run_extract(self):
         stage = self.stages["extract"]
         stage.status = "running"
@@ -140,13 +188,13 @@ class PipelineRunner:
         await self.emit("stage_start", {"stage": "extract"})
 
         try:
-            source_files = list(self.src.rglob("*.md"))
+            source_files = list(self.sanitized_dir.rglob("*.md"))
             stage.input_size = sum(f.stat().st_size for f in source_files)
             stage.file_count = len(source_files)
 
             extractor = Extractor(LLM(self.cfg, self.cfg.get('extraction')), self.cfg)
             await asyncio.to_thread(
-                extractor.run, self.src, self.cfg['processing'].get('skip_patterns')
+                extractor.run, self.sanitized_dir, self.cfg['processing'].get('skip_patterns')
             )
 
             out_dir = self.root / self.cfg['extraction']['output_dir']
