@@ -51,7 +51,9 @@ def main():
     backend = subprocess.Popen(
         [sys.executable, "-m", "uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "4000", "--reload"],
         cwd=ROOT,
-        env=env
+        env=env,
+        stdout=sys.stdout,
+        stderr=sys.stderr
     )
     processes.append(backend)
 
@@ -60,7 +62,9 @@ def main():
     print("Starting frontend on http://localhost:4444")
     frontend = subprocess.Popen(
         ["npm", "run", "dev"],
-        cwd=ROOT / "dashboard"
+        cwd=ROOT / "dashboard",
+        stdout=sys.stdout,
+        stderr=sys.stderr
     )
     processes.append(frontend)
 

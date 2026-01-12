@@ -3,6 +3,8 @@ import asyncio
 import yaml
 import shutil
 import time
+import traceback
+import sys
 from pathlib import Path
 from typing import Callable, Optional
 from dataclasses import dataclass, field, asdict
@@ -240,6 +242,8 @@ class PipelineRunner:
             stage.status = "error"
             stage.error = str(e)
             stage.end_time = time.time()
+            print(f"\n[FETCH ERROR] {e}", file=sys.stderr)
+            traceback.print_exc()
             await self.emit("stage_error", {"stage": "fetch", "error": str(e)})
             raise
 
@@ -281,6 +285,8 @@ class PipelineRunner:
             stage.status = "error"
             stage.error = str(e)
             stage.end_time = time.time()
+            print(f"\n[EXTRACT ERROR] {e}", file=sys.stderr)
+            traceback.print_exc()
             await self.emit("stage_error", {"stage": "extract", "error": str(e)})
             raise
 
@@ -321,6 +327,8 @@ class PipelineRunner:
             stage.status = "error"
             stage.error = str(e)
             stage.end_time = time.time()
+            print(f"\n[MERGE ERROR] {e}", file=sys.stderr)
+            traceback.print_exc()
             await self.emit("stage_error", {"stage": "merge", "error": str(e)})
             raise
 
@@ -342,9 +350,7 @@ class PipelineRunner:
                 self.cfg,
                 on_progress=progress_cb
             )
-            result = await asyncio.to_thread(
-                reducer.run, self.cfg['hierarchical_merge']['ratio']
-            )
+            result = await asyncio.to_thread(reducer.run)
 
             if result:
                 out_path = Path(result['output_path'])
@@ -359,6 +365,8 @@ class PipelineRunner:
             stage.status = "error"
             stage.error = str(e)
             stage.end_time = time.time()
+            print(f"\n[REDUCE ERROR] {e}", file=sys.stderr)
+            traceback.print_exc()
             await self.emit("stage_error", {"stage": "reduce", "error": str(e)})
             raise
 

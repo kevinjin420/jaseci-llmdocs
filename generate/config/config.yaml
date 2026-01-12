@@ -55,12 +55,13 @@ merge:
   output_dir: "output/2_merged"
   max_chunk_size: 15000
 
-# Stage 3: Hierarchical Merge
+# Stage 3: Semantic Density Encoding
 hierarchical_merge:
   output_dir: "output/3_hierarchical"
-  ratio: 4
-  max_passes: 2
-  min_pattern_ratio: 0.7
+  target_ratio: 50
+  max_workers: 8
+  vowel_strip: false
+  camel_case: false
 
 # Stage 4: Final Minification (deterministic, no LLM)
 ultra_compression:
