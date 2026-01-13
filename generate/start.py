@@ -32,13 +32,25 @@ def main():
     check_dependencies()
 
     processes = []
+    shutting_down = False
 
     def cleanup(sig=None, frame=None):
+        nonlocal shutting_down
+        if shutting_down:
+            return
+        shutting_down = True
         print("\nShutting down...")
         for p in processes:
-            p.terminate()
+            try:
+                os.killpg(os.getpgid(p.pid), signal.SIGTERM)
+            except (ProcessLookupError, OSError):
+                pass
+        time.sleep(0.5)
         for p in processes:
-            p.wait()
+            try:
+                os.killpg(os.getpgid(p.pid), signal.SIGKILL)
+            except (ProcessLookupError, OSError):
+                pass
         sys.exit(0)
 
     signal.signal(signal.SIGINT, cleanup)
@@ -53,7 +65,8 @@ def main():
         cwd=ROOT,
         env=env,
         stdout=sys.stdout,
-        stderr=sys.stderr
+        stderr=sys.stderr,
+        start_new_session=True
     )
     processes.append(backend)
 
@@ -64,7 +77,8 @@ def main():
         ["npm", "run", "dev"],
         cwd=ROOT / "dashboard",
         stdout=sys.stdout,
-        stderr=sys.stderr
+        stderr=sys.stderr,
+        start_new_session=True
     )
     processes.append(frontend)
 

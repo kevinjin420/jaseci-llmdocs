@@ -25,9 +25,10 @@ class LLM:
         data = {
             "model": self.cfg['model'],
             "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": self.cfg.get('max_tokens', 4096),
             "temperature": self.cfg.get('temperature', 0.0)
         }
+        if self.cfg.get('max_tokens'):
+            data["max_tokens"] = self.cfg['max_tokens']
 
         for i in range(self.cfg.get('max_retries', 3)):
             try:

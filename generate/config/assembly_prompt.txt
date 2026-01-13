@@ -1,8 +1,8 @@
-You are assembling a comprehensive Jac language reference from extracted signatures and examples.
+You are assembling a Jac language reference from extracted signatures and examples.
 
-TARGET: 20-30KB reference document. Include ALL language features - no gaps.
+TARGET: 25-30KB. Balance thoroughness with conciseness.
 
-MANDATORY SECTIONS (must include all):
+MANDATORY SECTIONS (include all):
 
 ## 1. Syntax & Types
 - Primitives: int, float, str, bool, bytes, any
@@ -35,18 +35,17 @@ MANDATORY SECTIONS (must include all):
 
 ## 5. Graph Operations
 - Connect: ++>, <++, <++>, +>:Edge:+>, <+:Edge:+>
-- Disconnect: del, --> del
+- Disconnect: del
 - Traverse: [-->], [<--], [<-->]
 - Typed traverse: [-->:EdgeType:]
 - Node filter: [-->(`?NodeType)]
 - Attribute filter: (?attr == val)
-- Combined filters
 
 ## 6. Abilities & Events
 - can name with Type entry { }
 - can name with Type exit { }
-- can name with entry { } (generic)
-- Execution order (node entry -> walker entry -> walker exit -> node exit)
+- can name with entry/exit { } (generic)
+- Execution order: node entry -> walker entry -> walker exit -> node exit
 - Keywords: self, here, visitor, root, `root
 
 ## 7. Walker Control
@@ -58,7 +57,8 @@ MANDATORY SECTIONS (must include all):
 
 ## 8. AI Integration
 - by llm(): basic LLM function
-- by llm(method="Reason"): reasoning method
+- by llm(method="Reason"): reasoning
+- by llm(method="ReAct"): reasoning with actions
 - by llm(model=model_var): model selection
 - by llm(tools=[funcs]): tool use
 - glob llm = Model(model_name="...")
@@ -67,68 +67,88 @@ MANDATORY SECTIONS (must include all):
 - Image/Video: Image(url=), Video(path=, fps=)
 
 ## 9. File I/O & JSON
-- file.open(path, mode)
-- file.read(), file.write()
+- file.open(path, mode), file.read(), file.write()
 - json.dumps(obj), json.loads(str)
 
 ## 10. Cloud & API (jac serve)
 - jac serve file.jac
 - Walker as endpoint
-- __specs__: auth, methods, path
-- report for API response
-- WebSocket support
+- __specs__: auth, methods, path, as_query
+- static has, report for response
+- File upload with UploadFile
 
-## 11. Async & Concurrency
-- async walker
-- async def
-- await
-- Semaphores
+## 11. WebSocket
+- methods: ["websocket"] in __specs__
+- Connection events, client events
+- socket.notify_users(), notify_channels(), notify_clients()
 
-## 12. Persistence
-- Automatic persistence in jac-cloud
+## 12. Webhooks
+- __specs__ webhook config: type (header/query/body), name
+- Generate webhook keys via API
+- Webhook endpoint: /webhook/walker/{name}
+
+## 13. Scheduler
+- __specs__ schedule config
+- Cron triggers: {"trigger": "cron", "hour": "9", "minute": "0"}
+- Interval triggers: {"trigger": "interval", "seconds": 30}
+- Date triggers: {"trigger": "date", "run_date": "..."}
+- private: true for scheduled walkers
+
+## 14. Async & Concurrency
+- async walker, async def, await
+- Task status: task.__jac__.status, reports, error
+- Task queue with create_task()
+
+## 15. Permissions
+- Levels: NoPerm, ReadPerm, ConnectPerm, WritePerm
+- Grant: _.allow_root(node, target_root, level), grant(node, level)
+- Revoke: _.disallow_root(node, target), revoke(node)
+- Custom: def __jac_access__() -> AccessLevel
+
+## 16. Persistence
+- Automatic persistence if connected to root
+- save(node), commit(), commit(Type)
 - glob for global nodes
-- Root connectivity for persistence
+- References: &"n::id"
 
-## 13. Testing
+## 17. Testing
 - test { } blocks
-- assert statements
-- check statements
+- assert, check statements
 
-## 14. Data Spatial Operations
-- References and paths
-- Edge operations
-- Node filtering
+## 18. Standard Library
+- print, input, range, len, enumerate
+- str/list/dict methods
 
-## 15. Standard Library
-- print, input
-- range, len, enumerate
-- str methods, list methods
-- Math operations
+## 19. Deployment
+- Docker: FROM python, jac serve
+- Kubernetes: deployment, service, ingress
+- Environment variables for config
 
-## 16. Patterns (2-3 complete examples)
+## 20. Patterns (4-5 complete examples)
 - Graph traversal with collection
-- Search with early exit
-- AI-powered processing
-- API endpoint walker
+- AI-powered processing with by llm()
+- API endpoint walker with __specs__
+- Multi-agent orchestration
+- Caching pattern
 
-FORMAT RULES:
-1. Use ### for subsections within ## sections
-2. Include signature pattern before each example: `syntax pattern`
-3. Use tables for operators and keywords
-4. Examples should be 5-25 lines, complete and runnable
-5. Include comments in examples only when clarifying non-obvious behavior
-6. Every operator mentioned must have an example
-7. Quick reference tables at the end
+FORMAT GUIDELINES:
+1. Use tables for operators, keywords, and type references
+2. Code examples: 5-15 lines each, one per concept unless critical
+3. Combine related features in single examples where possible
+4. Minimal prose - let code speak for itself
+5. Use inline code for simple syntax: `node Name { has x: type; }`
 
 CRITICAL - MUST PRESERVE EXACTLY:
 - Edge operators: ++>, <++, <++>, -->, <-->, +>, <+, +>:Edge:+>, <+:Edge:+>
 - Keywords: spawn, visit, disengage, report, skip, here, self, visitor, root, `root
 - Abilities: can, with entry, with exit
-- LLM: by llm(), glob llm, Model, Image, Video, :sem:
+- LLM: by llm(), glob llm, Model, Image, Video, :sem:, method="Reason", method="ReAct"
 - Types: has, def, ->, |
-- Specs: __specs__, static has
+- Specs: __specs__, static has, auth, methods, path, as_query, private, schedule, webhook
+- Permissions: NoPerm, ReadPerm, ConnectPerm, WritePerm, _.allow_root, _.disallow_root
 - File: file.open, json.dumps, json.loads
 - Test: test { }, assert, check
+- Async: async walker, __jac__.status, create_task
 
 ---
 
@@ -137,5 +157,10 @@ EXTRACTED CONTENT:
 
 ---
 
-Generate the complete reference. Cover ALL topics listed above. Target 20-30KB.
-Do not skip any section. Every section header listed above must appear in output.
+Generate the complete reference document. Ensure all 20 sections are present.
+
+Each section needs:
+1. A reference table or syntax summary
+2. One working code example (more only for critical features like graph ops, walkers, AI)
+
+Do not skip any section. Prioritize accuracy over verbosity.

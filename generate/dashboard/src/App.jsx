@@ -568,23 +568,9 @@ function LogEntry({ event }) {
     stage_complete: 'text-green-400',
     stage_error: 'text-red-400',
     progress: 'text-zinc-500',
-    summary: 'text-white',
   }
 
   if (event.event === 'progress') return null
-
-  if (event.event === 'summary') {
-    return (
-      <div className="text-xs font-mono py-2 border-b border-zinc-700 bg-zinc-900/50">
-        <div className="text-green-400 font-bold mb-1">Pipeline Summary</div>
-        {event.data.lines.map((line, i) => (
-          <div key={i} className={line.startsWith('  ') ? 'text-zinc-400' : 'text-zinc-300'}>
-            {line}
-          </div>
-        ))}
-      </div>
-    )
-  }
 
   return (
     <div className="text-xs font-mono py-1 border-b border-zinc-800">
@@ -611,47 +597,6 @@ function App() {
   const [metrics, setMetrics] = useState(null)
   const wsRef = useRef(null)
   const logsEndRef = useRef(null)
-  const stagesRef = useRef(stages)
-
-  useEffect(() => {
-    stagesRef.current = stages
-  }, [stages])
-
-  const generateSummary = (duration) => {
-    const s = stagesRef.current
-    const lines = []
-
-    const totalInput = s.fetch.input_size
-    const totalOutput = s.assemble.output_size
-    const overallRatio = totalInput > 0 ? ((1 - totalOutput / totalInput) * 100).toFixed(1) : 0
-
-    lines.push(`Total: ${formatBytes(totalInput)} -> ${formatBytes(totalOutput)} (${overallRatio}% reduction)`)
-    if (duration) lines.push(`Duration: ${formatDuration(duration)}`)
-    lines.push('')
-
-    const stageOrder = ['fetch', 'extract', 'assemble']
-    for (const key of stageOrder) {
-      const stage = s[key]
-      if (stage.status === 'complete') {
-        const reduction = stage.input_size > 0
-          ? ((1 - stage.output_size / stage.input_size) * 100).toFixed(0)
-          : 0
-        const fileCount = stage.file_count || stage.files?.length || 0
-        lines.push(`${stage.name}:`)
-        lines.push(`  ${formatBytes(stage.input_size)} -> ${formatBytes(stage.output_size)} (${reduction}% reduction, ${fileCount} files)`)
-        // Show extra stats for extract stage
-        if (key === 'extract' && stage.extra) {
-          const { signatures, examples, selected_examples } = stage.extra
-          if (signatures) lines.push(`  ${signatures} signatures, ${examples} examples -> ${selected_examples} selected`)
-        }
-      } else if (stage.status === 'error') {
-        lines.push(`${stage.name}: ERROR`)
-        if (stage.error) lines.push(`  ${stage.error}`)
-      }
-    }
-
-    return lines
-  }
 
   const fetchSources = async () => {
     try {
@@ -695,19 +640,61 @@ function App() {
     }
   }
 
+  const fetchStatus = async () => {
+    try {
+      const [statusRes, stagesRes] = await Promise.all([
+        fetch('/api/status'),
+        fetch('/api/stages')
+      ])
+      const status = await statusRes.json()
+      const stagesData = await stagesRes.json()
+
+      setRunning(status.is_running)
+
+      if (stagesData.length > 0) {
+        const stageKeys = ['fetch', 'extract', 'assemble']
+        const newStages = {}
+        stagesData.forEach((s, i) => {
+          const key = stageKeys[i]
+          if (key) {
+            newStages[key] = {
+              ...stages[key],
+              ...s,
+            }
+          }
+        })
+        setStages(prev => ({ ...prev, ...newStages }))
+      }
+
+      if (status.is_running) {
+        const metricsRes = await fetch('/api/metrics')
+        const metricsData = await metricsRes.json()
+        if (metricsData.validation) {
+          setValidation(metricsData.validation)
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch status:', err)
+    }
+  }
+
   useEffect(() => {
     fetchSources()
+    fetchStatus()
   }, [])
 
   useEffect(() => {
+    let cancelled = false
+
     const connect = () => {
+      if (cancelled) return
       const ws = new WebSocket(`ws://${window.location.hostname}:4000/ws`)
       wsRef.current = ws
 
       ws.onopen = () => setConnected(true)
       ws.onclose = () => {
         setConnected(false)
-        setTimeout(connect, 2000)
+        if (!cancelled) setTimeout(connect, 2000)
       }
 
       ws.onmessage = (e) => {
@@ -727,14 +714,6 @@ function App() {
           setRunning(false)
           setProgress({})
           if (msg.data) setMetrics(msg.data)
-          setTimeout(() => {
-            const summaryLines = generateSummary(msg.data?.total_duration)
-            setLogs(prev => [...prev, {
-              event: 'summary',
-              timestamp: new Date().toISOString(),
-              data: { lines: summaryLines }
-            }])
-          }, 100)
         }
 
         if (msg.event === 'pipeline_error') {
@@ -786,7 +765,10 @@ function App() {
     }
 
     connect()
-    return () => wsRef.current?.close()
+    return () => {
+      cancelled = true
+      wsRef.current?.close()
+    }
   }, [])
 
   useEffect(() => {

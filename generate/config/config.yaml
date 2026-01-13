@@ -14,7 +14,7 @@ llm:
   # model: "google/gemini-3-flash-preview"
   model: "anthropic/claude-opus-4.5"
   api_key_env: "OPENROUTER_API_KEY"
-  max_tokens: 4096
+  # max_tokens: removed to allow model's full output length
   temperature: 0.0
   max_retries: 3
   retry_delay: 2

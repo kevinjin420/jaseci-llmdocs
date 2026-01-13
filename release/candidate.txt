@@ -1,297 +1,409 @@
 # Jac Language Reference
 
-## Syntax & Types
+## 1. Syntax & Types
 
 ### Primitives & Collections
+
+| Type | Description | Example |
+|------|-------------|---------|
+| `int` | Integer | `42`, `-17` |
+| `float` | Floating point | `3.14`, `-0.5` |
+| `str` | String | `"hello"`, `f"value: {x}"` |
+| `bool` | Boolean | `True`, `False` |
+| `bytes` | Byte sequence | `b"data"` |
+| `any` | Any type | Dynamic typing |
+| `list[T]` | Mutable list | `[1, 2, 3]` |
+| `dict[K, V]` | Dictionary | `{"a": 1}` |
+| `set[T]` | Mutable set | `{1, 2, 3}` |
+| `tuple[T, ...]` | Immutable tuple | `(1, "a")` |
+| `frozenset[T]` | Immutable set | `frozenset({1, 2})` |
+
+### Type Annotations
+
 ```jac
+# Type unions
+has value: int | None;
+has data: str | int | float;
+
+# Has declarations with types
 has name: str;
 has age: int = 0;
-has score: float = 0.0;
-has active: bool = True;
 has items: list[str] = [];
-has data: dict[str, int] = {};
-has coords: tuple[int, int];
-has maybe_val: int | None = None;
-```
 
-### Control Flow
-```jac
-# Conditionals
-if age <= 12 { print("Child"); }
-elif age <= 19 { print("Teen"); }
-else { print("Adult"); }
+# Function return types
+def compute(x: int, y: int) -> int;
 
-# Loops
-for item in items { print(item); }
-for i in range(10) { print(i); }
-while count > 0 { count -= 1; }
-
-# Match
-match value {
-    case 1 => print("one");
-    case 2 => print("two");
-    case _ => print("other");
-}
-```
-
-### Functions & Lambdas
-```jac
-def compute(x: int, y: int) -> int {
-    return x + y;
-}
-
-def greet { print("Hello!"); }  # No params/return
-
-# Lambda
+# Lambda syntax
 transform = |x: int| -> int { x * 2 };
 ```
 
-### Entry Point
+### Control Flow
+
 ```jac
 with entry {
-    # Program starts here
-    print("Hello, Jac!");
+    age = 17;
+    
+    # if/elif/else
+    if age <= 12 {
+        print("Child");
+    } elif age <= 19 {
+        print("Teenager");
+    } else {
+        print("Adult");
+    }
+    
+    # for loop
+    for i in range(5) {
+        print(i);
+    }
+    
+    # while loop
+    count = 0;
+    while count < 3 {
+        print(count);
+        count += 1;
+    }
+    
+    # match/case
+    match age {
+        case 0..12: print("Child");
+        case 13..19: print("Teen");
+        case _: print("Adult");
+    }
 }
 ```
 
-## Archetypes
+---
 
-### Node - Graph Vertices
-`node Name { has attr: type; can ability with Walker entry { } }`
+## 2. Imports
+
+| Syntax | Description |
+|--------|-------------|
+| `import os;` | Simple import |
+| `import sys, json;` | Multiple imports |
+| `import datetime as dt;` | Aliased import |
+| `import from math { sqrt, pi }` | From import |
+| `import:py from module { func }` | Python interop |
+
+```jac
+import os;
+import sys, json;
+import datetime as dt;
+import from math { sqrt, pi, ceil }
+import:py from collections { defaultdict }
+
+with entry {
+    print(sqrt(16));        # 4.0
+    print(dt.datetime.now());
+    d = defaultdict(int);
+}
+```
+
+---
+
+## 3. Archetypes
+
+### Node
 
 ```jac
 node Person {
     has name: str;
-    has age: int;
+    has age: int = 0;
     
-    can greet with Visitor entry {
-        print(f"Hello from {self.name}");
+    def greet() -> str {
+        return f"Hello, I'm {self.name}";
     }
 }
-```
 
-### Edge - Typed Relationships
-`edge Name { has attr: type = default; }`
-
-```jac
-edge Knows {
-    has since: int = 2024;
-    has strength: int = 5;
-}
-
-edge WorksAt {
-    has position: str;
+# Inheritance
+node Employee(Person) {
+    has department: str;
     has salary: float;
 }
 ```
 
-### Walker - Mobile Computation
-`walker Name { has state: type; can ability with Node entry { visit [-->]; } }`
+### Edge
 
 ```jac
-walker Collector {
-    has data: list = [];
+edge Knows {
+    has since: int = 2024;
+    has strength: int = 1;
+}
 
+edge WorksAt {
+    has position: str;
+    has start_date: str;
+}
+```
+
+### Walker
+
+```jac
+walker Visitor {
+    has name: str;
+    has visited: list[str] = [];
+    
     can start with `root entry {
         visit [-->];
     }
-
-    can collect with Person entry {
-        self.data.append({"name": here.name});
+    
+    can meet with Person entry {
+        self.visited.append(here.name);
         visit [-->];
+    }
+    
+    can finish with exit {
+        print(f"Visited: {self.visited}");
     }
 }
 ```
 
-### Obj - Value Objects
+### Obj (Value Object)
+
 ```jac
 obj Rectangle {
     has width: float;
     has height: float;
     has area: float by postinit;
-
+    
     def postinit() -> None {
         self.area = self.width * self.height;
     }
+}
 
-    def scale(factor: float) -> None {
-        self.width *= factor;
-        self.height *= factor;
+with entry {
+    rect = Rectangle(width=5.0, height=3.0);
+    print(f"Area: {rect.area}");  # Area: 15.0
+}
+```
+
+### Enum
+
+```jac
+enum Role {
+    ADMIN,
+    USER,
+    VIEWER
+}
+
+enum Sentiment {
+    POSITIVE = "positive",
+    NEGATIVE = "negative",
+    NEUTRAL = "neutral"
+}
+```
+
+---
+
+## 4. Access Modifiers
+
+| Modifier | Scope | Default |
+|----------|-------|---------|
+| `:pub` | Public, accessible everywhere | Yes |
+| `:priv` | Private, same archetype only | No |
+| `:prot` | Protected, archetype + children | No |
+
+```jac
+obj PrivateExample {
+    has :priv secret: str;
+    has :prot internal: int = 42;
+    has :pub visible: str = "public";
+    
+    def :priv private_method() -> str {
+        return "Private";
+    }
+    
+    def :pub public_method() -> str {
+        return self.private_method();
     }
 }
-```
 
-### Enum - Enumerations
-```jac
-enum Role { ADMIN, USER, VIEWER }
-enum Sentiment { POSITIVE, NEGATIVE, NEUTRAL }
-```
-
-### Access Modifiers
-```jac
-obj Example {
-    has :priv secret: str;           # Private
-    has :pub public_val: int;        # Public (default)
-    def :priv helper() -> str { }    # Private method
+with entry {
+    ex = PrivateExample(secret="hidden");
+    print(ex.public_method());  # Works
+    # print(ex.secret);  # Error: private
 }
 ```
 
-## Graph Operations
+---
 
-### Connect Operators
+## 5. Graph Operations
+
+### Connection Operators
+
 | Operator | Description |
 |----------|-------------|
-| `++>` | Create forward edge (returns list of target nodes) |
-| `<++` | Create backward edge |
-| `<++>` | Create bidirectional edges |
-| `+>:Edge:+>` | Forward edge with type |
-| `<+:Edge:+>` | Bidirectional typed edge |
+| `++>` | Connect forward (create + connect) |
+| `<++` | Connect backward |
+| `<++>` | Bidirectional connection |
+| `+>` | Connect existing node forward |
+| `<+` | Connect existing node backward |
+| `+>:Edge:+>` | Typed edge forward |
+| `<+:Edge:+>` | Typed edge bidirectional |
+| `del` | Disconnect/delete |
 
-```jac
-with entry {
-    alice = Person(name="Alice", age=25);
-    bob = Person(name="Bob", age=30);
-    
-    root ++> alice;                           # Connect to root
-    alice ++> bob;                            # Forward edge
-    alice +>:Knows(since=2020):+> bob;       # Typed edge
-    alice <+:Knows(since=2020):+> bob;       # Bidirectional typed
-}
-```
+### Traversal Operators
 
-### Traverse Operators
-| Syntax | Description |
-|--------|-------------|
-| `[-->]` | All outgoing edges/nodes |
-| `[<--]` | All incoming edges/nodes |
+| Operator | Description |
+|----------|-------------|
+| `[-->]` | All forward connections |
+| `[<--]` | All backward connections |
 | `[<-->]` | Both directions |
-| `[-->:EdgeType:]` | Filter by edge type |
-| `[-->(\`?NodeType)]` | Filter by node type |
+| `[-->:EdgeType:]` | Typed edge traversal |
+| `[-->(\`?NodeType)]` | Node type filter |
+| `(?attr == val)` | Attribute filter |
 
-### Filter Syntax
 ```jac
-# Get connected nodes
-people = [root --> Person];
+node Person { has name: str; }
+edge Knows { has years: int = 1; }
 
-# Filter by type
-adults = [root --> (`?Person)];
-
-# Filter by attribute
-seniors = [root --> (`?Person)](?age >= 65);
-
-# Filter by edge type
-friends = [alice -->:Knows:];
-
-# Combined
-close_friends = [alice -->:Knows:(`?Person)](?strength > 7);
-```
-
-### Visit & Traversal
-```jac
-walker Traverser {
-    can traverse with entry {
-        visit [-->];              # Visit forward connections
-        visit [<--];              # Visit backward connections
-        visit [<-->];             # Visit both directions
-        
-        visit [-->] else {        # Handle end of path
-            print("End of path");
-            disengage;
-        }
-    }
-}
-```
-
-### Spawn
-```jac
 with entry {
-    root ++> Person(name="Alice");
+    # Create and connect
+    alice = root ++> Person(name="Alice");
+    bob = root ++> Person(name="Bob");
     
-    # Spawn walker at node
-    w = Collector() spawn root;
+    # Typed edge connection
+    alice[0] +>:Knows(years=5):+> bob[0];
     
-    # Access walker state after traversal
-    print(w.data);
+    # Bidirectional
+    alice[0] <++> bob[0];
+    
+    # Traversal with filters
+    people = [root --> Person];
+    friends = [alice[0] -->:Knows:];
+    old_friends = [alice[0] -->:Knows:](?years > 3);
 }
 ```
 
-## Abilities & Events
+---
+
+## 6. Abilities & Events
+
+### Ability Syntax
+
+| Pattern | Trigger |
+|---------|---------|
+| `can name with entry { }` | Any node entry |
+| `can name with exit { }` | Any node exit |
+| `can name with NodeType entry { }` | Specific node entry |
+| `can name with NodeType exit { }` | Specific node exit |
+| `can name with \`root entry { }` | Root node entry |
+
+### Execution Order
+
+1. Node's generic `entry` abilities
+2. Node's walker-specific `entry` abilities
+3. Walker's node-specific `entry` abilities
+4. Walker's node-specific `exit` abilities
+5. Node's walker-specific `exit` abilities
+6. Node's generic `exit` abilities
 
 ### Keywords
+
 | Keyword | Description |
 |---------|-------------|
 | `self` | Current archetype instance |
 | `here` | Current node being visited |
 | `visitor` | Walker visiting the node |
-| `root` | Graph root node |
-| `` `root `` | Root node type for matching |
+| `root` | Graph root reference |
+| `` `root `` | Root type annotation |
 
-### Entry/Exit Abilities
 ```jac
 node Room {
     has name: str;
     
-    can welcome with Visitor entry {
-        print(f"Welcome to {self.name}");
+    can welcome with entry {
+        print(f"Entering {self.name}");
     }
     
-    can farewell with Visitor exit {
-        print(f"Goodbye from {self.name}");
+    can greet_visitor with Visitor entry {
+        print(f"{visitor.name} entered {self.name}");
     }
 }
 
 walker Visitor {
+    has name: str;
+    
     can start with `root entry {
         visit [-->];
     }
     
-    can visit_room with Room entry {
-        print(f"Visiting {here.name}");
+    can explore with Room entry {
+        print(f"{self.name} exploring {here.name}");
         visit [-->];
-    }
-    
-    can leave_room with Room exit {
-        print(f"Leaving {here.name}");
-    }
-    
-    can finish with exit {
-        print("Walker finished");
     }
 }
 ```
 
-### Execution Order
-1. Node's generic `with entry` abilities
-2. Node's `with WalkerType entry` abilities  
-3. Walker's `with NodeType entry` abilities
-4. Walker's `with NodeType exit` abilities
-5. Node's `with WalkerType exit` abilities
-6. Node's generic `with exit` abilities
+---
 
-### Control Flow
-- `visit [-->]` - Queue nodes for traversal
-- `disengage` - Stop walker immediately
-- `report value` - Return value from walker
+## 7. Walker Control
+
+| Keyword | Description |
+|---------|-------------|
+| `spawn` | Start walker at node |
+| `visit` | Queue nodes for traversal |
+| `disengage` | Stop walker immediately |
+| `report` | Return value from walker |
+| `skip` | Skip current node processing |
 
 ```jac
-walker SearchWalker {
-    has target: str;
+walker Collector {
+    has data: list = [];
+    has target: str = "";
     has found: bool = False;
-
-    can search with Person entry {
-        if here.name == self.target {
-            self.found = True;
-            report here;    # Return the found node
-            disengage;      # Stop traversing
-        }
+    
+    can start with `root entry {
         visit [-->];
     }
+    
+    can collect with Person entry {
+        self.data.append(here.name);
+        
+        if here.name == self.target {
+            self.found = True;
+            report here;
+            disengage;  # Stop traversal
+        }
+        
+        visit [-->] else {
+            print("End of path");
+        }
+    }
+}
+
+with entry {
+    root ++> Person(name="Alice");
+    root ++> Person(name="Bob");
+    
+    c = Collector(target="Alice") spawn root;
+    print(c.data);
+    print(c.found);
 }
 ```
 
-## AI Integration
+---
+
+## 8. AI Integration
+
+### Configuration
+
+```jac
+import from byllm.lib { Model, Image, Video }
+
+glob llm = Model(model_name="gpt-4o-mini");
+```
 
 ### Basic LLM Functions
+
+| Syntax | Description |
+|--------|-------------|
+| `by llm()` | Basic LLM call |
+| `by llm(method="Reason")` | Chain-of-thought reasoning |
+| `by llm(method="ReAct")` | Reasoning with actions |
+| `by llm(model=var)` | Specific model |
+| `by llm(tools=[funcs])` | Tool use |
+
 ```jac
 import from byllm.lib { Model }
 glob llm = Model(model_name="gpt-4o-mini");
@@ -299,29 +411,33 @@ glob llm = Model(model_name="gpt-4o-mini");
 """Summarize the given text into 2-3 sentences."""
 def summarize(text: str) -> str by llm();
 
-with entry {
-    summary = summarize("Long article text here...");
-    print(summary);
-}
-```
-
-### Structured Output
-```jac
-import from byllm.lib { Model }
-glob llm = Model(model_name="gpt-4o-mini");
-
-enum Sentiment { POSITIVE, NEGATIVE, NEUTRAL }
-
 """Analyze the sentiment of the text."""
+enum Sentiment { POSITIVE, NEGATIVE, NEUTRAL }
 def get_sentiment(text: str) -> Sentiment by llm();
 
 with entry {
-    result = get_sentiment("I love this product!");
-    print(result);  # Sentiment.POSITIVE
+    text = "I absolutely love this product!";
+    print(summarize(text));
+    print(get_sentiment(text));  # Sentiment.POSITIVE
 }
 ```
 
-### Image/Video Analysis
+### Semstrings
+
+```jac
+"""A task routing system for customer support."""
+enum TaskType {
+    BILLING = "billing" :sem: """Financial and payment issues""",
+    TECHNICAL = "tech" :sem: """Software bugs and errors""",
+    GENERAL = "general" :sem: """General inquiries"""
+}
+
+"""Route the customer query to appropriate department."""
+def route_query(query: str) -> TaskType by llm();
+```
+
+### Multimodal
+
 ```jac
 import from byllm.lib { Model, Image, Video }
 glob llm = Model(model_name="gpt-4o");
@@ -334,196 +450,866 @@ def analyze_video(v: Video) -> str by llm();
 
 with entry {
     img = Image(url="https://example.com/photo.jpg");
-    description = describe_image(img);
+    print(describe_image(img));
     
     vid = Video(path="video.mp4", fps=1);
-    summary = analyze_video(vid);
+    print(analyze_video(vid));
 }
 ```
 
-### Semantic Strings (Semstrings)
+---
+
+## 9. File I/O & JSON
+
+| Function | Description |
+|----------|-------------|
+| `file.open(path, mode)` | Open file |
+| `file.read()` | Read contents |
+| `file.write(data)` | Write data |
+| `file.close()` | Close file |
+| `json.dumps(obj)` | Object to JSON string |
+| `json.loads(str)` | JSON string to object |
+
 ```jac
-enum AgentType {
-    RESEARCHER = "Handles web searches and information gathering" :sem:,
-    CODER = "Writes and reviews code" :sem:,
-    WRITER = "Creates and edits text content" :sem:
+import json;
+
+with entry {
+    # Write JSON
+    data = {"name": "Alice", "age": 30};
+    f = file.open("data.json", "w");
+    f.write(json.dumps(data));
+    f.close();
+    
+    # Read JSON
+    f = file.open("data.json", "r");
+    content = f.read();
+    f.close();
+    loaded = json.loads(content);
+    print(loaded["name"]);  # Alice
 }
 ```
 
-## Cloud & API
+---
 
-### Serve Walkers as Endpoints
+## 10. Cloud & API (jac serve)
+
+### Basic Setup
+
 ```bash
 jac serve main.jac
 ```
 
-### Walker Specs
+### Walker as Endpoint
+
 ```jac
+node Counter {
+    has value: int = 0;
+    
+    def increment() -> int {
+        self.value += 1;
+        return self.value;
+    }
+}
+
 walker get_counter {
     obj __specs__ {
-        static has auth: bool = False;      # Public endpoint
-        static has methods: list = ["GET"]; # HTTP methods
+        static has auth: bool = False;
+        static has methods: list = ["GET"];
     }
-
-    can get_counter_endpoint with `root entry {
-        counter_nodes = [root --> Counter];
-        if not counter_nodes {
+    
+    can endpoint with `root entry {
+        counters = [root --> Counter];
+        if not counters {
             counter = Counter();
             root ++> counter;
         } else {
-            counter = counter_nodes[0];
+            counter = counters[0];
         }
-        report {"value": counter.get_value()};
+        report {"value": counter.value};
+    }
+}
+
+walker increment_counter {
+    obj __specs__ {
+        static has auth: bool = False;
+        static has methods: list = ["POST"];
+    }
+    
+    can endpoint with `root entry {
+        counters = [root --> Counter];
+        if not counters {
+            counter = Counter();
+            root ++> counter;
+        } else {
+            counter = counters[0];
+        }
+        report {"value": counter.increment()};
     }
 }
 ```
 
-### Report for API Response
+### __specs__ Options
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `auth` | `bool` | Require authentication (default: True) |
+| `methods` | `list` | HTTP methods: `["GET"]`, `["POST"]`, etc. |
+| `path` | `str` | Custom endpoint path |
+| `as_query` | `list` | Parameters as query string |
+| `private` | `bool` | Hide from public API |
+
 ```jac
-walker create_post {
+walker search_users {
+    has query: str;
+    has limit: int = 10;
+    
+    obj __specs__ {
+        static has auth: bool = True;
+        static has methods: list = ["GET"];
+        static has path: str = "/api/users/search";
+        static has as_query: list = ["query", "limit"];
+    }
+    
+    can search with `root entry {
+        # query and limit come from ?query=...&limit=...
+        report {"query": self.query, "limit": self.limit};
+    }
+}
+```
+
+### File Upload
+
+```jac
+import from fastapi { UploadFile }
+
+walker upload_file {
+    has file: UploadFile;
+    
+    obj __specs__ {
+        static has auth: bool = False;
+    }
+    
+    can handle with `root entry {
+        content = self.file.file.read();
+        report {"filename": self.file.filename, "size": len(content)};
+    }
+}
+```
+
+---
+
+## 11. WebSocket
+
+```jac
+walker chat_handler {
+    has message: str = "";
+    
+    obj __specs__ {
+        static has methods: list = ["websocket"];
+        static has auth: bool = True;
+    }
+    
+    can on_connect with `root entry {
+        print("Client connected");
+    }
+    
+    can on_message with `root entry {
+        # Echo message back
+        socket.send(f"Received: {self.message}");
+        
+        # Broadcast to channel
+        socket.notify_channel("general", self.message);
+    }
+    
+    can on_disconnect with `root entry {
+        print("Client disconnected");
+    }
+}
+```
+
+### Socket Methods
+
+| Method | Description |
+|--------|-------------|
+| `socket.send(msg)` | Send to current client |
+| `socket.notify_users(users, msg)` | Send to specific users |
+| `socket.notify_channel(channel, msg)` | Broadcast to channel |
+| `socket.notify_clients(client_ids, msg)` | Send to client IDs |
+
+---
+
+## 12. Webhooks
+
+### Configuration
+
+```jac
+walker github_webhook {
+    has payload: dict;
+    
+    obj __specs__ {
+        static has auth: bool = False;
+        static has webhook: dict = {
+            "type": "header",
+            "name": "X-Hub-Signature-256"
+        };
+    }
+    
+    can handle with `root entry {
+        event = self.payload.get("action", "unknown");
+        report {"status": "processed", "event": event};
+    }
+}
+```
+
+### Webhook Types
+
+| Type | Location | Example |
+|------|----------|---------|
+| `header` | HTTP header | `X-Webhook-Key` |
+| `query` | Query parameter | `?key=...` |
+| `body` | Request body field | `{"key": "..."}` |
+
+Endpoint: `/webhook/walker/{walker_name}`
+
+---
+
+## 13. Scheduler
+
+### Trigger Types
+
+| Trigger | Parameters |
+|---------|------------|
+| `cron` | `hour`, `minute`, `day_of_week`, etc. |
+| `interval` | `seconds`, `minutes`, `hours` |
+| `date` | `run_date` |
+
+```jac
+walker daily_cleanup {
+    obj __specs__ {
+        static has private: bool = true;
+        static has schedule: dict = {
+            "trigger": "cron",
+            "hour": "2",
+            "minute": "0"
+        };
+    }
+    
+    can run with `root entry {
+        # Runs daily at 2:00 AM
+        print("Running cleanup...");
+    }
+}
+
+walker periodic_check {
+    obj __specs__ {
+        static has private: bool = true;
+        static has schedule: dict = {
+            "trigger": "interval",
+            "seconds": 30
+        };
+    }
+    
+    can run with `root entry {
+        print("Health check...");
+    }
+}
+
+walker one_time_task {
+    obj __specs__ {
+        static has private: bool = true;
+        static has schedule: dict = {
+            "trigger": "date",
+            "run_date": "2024-12-31 23:59:59"
+        };
+    }
+    
+    can run with `root entry {
+        print("Happy New Year!");
+    }
+}
+```
+
+---
+
+## 14. Async & Concurrency
+
+### Async Walker
+
+```jac
+async walker AsyncFetcher {
+    has results: list = [];
+    
+    can start with `root entry {
+        visit [-->];
+    }
+    
+    can fetch with DataNode entry {
+        data = await here.fetch_async();
+        self.results.append(data);
+        visit [-->];
+    }
+}
+```
+
+### Async Functions
+
+```jac
+async def fetch_data(url: str) -> dict {
+    response = await http.get(url);
+    return response.json();
+}
+
+async def process_all(urls: list[str]) -> list {
+    tasks = [fetch_data(url) for url in urls];
+    return await asyncio.gather(*tasks);
+}
+```
+
+### Task Management
+
+```jac
+with entry {
+    # Create async task
+    task = create_task(long_running_walker() spawn root);
+    
+    # Check status
+    print(task.__jac__.status);   # "pending", "running", "completed", "failed"
+    print(task.__jac__.reports);  # Results from report statements
+    print(task.__jac__.error);    # Error if failed
+}
+```
+
+---
+
+## 15. Permissions
+
+### Permission Levels
+
+| Level | Description |
+|-------|-------------|
+| `NoPerm` | No access |
+| `ReadPerm` | Read only |
+| `ConnectPerm` | Read + connect edges |
+| `WritePerm` | Full access |
+
+### Grant/Revoke
+
+```jac
+import from jac_cloud.core.architype { NoPerm, ReadPerm, ConnectPerm, WritePerm }
+
+with entry {
+    # Grant access to another user's root
+    _.allow_root(my_node, target_root, ReadPerm);
+    
+    # Grant on specific node
+    grant(my_node, WritePerm);
+    
+    # Revoke access
+    _.disallow_root(my_node, target_root);
+    revoke(my_node);
+}
+```
+
+### Custom Access Control
+
+```jac
+node SecureDocument {
+    has owner: str;
     has content: str;
-    has author: str;
-
-    can create with `root entry {
-        new_post = Post(content=self.content, author=self.author);
-        here ++> new_post;
-        report {"id": new_post.id, "status": "posted"};
-    }
-}
-```
-
-## Persistence
-
-### Global Variables
-```jac
-glob END = EndNode();  # Persistent global node
-
-with entry {
-    node_a ++> END;  # Connect to global
-}
-```
-
-### Graph Persistence
-Nodes and edges connected to `root` persist automatically in jac-cloud/jac-scale.
-
-## Patterns
-
-### Complete Graph Traversal Example
-```jac
-node Person {
-    has name: str;
-    has age: int;
-}
-
-edge Knows {
-    has since: int = 2024;
-}
-
-walker Collector {
-    has data: list = [];
-
-    can start with `root entry {
-        visit [-->];
-    }
-
-    can collect with Person entry {
-        self.data.append({"name": here.name, "age": here.age});
-        visit [-->];
-    }
-}
-
-with entry {
-    alice = Person(name="Alice", age=30);
-    bob = Person(name="Bob", age=25);
     
-    root ++> alice;
-    alice +>:Knows(since=2020):+> bob;
-
-    c = Collector() spawn root;
-    print(c.data);  # [{"name": "Alice", "age": 30}, {"name": "Bob", "age": 25}]
+    def __jac_access__(visitor: root) -> AccessLevel {
+        if visitor.id == self.owner {
+            return WritePerm;
+        }
+        return ReadPerm;
+    }
 }
 ```
 
-### Search with Early Exit
-```jac
-walker FindPerson {
-    has target_name: str;
-    has result: Person | None = None;
+---
 
+## 16. Persistence
+
+### Automatic Persistence
+
+Nodes connected to `root` are automatically persisted.
+
+```jac
+with entry {
+    # Automatically persisted (connected to root)
+    user = root ++> User(name="Alice");
+    
+    # Manual save for disconnected nodes
+    temp_node = Node(data="temp");
+    save(temp_node);
+    
+    # Commit changes
+    commit();
+    commit(User);  # Commit specific type
+}
+```
+
+### Global Nodes
+
+```jac
+node Config {
+    has settings: dict = {};
+}
+
+glob config = Config();  # Globally accessible, persisted
+
+with entry {
+    config.settings["theme"] = "dark";
+}
+```
+
+### References
+
+```jac
+with entry {
+    # Get node by reference ID
+    node = &"n::abc123-def456";
+    
+    # Store reference
+    ref_id = str(node.__jac__.id);
+}
+```
+
+---
+
+## 17. Testing
+
+### Test Blocks
+
+```jac
+test "basic arithmetic" {
+    assert 2 + 2 == 4;
+    assert 10 / 2 == 5;
+}
+
+test "node creation" {
+    p = Person(name="Test", age=25);
+    assert p.name == "Test";
+    assert p.age == 25;
+}
+
+test "graph operations" {
+    root ++> Person(name="Alice");
+    people = [root --> Person];
+    check len(people) == 1;  # Soft assertion (continues on fail)
+    assert people[0].name == "Alice";
+}
+
+test "walker traversal" {
+    root ++> Person(name="A");
+    root ++> Person(name="B");
+    
+    collector = Collector() spawn root;
+    assert len(collector.data) == 2;
+}
+```
+
+### Running Tests
+
+```bash
+jac test main.jac
+jac test main.jac -v  # Verbose
+```
+
+---
+
+## 18. Standard Library
+
+### Built-in Functions
+
+| Function | Description |
+|----------|-------------|
+| `print(*args)` | Output to console |
+| `input(prompt)` | Read user input |
+| `range(start, stop, step)` | Generate sequence |
+| `len(obj)` | Length of collection |
+| `enumerate(iter)` | Index-value pairs |
+| `type(obj)` | Get type |
+| `str(obj)` | Convert to string |
+| `int(obj)` | Convert to integer |
+| `float(obj)` | Convert to float |
+| `list(iter)` | Convert to list |
+| `dict(pairs)` | Convert to dict |
+
+### String Methods
+
+| Method | Description |
+|--------|-------------|
+| `.upper()` | Uppercase |
+| `.lower()` | Lowercase |
+| `.strip()` | Remove whitespace |
+| `.split(sep)` | Split string |
+| `.join(iter)` | Join strings |
+| `.replace(old, new)` | Replace substring |
+| `.startswith(s)` | Check prefix |
+| `.endswith(s)` | Check suffix |
+
+### List Methods
+
+| Method | Description |
+|--------|-------------|
+| `.append(x)` | Add to end |
+| `.extend(iter)` | Add multiple |
+| `.insert(i, x)` | Insert at index |
+| `.remove(x)` | Remove first match |
+| `.pop(i)` | Remove at index |
+| `.sort()` | Sort in place |
+| `.reverse()` | Reverse in place |
+
+### Dict Methods
+
+| Method | Description |
+|--------|-------------|
+| `.keys()` | All keys |
+| `.values()` | All values |
+| `.items()` | Key-value pairs |
+| `.get(k, default)` | Get with default |
+| `.update(d)` | Merge dicts |
+| `.pop(k)` | Remove key |
+
+---
+
+## 19. Deployment
+
+### Dockerfile
+
+```dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN pip install jaclang jac-cloud
+
+COPY . .
+
+EXPOSE 8000
+
+CMD ["jac", "serve", "main.jac", "--host", "0.0.0.0"]
+```
+
+### Kubernetes Deployment
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jac-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: jac-app
+  template:
+    metadata:
+      labels:
+        app: jac-app
+    spec:
+      containers:
+      - name: jac-app
+        image: myregistry/jac-app:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: jac-secrets
+              key: database-url
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jac-service
+spec:
+  selector:
+    app: jac-app
+  ports:
+  - port: 80
+    targetPort: 8000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: jac-ingress
+spec:
+  rules:
+  - host: api.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: jac-service
+            port:
+              number: 80
+```
+
+### Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | Database connection string |
+| `JAC_SECRET_KEY` | JWT signing key |
+| `JAC_DEBUG` | Enable debug mode |
+| `OPENAI_API_KEY` | LLM API key |
+
+---
+
+## 20. Patterns
+
+### Pattern 1: Graph Traversal with Collection
+
+```jac
+node Document {
+    has title: str;
+    has content: str;
+    has tags: list[str] = [];
+}
+
+walker DocumentCollector {
+    has collected: list[dict] = [];
+    has filter_tag: str = "";
+    
     can start with `root entry {
         visit [-->];
     }
-
-    can search with Person entry {
-        if here.name == self.target_name {
-            self.result = here;
-            report here;
-            disengage;
+    
+    can collect with Document entry {
+        if not self.filter_tag or self.filter_tag in here.tags {
+            self.collected.append({
+                "title": here.title,
+                "tags": here.tags
+            });
         }
         visit [-->];
     }
 }
 
 with entry {
-    root ++> Person(name="Alice", age=30);
-    root ++> Person(name="Bob", age=25);
+    root ++> Document(title="Guide", tags=["tutorial", "beginner"]);
+    root ++> Document(title="API Ref", tags=["reference", "advanced"]);
     
-    finder = FindPerson(target_name="Bob") spawn root;
-    print(finder.result.name);  # Bob
+    collector = DocumentCollector(filter_tag="tutorial") spawn root;
+    print(collector.collected);
 }
 ```
 
-### AI-Powered Node Processing
+### Pattern 2: AI-Powered Processing
+
 ```jac
 import from byllm.lib { Model }
 glob llm = Model(model_name="gpt-4o-mini");
 
-node Document {
+node Article {
+    has title: str;
     has content: str;
     has summary: str = "";
+    has sentiment: str = "";
 }
 
-"""Summarize the document in one sentence."""
-def summarize(text: str) -> str by llm();
+"""Summarize the article in 2 sentences."""
+def summarize(content: str) -> str by llm();
 
-walker Summarizer {
-    can process with Document entry {
-        here.summary = summarize(here.content);
-        print(f"Summarized: {here.summary}");
+"""Classify sentiment as positive, negative, or neutral."""
+def classify_sentiment(content: str) -> str by llm();
+
+walker ArticleProcessor {
+    can start with `root entry { visit [-->]; }
+    
+    can process with Article entry {
+        if not here.summary {
+            here.summary = summarize(here.content);
+            here.sentiment = classify_sentiment(here.content);
+        }
         visit [-->];
     }
 }
+```
 
-with entry {
-    doc = Document(content="Long document text...");
-    root ++> doc;
-    Summarizer() spawn root;
+### Pattern 3: API Endpoint Walker
+
+```jac
+node Note {
+    has title: str;
+    has content: str;
+    has created_at: str;
+}
+
+walker create_note {
+    has title: str;
+    has content: str;
+    
+    obj __specs__ {
+        static has auth: bool = True;
+        static has methods: list = ["POST"];
+    }
+    
+    can create with `root entry {
+        import datetime;
+        note = Note(
+            title=self.title,
+            content=self.content,
+            created_at=str(datetime.datetime.now())
+        );
+        root ++> note;
+        report {"id": str(note.__jac__.id), "title": note.title};
+    }
+}
+
+walker get_notes {
+    obj __specs__ {
+        static has auth: bool = True;
+        static has methods: list = ["GET"];
+    }
+    
+    can get with `root entry {
+        notes = [root --> Note];
+        report [{"title": n.title, "content": n.content} for n in notes];
+    }
 }
 ```
 
-## Quick Reference
+### Pattern 4: Multi-Agent Orchestration
 
-### Operators
-| Operator | Purpose |
-|----------|---------|
-| `++>` | Connect forward |
-| `<++` | Connect backward |
-| `<++>` | Connect bidirectional |
-| `+>:E:+>` | Typed forward edge |
-| `[-->]` | Traverse forward |
-| `[<--]` | Traverse backward |
+```jac
+import from byllm.lib { Model }
+glob llm = Model(model_name="gpt-4o");
+
+enum AgentType {
+    RESEARCHER :sem: """Finds and gathers information""",
+    WRITER :sem: """Creates written content""",
+    REVIEWER :sem: """Reviews and improves content"""
+}
+
+node Agent {
+    has agent_type: AgentType;
+    has result: str = "";
+}
+
+"""Determine which agent should handle this task."""
+def route_task(task: str) -> AgentType by llm();
+
+"""Execute the task based on agent type."""
+def execute_task(task: str, agent_type: AgentType) -> str by llm();
+
+walker Orchestrator {
+    has task: str;
+    has results: list[dict] = [];
+    
+    can start with `root entry {
+        agent_type = route_task(self.task);
+        agents = [root -->:AgentType:(`?Agent)](?agent_type == agent_type);
+        
+        if agents {
+            visit agents[0];
+        } else {
+            new_agent = Agent(agent_type=agent_type);
+            root ++> new_agent;
+            visit new_agent;
+        }
+    }
+    
+    can execute with Agent entry {
+        here.result = execute_task(self.task, here.agent_type);
+        self.results.append({
+            "agent": str(here.agent_type),
+            "result": here.result
+        });
+        report self.results;
+    }
+}
+```
+
+### Pattern 5: Caching Pattern
+
+```jac
+node CacheEntry {
+    has key: str;
+    has value: any;
+    has expires_at: float;
+}
+
+walker CacheManager {
+    has operation: str;  # "get", "set", "clear"
+    has key: str = "";
+    has value: any = None;
+    has ttl: int = 3600;
+    
+    obj __specs__ {
+        static has auth: bool = False;
+    }
+    
+    can manage with `root entry {
+        import time;
+        now = time.time();
+        
+        if self.operation == "get" {
+            entries = [root --> CacheEntry](?key == self.key);
+            if entries and entries[0].expires_at > now {
+                report {"hit": True, "value": entries[0].value};
+            } else {
+                report {"hit": False, "value": None};
+            }
+        } elif self.operation == "set" {
+            # Remove old entry
+            old = [root --> CacheEntry](?key == self.key);
+            for e in old { del root ++> e; }
+            
+            # Create new entry
+            entry = CacheEntry(
+                key=self.key,
+                value=self.value,
+                expires_at=now + self.ttl
+            );
+            root ++> entry;
+            report {"stored": True};
+        } elif self.operation == "clear" {
+            entries = [root --> CacheEntry];
+            for e in entries { del root ++> e; }
+            report {"cleared": len(entries)};
+        }
+    }
+}
+```
+
+---
+
+## Quick Reference Tables
+
+### Edge Operators
+
+| Operator | Direction | Creates Node |
+|----------|-----------|--------------|
+| `++>` | Forward | Yes |
+| `<++` | Backward | Yes |
+| `<++>` | Both | Yes |
+| `+>` | Forward | No |
+| `<+` | Backward | No |
+| `+>:E:+>` | Forward typed | No |
+| `<+:E:+>` | Both typed | No |
+
+### Walker Keywords
+
+| Keyword | Purpose |
+|---------|---------|
 | `spawn` | Start walker at node |
 | `visit` | Queue nodes to visit |
 | `disengage` | Stop walker |
 | `report` | Return value |
+| `skip` | Skip current node |
 
-### Keywords
+### Context Keywords
+
 | Keyword | Context |
 |---------|---------|
 | `self` | Current instance |
 | `here` | Current node (in walker) |
 | `visitor` | Visiting walker (in node) |
 | `root` | Graph root |
-| `` `root `` | Root type matcher |
-| `entry` | Enter event |
-| `exit` | Leave event |
+| `` `root `` | Root type annotation |
