@@ -1,0 +1,69 @@
+# Prompt files for each stage
+prompts:
+  extraction: "config/stage1_extract_prompt.txt"
+  merge: "config/merge_prompt.txt"
+  reduce: "config/merge_prompt.txt"
+  compress: "config/stage4_compress_prompt.txt"
+
+# Source documentation directory (fetched from github.com/jaseci-labs/jaseci)
+source_dir: "docs"
+
+# LLM API Configuration
+llm:
+  provider: "openrouter"
+  # model: "google/gemini-3-flash-preview"
+  model: "anthropic/claude-opus-4.5"
+  api_key_env: "OPENROUTER_API_KEY"
+  # max_tokens: removed to allow model's full output length
+  temperature: 0.0
+  max_retries: 3
+  retry_delay: 2
+
+# Processing options
+processing:
+  parallel: true
+  max_workers: 16
+  parallel_sections: true
+  section_workers: 8
+  chunk_size: 500
+  skip_patterns:
+    - "*.html"
+    - "*.css"
+    - "*.js"
+    - "index.md"
+    - "README.md"
+  categories: null
+
+# Validation settings
+validation:
+  min_size_ratio: 0.15
+  required_pattern_ratio: 0.6
+  critical_patterns:
+    - "++>"
+    - "-->"
+    - "by llm("
+    - "with entry"
+    - "spawn"
+    - "has .*:"
+
+# Stage 1: Topic Extraction
+extraction:
+  output_dir: "output/1_extracted"
+
+# Stage 2: Topic Merging
+merge:
+  max_workers: 16
+  output_dir: "output/2_merged"
+  max_chunk_size: 15000
+
+# Stage 3: Intelligent Summarization
+hierarchical_merge:
+  output_dir: "output/3_hierarchical"
+  target_ratio: 5
+  max_workers: 8
+  chunk_size: 8000
+
+# Stage 4: Final Minification (deterministic, no LLM)
+ultra_compression:
+  output_file: "jac_docs_final.txt"
+  output_dir: "output/4_final"

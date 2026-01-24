@@ -1,0 +1,74 @@
+sections:
+  - id: syntax
+    title: "Core Syntax"
+    description: "Types, variables, control flow, functions"
+    constructs: ["types", "control_flow", "functions", "lambda"]
+
+  - id: archetypes
+    title: "Archetypes"
+    description: "Node, edge, walker, object definitions"
+    constructs: ["node", "edge", "walker", "obj", "enum"]
+
+  - id: graph_ops
+    title: "Graph Operations"
+    description: "Creating connections, traversal, filtering"
+    constructs: ["connect", "traverse", "filter", "spawn"]
+
+  - id: abilities
+    title: "Abilities & Events"
+    description: "Entry/exit triggers, spatial context"
+    constructs: ["can", "with_entry", "with_exit", "here", "self", "visitor"]
+
+  - id: ai
+    title: "AI Integration"
+    description: "LLM delegation, tools, semantic types"
+    constructs: ["by_llm", "tools", "sem", "Model"]
+
+  - id: cloud
+    title: "Jac Cloud & API"
+    description: "Server, endpoints, async, websocket"
+    constructs: ["serve", "endpoint", "async", "websocket", "__specs__"]
+
+  - id: persistence
+    title: "Persistence & Permissions"
+    description: "Saving, loading, access control"
+    constructs: ["save", "commit", "grant", "revoke", "root"]
+
+  - id: patterns
+    title: "Common Patterns"
+    description: "RAG, agents, CRUD, traversal patterns"
+    constructs: ["pattern"]
+
+keywords:
+  critical:
+    - "++>"
+    - "<++>"
+    - "-->"
+    - "<-->"
+    - "+>"
+    - "<+"
+    - "spawn"
+    - "visit"
+    - "report"
+    - "disengage"
+    - "here"
+    - "self"
+    - "visitor"
+    - "by llm"
+    - "with entry"
+    - "with exit"
+    - "`root"
+
+  archetypes:
+    - "node"
+    - "edge"
+    - "walker"
+    - "obj"
+    - "enum"
+    - "glob"
+
+  abilities:
+    - "can"
+    - "def"
+    - "has"
+    - "impl"

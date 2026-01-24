@@ -1,0 +1,73 @@
+You are assembling a Jac language reference from extracted signatures and examples.
+
+TARGET: 20-25KB in dense prose format. No markdown formatting.
+
+OUTPUT FORMAT:
+- Dense prose paragraphs, no markdown headers/tables/code fences
+- NO blank lines between paragraphs - continuous text
+- Inline code snippets within text flow
+- Semicolon-separated lists for related items
+- One paragraph per topic, combine related concepts
+- Example: "Types: int str float bool any. Collections: list[T] dict[K,V] set[T]. Union: type1|type2."
+
+MANDATORY TOPICS (cover all in dense prose):
+
+1. SYNTAX & TYPES: Primitives (int, float, str, bool, bytes, any). Collections (list, dict, set, tuple, frozenset) with type params. Type unions (int | None). Type annotations (has x: type, -> return_type). Control flow (if/elif/else, for, while, match/case). Functions (def with params, returns, defaults). Lambdas (|params| -> type { body }). Entry point (with entry { }).
+
+2. IMPORTS: Simple (import os;). Multiple (import sys, json;). Alias (import datetime as dt;). From (import from math { sqrt, pi }). Python interop (import:py from module { func }).
+
+3. ARCHETYPES: node (has, can, def, inheritance). edge (has, typed connections). walker (has, can with entry/exit, visit, spawn). obj (value objects, postinit). enum (enumerations with values). Include inline examples.
+
+4. ACCESS MODIFIERS: :pub (public, default), :priv (private), :prot (protected). Show on both has and def.
+
+5. GRAPH OPERATIONS: Connect operators (++>, <++, <++>, +>, <+, +>:Edge:+>, <+:Edge:+>). Disconnect (del). Traverse ([-->], [<--], [<-->]). Typed traverse ([-->:EdgeType:]). Node filter ([-->(`?NodeType)]). Attribute filter ((?attr == val)). Include examples.
+
+6. ABILITIES & EVENTS: Ability syntax (can name with Type entry/exit { }). Generic abilities (can name with entry { }). Execution order (node entry -> walker entry -> walker exit -> node exit). Keywords (self, here, visitor, root, `root).
+
+7. WALKER CONTROL: spawn (walker() spawn node). visit (visit [-->], visit [-->] else { }). disengage (stop walker). report (return values). skip (skip current node). Include traversal example.
+
+8. AI INTEGRATION: by llm() basic. by llm(method="Reason") chain-of-thought. by llm(method="ReAct") reasoning with actions. by llm(model=var) model selection. by llm(tools=[funcs]) tool use. glob llm = Model(model_name="..."). Semstrings ("""description""" and :sem:). Structured output with enums/objects. Multimodal (Image(url=), Video(path=, fps=)). Include example.
+
+9. FILE I/O & JSON: file.open(path, mode), file.read(), file.write(), file.close(). json.dumps(obj), json.loads(str).
+
+10. CLOUD & API: jac serve file.jac. Walker as endpoint. __specs__ config (auth, methods, path, as_query, private). static has for specs. report for response. File upload (UploadFile). Include endpoint example.
+
+11. WEBSOCKET: methods: ["websocket"] in __specs__. Socket methods (socket.notify_users(), notify_channels(), notify_clients()).
+
+12. WEBHOOKS: __specs__ webhook config with type (header/query/body) and name. Endpoint: /webhook/walker/{name}.
+
+13. SCHEDULER: __specs__ schedule config. Cron ({"trigger": "cron", "hour": "9", "minute": "0"}). Interval ({"trigger": "interval", "seconds": 30}). Date ({"trigger": "date", "run_date": "..."}). private: true for scheduled walkers.
+
+14. ASYNC: async walker, async def, await. Task status (task.__jac__.status, reports, error). Task queue (create_task()).
+
+15. PERMISSIONS: Levels (NoPerm, ReadPerm, ConnectPerm, WritePerm). Grant (_.allow_root(node, target_root, level), grant(node, level)). Revoke (_.disallow_root(node, target), revoke(node)). Custom (__jac_access__).
+
+16. PERSISTENCE: Auto-persist if connected to root. Manual (save(node), commit(), commit(Type)). Global nodes (glob). References (&"n::id").
+
+17. TESTING: test { } blocks. assert (fail on false). check (soft assertion).
+
+18. STANDARD LIBRARY: print, input, range, len, enumerate, type, str, int, float, list, dict. String methods (upper, lower, strip, split, join, replace). List methods (append, extend, insert, remove, pop, sort, reverse). Dict methods (keys, values, items, get, update, pop).
+
+19. DEPLOYMENT: Docker (FROM python, pip install jaclang, jac serve). Kubernetes (deployment, service, ingress). Environment variables (DATABASE_URL, JAC_SECRET_KEY, OPENAI_API_KEY).
+
+20. PATTERNS: Include 3-4 complete inline examples: graph traversal with collection, AI-powered processing, API endpoint walker, caching pattern.
+
+CRITICAL SYNTAX TO PRESERVE EXACTLY:
+- Edge: ++>, <++, <++>, -->, <-->, +>, <+, +>:Edge:+>, <+:Edge:+>
+- Walker: spawn, visit, disengage, report, skip, here, self, visitor, root, `root
+- Abilities: can, with entry, with exit
+- LLM: by llm(), glob llm, Model, Image, Video, :sem:, method="Reason", method="ReAct"
+- Types: has, def, ->, |
+- Specs: __specs__, static has, auth, methods, path, as_query, private, schedule, webhook
+- Permissions: NoPerm, ReadPerm, ConnectPerm, WritePerm, _.allow_root, _.disallow_root
+- Async: async walker, __jac__.status, create_task
+- Test: test { }, assert, check
+
+---
+
+EXTRACTED CONTENT:
+{content}
+
+---
+
+Generate the complete reference as dense prose. No markdown. No blank lines. All 20 topics must be covered. Inline code examples within paragraphs.
