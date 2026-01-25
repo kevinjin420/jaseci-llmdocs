@@ -46,6 +46,10 @@ class Validator:
         (r'\bprops\b', 'props keyword'),
         (r'\bcl\s*\{', 'client block'),
         (r'\bsv\s*\{', 'server block'),
+        (r'<[A-Z]\w*', 'JSX element'),
+        (r'/>', 'JSX self-closing'),
+        (r'\buseState\b', 'React useState'),
+        (r'\buseEffect\b', 'React useEffect'),
     ]
 
     def __init__(self, min_size_ratio=0.1, required_pattern_ratio=0.5):

@@ -60,13 +60,17 @@ class DeterministicExtractor:
         'serve': r'jac\s+serve',
         'client_block': r'\bcl\s*\{',
         'server_block': r'\bsv\s*\{',
+        'jsx_element': r'<[A-Z]\w*[^>]*/>|<[A-Z]\w*[^>]*>',
+        'jsx_fragment': r'<>|</>',
+        'react_hook': r'\buse[A-Z]\w*\s*\(',
     }
 
     CRITICAL_KEYWORDS = [
         '++>', '<++>', '-->', '<-->', '+>:', ':<+', '->:', ':->',
         'spawn', 'visit', 'report', 'disengage',
         'here', 'self', 'visitor', 'props', 'by llm',
-        'with entry', 'with exit', '`root', 'cl {', 'sv {'
+        'with entry', 'with exit', '`root', '.cl.jac', 'cl {', 'sv {',
+        '</', '/>', 'useState', 'useEffect'
     ]
 
     def __init__(self, config: dict = None):

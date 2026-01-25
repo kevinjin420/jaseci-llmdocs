@@ -29,6 +29,11 @@ sections:
     description: "Server, endpoints, async, websocket"
     constructs: ["serve", "endpoint", "async", "websocket", "__specs__", "cl", "sv"]
 
+  - id: frontend
+    title: "JSX & Frontend"
+    description: "Onelang frontend development with JSX in .cl.jac files, compiles to JavaScript"
+    constructs: ["jsx", "component", "hooks", "useState", "useEffect", "cl", ".cl.jac"]
+
   - id: persistence
     title: "Persistence & Permissions"
     description: "Saving, loading, access control"
@@ -60,6 +65,11 @@ keywords:
     - "with entry"
     - "with exit"
     - "`root"
+    - ".cl.jac"
+    - "cl {"
+    - "sv {"
+    - "</"
+    - "/>"
 
   archetypes:
     - "node"
