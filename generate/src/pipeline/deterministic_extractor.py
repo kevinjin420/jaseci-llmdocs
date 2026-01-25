@@ -50,7 +50,7 @@ class DeterministicExtractor:
         'by_llm': r'by\s+llm\s*\(',
         'spawn': r'\bspawn\b',
         'visit': r'\bvisit\s+\[',
-        'connect': r'\+\+>|<\+\+>|\+>|<\+',
+        'connect': r'\+\+>|<\+\+>|\+>:.*?:\+>|<\+:.*?:<\+',
         'traverse': r'\[.*?-->.*?\]|\[.*?<--.*?\]',
         'filter': r'\(\?\w+',
         'report': r'\breport\b',
@@ -58,13 +58,15 @@ class DeterministicExtractor:
         'async': r'\basync\s+(walker|def)',
         'websocket': r'websocket',
         'serve': r'jac\s+serve',
+        'client_block': r'\bcl\s*\{',
+        'server_block': r'\bsv\s*\{',
     }
 
     CRITICAL_KEYWORDS = [
-        '++>', '<++>', '-->', '<-->', '+>', '<+',
+        '++>', '<++>', '-->', '<-->', '+>:', ':<+', '->:', ':->',
         'spawn', 'visit', 'report', 'disengage',
-        'here', 'self', 'visitor', 'by llm',
-        'with entry', 'with exit', '`root'
+        'here', 'self', 'visitor', 'props', 'by llm',
+        'with entry', 'with exit', '`root', 'cl {', 'sv {'
     ]
 
     def __init__(self, config: dict = None):

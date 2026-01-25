@@ -12,17 +12,17 @@ OUTPUT FORMAT:
 
 MANDATORY TOPICS (cover all in dense prose):
 
-1. SYNTAX & TYPES: Primitives (int, float, str, bool, bytes, any). Collections (list, dict, set, tuple, frozenset) with type params. Type unions (int | None). Type annotations (has x: type, -> return_type). Control flow (if/elif/else, for, while, match/case). Functions (def with params, returns, defaults). Lambdas (|params| -> type { body }). Entry point (with entry { }).
+1. SYNTAX & TYPES: Primitives (int, float, str, bool, bytes, any). Collections (list, dict, set, tuple, frozenset) with type params. Type unions (int | None). Type annotations (has x: type, -> return_type). Control flow (if/elif/else, for, while, match/case). Functions (def with params, returns, defaults). Lambdas (lambda params -> type { body } or lambda params: expression). Entry point (with entry { }).
 
-2. IMPORTS: Simple (import os;). Multiple (import sys, json;). Alias (import datetime as dt;). From (import from math { sqrt, pi }). Python interop (import:py from module { func }).
+2. IMPORTS: Simple (import os;). Multiple (import sys, json;). Alias (import datetime as dt;). From (import from math { sqrt, pi }). Include (include module_path;). All imports work for both Python and Jac modules.
 
 3. ARCHETYPES: node (has, can, def, inheritance). edge (has, typed connections). walker (has, can with entry/exit, visit, spawn). obj (value objects, postinit). enum (enumerations with values). Include inline examples.
 
-4. ACCESS MODIFIERS: :pub (public, default), :priv (private), :prot (protected). Show on both has and def.
+4. ACCESS MODIFIERS: :pub (public, default), :priv (private), :protect (protected). Show on both has and def.
 
-5. GRAPH OPERATIONS: Connect operators (++>, <++, <++>, +>, <+, +>:Edge:+>, <+:Edge:+>). Disconnect (del). Traverse ([-->], [<--], [<-->]). Typed traverse ([-->:EdgeType:]). Node filter ([-->(`?NodeType)]). Attribute filter ((?attr == val)). Include examples.
+5. GRAPH OPERATIONS: Connect operators (++> forward, <++ reverse, <++> bidirectional). Typed connect (+>:Edge:+> forward, <+:Edge:<+ reverse, <+:Edge:+> bidirectional). Disconnect (del). Traverse ([-->], [<--], [<-->]). Typed traverse ([->:EdgeType:->]). Node filter ([-->(`?NodeType)]). Attribute filter ((?attr == val)). Include examples.
 
-6. ABILITIES & EVENTS: Ability syntax (can name with Type entry/exit { }). Generic abilities (can name with entry { }). Execution order (node entry -> walker entry -> walker exit -> node exit). Keywords (self, here, visitor, root, `root).
+6. ABILITIES & EVENTS: Ability syntax (can name with Type entry/exit { }). Generic abilities (can name with entry { }). Execution order (node entry -> walker entry -> walker exit -> node exit). Keywords (self, here, visitor, props, root, `root).
 
 7. WALKER CONTROL: spawn (walker() spawn node). visit (visit [-->], visit [-->] else { }). disengage (stop walker). report (return values). skip (skip current node). Include traversal example.
 
@@ -30,7 +30,7 @@ MANDATORY TOPICS (cover all in dense prose):
 
 9. FILE I/O & JSON: file.open(path, mode), file.read(), file.write(), file.close(). json.dumps(obj), json.loads(str).
 
-10. CLOUD & API: jac serve file.jac. Walker as endpoint. __specs__ config (auth, methods, path, as_query, private). static has for specs. report for response. File upload (UploadFile). Include endpoint example.
+10. CLOUD & API: jac serve file.jac. Walker as endpoint. __specs__ as nested obj with static has fields (obj __specs__ { static has auth: bool = False; static has methods: list = ["GET"]; }). report for response. File upload (UploadFile). Client/server blocks (cl { } for client-only code, sv { } for server-only code). Include endpoint example.
 
 11. WEBSOCKET: methods: ["websocket"] in __specs__. Socket methods (socket.notify_users(), notify_channels(), notify_clients()).
 
@@ -53,12 +53,12 @@ MANDATORY TOPICS (cover all in dense prose):
 20. PATTERNS: Include 3-4 complete inline examples: graph traversal with collection, AI-powered processing, API endpoint walker, caching pattern.
 
 CRITICAL SYNTAX TO PRESERVE EXACTLY:
-- Edge: ++>, <++, <++>, -->, <-->, +>, <+, +>:Edge:+>, <+:Edge:+>
-- Walker: spawn, visit, disengage, report, skip, here, self, visitor, root, `root
+- Edge: ++>, <++, <++>, -->, <-->, +>:Edge:+>, <+:Edge:<+, <+:Edge:+>, ->:EdgeType:->
+- Walker: spawn, visit, disengage, report, skip, here, self, visitor, props, root, `root
 - Abilities: can, with entry, with exit
 - LLM: by llm(), glob llm, Model, Image, Video, :sem:, method="Reason", method="ReAct"
 - Types: has, def, ->, |
-- Specs: __specs__, static has, auth, methods, path, as_query, private, schedule, webhook
+- Specs: obj __specs__ { static has auth: bool; static has methods: list; }, schedule, webhook, cl { }, sv { }
 - Permissions: NoPerm, ReadPerm, ConnectPerm, WritePerm, _.allow_root, _.disallow_root
 - Async: async walker, __jac__.status, create_task
 - Test: test { }, assert, check

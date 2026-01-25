@@ -27,7 +27,7 @@ class Validator:
         (r'with\s+exit', 'with exit'),
         (r'`root\s+entry', 'root entry'),
         (r'\bspawn\b', 'spawn'),
-        (r'import:py', 'import:py'),
+        (r'import\s+from\s+\w+\s*\{', 'import from module { }'),
         (r'\bhas\s+\w+\s*:', 'has x: type'),
         (r'\bnode\s+\w+', 'node definition'),
         (r'\bwalker\s+\w+', 'walker definition'),
@@ -43,6 +43,9 @@ class Validator:
         (r'\bvisit\b', 'visit'),
         (r'\bhere\b', 'here keyword'),
         (r'\bself\b', 'self keyword'),
+        (r'\bprops\b', 'props keyword'),
+        (r'\bcl\s*\{', 'client block'),
+        (r'\bsv\s*\{', 'server block'),
     ]
 
     def __init__(self, min_size_ratio=0.1, required_pattern_ratio=0.5):

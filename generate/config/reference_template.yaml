@@ -17,7 +17,7 @@ sections:
   - id: abilities
     title: "Abilities & Events"
     description: "Entry/exit triggers, spatial context"
-    constructs: ["can", "with_entry", "with_exit", "here", "self", "visitor"]
+    constructs: ["can", "with_entry", "with_exit", "here", "self", "visitor", "props"]
 
   - id: ai
     title: "AI Integration"
@@ -27,7 +27,7 @@ sections:
   - id: cloud
     title: "Jac Cloud & API"
     description: "Server, endpoints, async, websocket"
-    constructs: ["serve", "endpoint", "async", "websocket", "__specs__"]
+    constructs: ["serve", "endpoint", "async", "websocket", "__specs__", "cl", "sv"]
 
   - id: persistence
     title: "Persistence & Permissions"
@@ -45,8 +45,9 @@ keywords:
     - "<++>"
     - "-->"
     - "<-->"
-    - "+>"
-    - "<+"
+    - "+>:Edge:+>"
+    - "<+:Edge:<+"
+    - "->:EdgeType:->"
     - "spawn"
     - "visit"
     - "report"
@@ -54,6 +55,7 @@ keywords:
     - "here"
     - "self"
     - "visitor"
+    - "props"
     - "by llm"
     - "with entry"
     - "with exit"
