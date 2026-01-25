@@ -776,6 +776,7 @@ function App() {
   }, [logs])
 
   const runPipeline = async () => {
+    setRunning(true)
     setLogs([])
     setStages({
       fetch: { name: 'Fetch & Sanitize', status: 'pending', input_size: 0, output_size: 0, files: [], compression_ratio: 1, extra: {} },
@@ -790,14 +791,26 @@ function App() {
       await fetch('/api/run', { method: 'POST' })
     } catch (err) {
       console.error(err)
+      setRunning(false)
     }
   }
 
   const runStage = async (stageKey) => {
+    setRunning(true)
+    setStages(prev => ({
+      ...prev,
+      [stageKey]: { ...prev[stageKey], status: 'running', error: null }
+    }))
+
     try {
       await fetch(`/api/run/${stageKey}`, { method: 'POST' })
     } catch (err) {
       console.error(err)
+      setRunning(false)
+      setStages(prev => ({
+        ...prev,
+        [stageKey]: { ...prev[stageKey], status: 'error', error: 'Failed to start stage' }
+      }))
     }
   }
 
