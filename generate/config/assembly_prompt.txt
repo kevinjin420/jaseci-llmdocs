@@ -20,7 +20,7 @@ SPAWN KEYWORD: Walker spawning syntax: MyWalker() spawn node; or MyWalker() spaw
 
 IMPORT SYNTAX: Use "import from module { symbols }" for Jac. WRONG: import:py os. RIGHT: import os; or import from os { path }. For Python-specific: import from datetime { datetime }. Do NOT use import:py prefix.
 
-BY LLM SYNTAX: CORRECT: def func(x: str) -> str by llm; (semicolon, no parens). WRONG: def func(x: str) -> str by llm() or can func by llm. Must have glob llm = Model(...) declared. Import: import from jaclang.core.llms { Model }.
+BY LLM SYNTAX: "by llm" is a BUILT-IN language feature - NO IMPORT NEEDED. CORRECT: def func(x: str) -> str by llm; (semicolon, no parens). WRONG: def func(x: str) -> str by llm() or can func by llm. WRONG: import from jaclang.core.llms (this path does not exist). Just use "by llm" directly.
 
 ACCESS MODIFIERS: Syntax is keyword:modifier with NO SPACE. has:priv x: int; def:pub foo() { }. Three values only: :pub :priv :prot. WRONG: has :priv x or :priv has x or has:private.
 
@@ -44,7 +44,7 @@ MANDATORY TOPICS (cover all in dense prose):
 
 7. WALKER CONTROL: SPAWN SYNTAX: WalkerType() spawn target_node;. Examples: Greeter() spawn `root;, Explorer() spawn start_node;, walker(param=val) spawn here;. The spawn keyword comes AFTER walker instantiation, BEFORE target. VISIT: visit [-->]; or visit [-->] else { handle_leaf(); }. DISENGAGE: stops walker completely, returns early. REPORT: collects return values: report {"key": value};. SKIP: skips current iteration (like continue). Full example: walker Explorer { has found: list = []; can search with Node entry { if here.name == "target" { report here; disengage; } self.found.append(here); visit [-->]; } } with entry { result = Explorer() spawn `root; print(result); }.
 
-8. AI INTEGRATION: CORRECT IMPORT: import from jaclang.core.llms { Model }. REQUIRED PATTERN: glob llm = Model(model_name="gpt-4o"); at module level. Basic: def summarize(text: str) -> str by llm; (no parentheses after llm for basic). With model ref: def translate(text: str) -> str by llm(model=llm);. Method in object: obj Assistant { def answer(q: str) -> str by llm; }. Structured output: def analyze(text: str) -> AnalysisObj by llm;. Advanced: by llm(method="Reason") chain-of-thought, by llm(method="ReAct") tool-using agent, by llm(tools=[funcs]) tool use. Semstrings: has description: str """semantic hint for LLM"""; or :sem: annotation. Multimodal: Image(url=), Video(path=, fps=). COMMON MISTAKES: Wrong: by llm() with empty parens. Wrong: import from byllm. Wrong: using by llm without glob model declaration.
+8. AI INTEGRATION: "by llm" is a BUILT-IN FEATURE - NO IMPORT REQUIRED. Basic syntax: def summarize(text: str) -> str by llm; (semicolon terminator, no parentheses). Method in object: obj Assistant { def answer(q: str) -> str by llm; }. Structured output: def analyze(text: str) -> AnalysisObj by llm; (returns typed object). With parameters: def translate(text: str) -> str by llm(temperature=0.7);. Advanced: by llm(method="Reason") chain-of-thought, by llm(method="ReAct") tool-using agent. Semstrings provide context: has description: str """semantic hint for LLM""";. COMMON MISTAKES: Wrong: by llm() with empty parens - use by llm; instead. Wrong: import from jaclang.core.llms - this path does not exist, by llm is built-in.
 
 9. FILE I/O & JSON: file.open(path, mode), file.read(), file.write(), file.close(). json.dumps(obj), json.loads(str).
 
@@ -70,13 +70,13 @@ MANDATORY TOPICS (cover all in dense prose):
 
 20. DEPLOYMENT: Docker (FROM python, pip install jaclang, jac serve). Kubernetes (deployment, service, ingress). Environment variables (DATABASE_URL, JAC_SECRET_KEY, OPENAI_API_KEY).
 
-21. PATTERNS: Include 3-4 complete inline examples. Single-file fullstack: entire app in one .jac file with cl { } for frontend, sv { } for backend, walkers for API. Optional multi-file structure for larger projects: main.jac (backend), components/*.cl.jac (React components), hooks/*.cl.jac (custom hooks). Graph traversal with collection pattern. AI-powered processing with by llm(). API endpoint walker with __specs__.
+21. PATTERNS: Include 3-4 complete inline examples. Single-file fullstack: entire app in one .jac file with cl { } for frontend, sv { } for backend, walkers for API. Optional multi-file structure for larger projects: main.jac (backend), components/*.cl.jac (React components), hooks/*.cl.jac (custom hooks). Graph traversal with collection pattern. AI-powered processing with by llm; (no parens). API endpoint walker with __specs__.
 
 CRITICAL SYNTAX TO PRESERVE EXACTLY:
 - Entry Point: with entry { } (MUST include "with"), with entry:name { } for named
 - Spawn: Walker() spawn node; (spawn AFTER instantiation, BEFORE target)
 - Import: import from module { symbols } or import module; (NO import:py prefix)
-- LLM: def func() -> T by llm; (semicolon terminator, no parens). Requires: import from jaclang.core.llms { Model }; glob llm = Model(model_name="...");
+- LLM: def func() -> T by llm; (semicolon terminator, no parens). BUILT-IN - no import needed. Do NOT use import from jaclang.core.llms
 - Access: has:priv x (NO space between keyword and modifier), :pub :priv :prot only
 - Permissions: node.__jac__.grant(root, WritePerm), node.__jac__.revoke(root)
 - Connect: ++>, <++, <++>, +>:EdgeType:+> (typed edge), +>:Edge:attr=val:+> (with attributes)
@@ -92,6 +92,7 @@ CRITICAL SYNTAX TO PRESERVE EXACTLY:
 COMMON MISTAKES TO WARN AGAINST:
 - WRONG: entry { } | RIGHT: with entry { } (MUST have "with" keyword)
 - WRONG: by llm() with empty parens | RIGHT: by llm; (semicolon, no parens)
+- WRONG: import from jaclang.core.llms { Model } | RIGHT: by llm is built-in, no import needed
 - WRONG: import:py os | RIGHT: import os; or import from os { path }
 - WRONG: spawn Walker() on node | RIGHT: Walker() spawn node; (spawn comes after instantiation)
 - WRONG: has :priv: x or :priv has x | RIGHT: has:priv x (no space, modifier after keyword)
