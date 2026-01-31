@@ -1,43 +1,257 @@
-Jac is a onelang that supersets Python and JavaScript, enabling developers to build fullstack applications spanning frontend, backend, and AI under one unified language; Jac compiles to Python for backend and AI workloads while compiling to JavaScript for frontend, with seamless interoperability allowing you to write once and deploy anywhere without context switching between languages.
+# JAC LANGUAGE REFERENCE
 
-SYNTAX AND TYPES: Jac supersets Python syntax with curly braces and an enhanced type system supporting primitives int, float, str, bool, bytes, any and collections list[T], dict[K,V], set[T], tuple, frozenset with type parameters; type unions use the pipe operator as in int | None; type annotations appear with has x: type for fields and -> return_type for functions; control flow uses if condition { } elif condition { } else { } and for item in items { } and while condition { }; the Jac-specific for loop syntax is for i = 0 to i < 10 by i += 1 { print(i); } which provides explicit initialization, condition, and increment; match/case statements use match status { case Status.PENDING { print("Waiting"); } case Status.ACTIVE { print("Active"); } }; standalone functions use def as in def func_name(param: type) -> return_type { body } and CRITICAL: can is ONLY for abilities with event clauses like can name with Type entry { } and never for standalone functions; lambdas use |params| -> type { body }; the entry point MUST use with entry { } and NEVER entry { } alone, for example with entry { print("hello"); } is correct while entry { } without the with keyword is WRONG; named entry points use with entry:main { }; global variables at module level use glob config: Config = Config(); and to modify globals inside functions use global varname; statement.
+## 1. TYPES
+Primitives: int float str bool bytes any
+Collections: list[T] dict[K,V] set[T] tuple[T,...]
+Union: int|None; str|int
+Declaration: has x: int; has y: str = "default"
+Return: def f() -> int { }
+Type check: type(x) == int
 
-IMPORTS: Jac seamlessly imports from the Python ecosystem using standard patterns; simple import uses import os; and multiple imports use import sys, json; with aliases as import datetime as dt; the from-import pattern uses braces as import from math { sqrt, pi } and import from datetime { datetime, timedelta }; aliased imports within braces use import from module { Original as Alias }; include statements use include module_path; for Jac modules; DO NOT use the import:py prefix as it is incorrect, just use normal import syntax directly; any Python package works including sklearn, torch, numpy, requests, and the entire PyPI ecosystem.
+## 2. CONTROL
+If: if cond { } elif cond { } else { }
+For-each: for x in items { }
+For-range: for i=0 to i<10 by i+=1 { }
+While: while cond { }
+Match: match x { case 1 { } case 2 { } case _ { } }
+Break/continue: break; continue;
 
-ARCHETYPES: Jac provides five archetype kinds; node archetypes define graph vertices with has for fields, def for regular methods, and can with entry/exit for abilities triggered during traversal as in node Todo { has id: str; has title: str; has done: bool = False; def toggle() { self.done = not self.done; } can on_visit with Walker entry { print(f"Visited {self.title}"); } }; edge archetypes define typed connections between nodes with has for fields as in edge Road { has distance: float; has toll: bool = false; } and can include abilities triggered during traversal; walker archetypes define graph traversers with has for state, can with entry/exit for traversal abilities, and use visit, spawn, report, disengage, skip keywords as in walker Explorer { has found: list = []; can search with Node entry { report here; visit [-->]; } }; obj archetypes define value objects with has for fields, def for methods, and optional postinit for initialization logic as in obj Calculator { has value: int = 0; def add(n: int) -> int { self.value += n; return self.value; } }; enum archetypes define enumerations as in enum Status { PENDING, ACTIVE, COMPLETED } or with explicit values enum Color { RED = "red", GREEN = "green", BLUE = "blue" }.
+## 3. FUNCTIONS
+Def: def name(p: T, q: T = default) -> R { return val; }
+Lambda: |x: int| -> int { x * 2 }; |x| { x + 1 }
+Glob: glob config: dict = {"debug": True};
+Nested: def outer() { def inner() { } }
 
-ACCESS MODIFIERS: Three access levels exist being :pub for public which is the default, :priv for private, and :prot for protected; the syntax places the modifier AFTER the keyword with NO space between them; for fields use has:priv balance: float; and NOT has :priv balance or :priv has balance; for methods use def:pub get_data() -> str { } and for abilities use can:prot helper with entry { }; WRONG forms include has :priv: x and :priv has x and has:private since only :pub :priv :prot are valid; complete example: obj Account { has:pub name: str; has:priv balance: float; def:pub deposit(amt: float) { self.balance += amt; } def:priv internal() { } }.
+## 4. IMPORTS
+Standard: import os; import json;
+From: import from math { sqrt, floor }
+Alias: import from datetime { datetime as dt }
+Include: include module;
+WRONG: import:py os RIGHT: import os
 
-GRAPH OPERATIONS: Define edge types with edge Road { has distance: float; has toll: bool = false; }; simple forward connection uses a ++> b; and bidirectional uses a <++> b; typed edge without attributes uses a +>:Road:+> b; typed edge with single attribute uses a +>:Road:distance=100.5:+> b; multiple attributes use a +>:Road:distance=100.5:toll=true:+> b; disconnect specific edge with del a --> b; disconnect all incoming to b with del --> b; disconnect all outgoing from a with del a -->; traversal operators are [-->] for forward, [<--] for backward, [<-->] for both directions; typed traversal uses [-->:Road:] or [->:Road:->]; node type filter uses [-->(`?City)] to filter by node type; attribute filter uses [-->](?population > 1000000) to filter by node attributes; combined filters use [-->(`?City)](?population > 1000000 and active == true); edge attribute filter during traversal uses [->:Friend:since > 2020:->]; chained multi-hop traversal uses [here ->:Friend:-> ->:Friend:->] for friends of friends.
+## 5. ARCHETYPES
+Node: node N { has f: T = default; can ability with W entry { } }
+Edge: edge E { has weight: float = 1.0; }
+Walker: walker W { has state: T; can act with N entry { visit [-->]; } }
+Object: obj O { has f: T; def method() -> R { return self.f; } }
+Enum: enum E { A, B = 1, C = "val" }
 
-ABILITIES AND EVENTS: Abilities use can with event clauses and ALWAYS require with ... entry or with ... exit; use def for regular methods without event triggers; node abilities trigger when walkers visit as in node Room { can on_enter with Visitor entry { print("Welcome"); } can on_exit with Visitor exit { print("Goodbye"); } }; walker abilities trigger on specific node types as in walker DataProcessor { can start with `root entry { visit [-->]; } can process with Person entry { print(here.name); } }; generic abilities trigger on any type using can name with entry { } without specifying a type; execution order is node entry ability, then walker entry ability, then walker exit ability, then node exit ability; key context keywords are self for the current archetype instance, here for the current node being visited, visitor for the walker visiting a node, props for walker properties accessed from nodes, root for the user's root node, and `root as the literal root type for abilities.
+node Todo { has id: str; has title: str; has done: bool = False; }
+edge Knows { has since: int; has strength: float = 1.0; }
+walker Finder { has target: str; can search with `root entry { visit [-->]; } }
+obj Calculator { has value: int = 0; def add(n: int) -> int { self.value += n; return self.value; } }
+enum Status { PENDING, ACTIVE, DONE }
 
-WALKER CONTROL: SPAWN SYNTAX places spawn AFTER walker instantiation and BEFORE target node as WalkerType() spawn target_node; examples include Greeter() spawn `root; and Explorer() spawn start_node; and walker(param=val) spawn here; WRONG syntax is spawn Walker() on node; the visit keyword queues nodes for traversal as visit [-->]; or with else clause visit [-->] else { handle_leaf(); } which executes when no nodes match; disengage stops the walker completely and returns early from traversal; report collects return values accessible via result.reports as report {"key": value}; or report here; skip skips current iteration like continue in loops; complete example: walker Explorer { has found: list = []; can search with Node entry { if here.name == "target" { report here; disengage; } self.found.append(here); visit [-->]; } } with entry { result = Explorer() spawn `root; print(result.reports); }.
+## 6. ACCESS
+Field: has:priv x: T; has:pub y: T; has:prot z: T;
+Method: def:pub m() { }; def:priv n() { }
+Ability: can:pub h with entry { }; can:priv p with N entry { }
+Walker: walker:priv W { }
+Only modifiers: :pub :priv :prot
+WRONG: has: priv x RIGHT: has:priv x
+WRONG: has :priv x RIGHT: has:priv x
 
-AI INTEGRATION: The by llm feature is a BUILT-IN language construct requiring NO IMPORT; basic syntax uses def summarize(text: str) -> str by llm; with semicolon terminator and no parentheses; method in object uses obj Assistant { def answer(q: str) -> str by llm; }; structured output returns typed objects as def analyze(text: str) -> AnalysisObj by llm; where AnalysisObj is a defined obj archetype; with parameters use def translate(text: str) -> str by llm(temperature=0.7); advanced methods include by llm(method="Reason") for chain-of-thought reasoning and by llm(method="ReAct") for tool-using agents; tools are passed as by llm(tools=[get_current_time, search_web]); semstrings provide semantic hints for LLM context as has description: str """semantic hint for LLM"""; streaming uses def stream_story(prompt: str) -> str by llm(stream=True); and iterate with for chunk in stream_story("Tell me a story") { print(chunk, end=""); }; inline expressions use response = "Explain quantum computing" by llm; COMMON MISTAKES: WRONG is by llm() with empty parentheses, RIGHT is by llm; with semicolon; WRONG is import from jaclang.core.llms { Model } since this path does not exist and by llm is built-in; pipeline processing chains LLM calls as result = text |> (lambda t: str -> str: t by llm("Correct grammar")) |> (lambda t: str -> str: t by llm("Translate to Spanish")).
+## 7. GRAPH
+Connect forward: a ++> b;
+Connect bidirectional: a <++> b;
+Connect typed: a +>:Edge:+> b;
+Connect with attrs: a +>:E:weight=0.5:+> b;
+Disconnect: del a --> b;
+Traverse forward: [-->]
+Traverse back: [<--]
+Traverse typed: [-->:E:]
+Traverse filter type: [-->(`?Node)]
+Traverse filter attr: [-->](?attr > val)
+Multi-hop: [-->:Friend:-> -->:Friend:->]
 
-FILE IO AND JSON: File operations use file.open(path, mode) returning a file handle, file.read() to read contents, file.write(data) to write, file.close() to close; JSON operations use import json; then json.dumps(obj) to serialize Python objects to JSON strings and json.loads(str) to parse JSON strings into Python objects; example: with entry { f = file.open("data.json", "r"); data = json.loads(f.read()); f.close(); }.
+node A { has name: str; }
+node B { has val: int; }
+edge Link { has weight: float; }
+with entry { a = A(name="x"); b = B(val=1); a ++> b; a +>:Link:weight=0.8:+> b; nodes = [a -->]; typed = [a -->:Link:]; filtered = [a -->](?val > 0); }
 
-CLOUD AND API: Start a server with jac start file.jac which was renamed from jac serve; walkers automatically become API endpoints accessible via HTTP; the __specs__ configuration MUST be a nested obj with static has fields and NOT a dict literal; correct form: walker MyEndpoint { has data: str; obj __specs__ { static has methods: list = ["GET", "POST"]; static has auth: bool = true; static has path_prefix: str = "/api/v1/custom"; static has as_query: list = ["param1"]; } can handle with `root entry { report {"status": "ok", "data": self.data}; } }; WRONG form is __specs__ = {"methods": [...]} which will not work; report returns response data to the client; file upload uses UploadFile type in walker fields; endpoints are accessible at /walker/walker_name; fullstack applications use cl { } blocks for frontend code that compiles to JavaScript and sv { } blocks for backend code that compiles to Python, all in the same .jac file or split into .cl.jac files for larger projects.
+## 8. ABILITIES
+Syntax: can name with Type entry { } or can name with Type exit { }
+Requires with...entry or with...exit always
+Use def for regular methods
+Context vars: self=instance here=node visitor=walker root=user_root `root=root_type
 
-WEBSOCKET: Configure websocket endpoints with methods: ["websocket"] in __specs__ as walker LiveUpdates { obj __specs__ { static has methods: list = ["websocket"]; } can handle with `root entry { } }; socket methods include socket.notify_users(user_ids, message) to notify specific users, socket.notify_channels(channel_names, message) to broadcast to channels, socket.notify_clients(client_ids, message) to notify specific client connections.
+node Room { can on_enter with Visitor entry { print(f"{visitor} entered {here}"); } can on_leave with Visitor exit { print(f"{visitor} left"); } }
+walker Visitor { has name: str; can start with `root entry { visit [-->]; } }
 
-WEBHOOKS: Configure webhook endpoints in __specs__ with type being header, query, or body and name for the parameter; example: walker GitHubWebhook { obj __specs__ { static has webhook: dict = {"type": "header", "name": "X-Hub-Signature-256"}; } can handle with `root entry { } }; webhook endpoints are accessible at /webhook/walker/walker_name.
+WRONG: can process(x: int) { } RIGHT: def process(x: int) { }
+WRONG: can act with Node { } RIGHT: can act with Node entry { }
 
-SCHEDULER: Configure scheduled execution in __specs__ with schedule configuration; cron scheduling uses {"trigger": "cron", "hour": "9", "minute": "0"} for daily at 9 AM; interval scheduling uses {"trigger": "interval", "seconds": 30} for every 30 seconds; date scheduling uses {"trigger": "date", "run_date": "2024-12-31T23:59:59"} for one-time execution; scheduled walkers should use private: true in __specs__ to prevent HTTP access; example: walker DailyReport { obj __specs__ { static has schedule: dict = {"trigger": "cron", "hour": "9", "minute": "0"}; static has private: bool = true; } can generate with `root entry { } }.
+## 9. WALKERS
+Spawn: Walker() spawn node;
+Visit: visit [-->]; visit [<--]; visit [-->:E:];
+Visit else: visit [-->] else { print("no nodes"); }
+Report: report value;
+Disengage: disengage;
+Skip: skip;
+Results: result = W() spawn n; data = result.reports;
 
-ASYNC: Async walkers and functions use async keyword; async walker DataFetcher { has url: str; async can fetch with `root entry { data = await http_get(self.url); report data; } }; async functions use async def fetch_data() -> dict { return await http_get(url); }; task status is accessible via task.__jac__.status for current state, task.__jac__.reports for collected reports, task.__jac__.error for any error; task queue uses create_task() to spawn background tasks.
+walker Collector { has items: list = []; can start with `root entry { visit [-->]; } can gather with Item entry { self.items.append(here.data); report here.data; } }
+with entry { root ++> Item(data="a"); root ++> Item(data="b"); result = Collector() spawn root; all_items = result.reports; }
 
-PERMISSIONS: Access the __jac__ anchor on any node for permission operations; permission levels from lowest to highest are NoPerm, ReadPerm, ConnectPerm, WritePerm which must be imported from jaclang.core.permissions; grant permissions with node.__jac__.grant(target_root, WritePerm); or node.__jac__.grant(user_root, ReadPerm); revoke permissions with node.__jac__.revoke(target_root); check permissions with node.__jac__.check_access(some_root, ReadPerm) which returns bool; WRONG syntax is grant(node, perm) as the method is called on the node's __jac__ anchor; custom access control defines __jac_access__ method on node as node SecureData { has secret: str; has allowed_roots: list = []; can __jac_access__(caller: Root) -> bool { return caller in self.allowed_roots; } }.
+WRONG: spawn Walker() on node RIGHT: Walker() spawn node
+WRONG: Walker().spawn(node) RIGHT: Walker() spawn node
 
-PERSISTENCE: Nodes connected to root auto-persist across requests; manual save uses node = here ++> Item(name="test"); save(node); commit(); to explicitly persist; reference nodes by ID with item = &item_id; using the ampersand operator; delete and commit with del item; commit(); to remove from persistence; commit specific type with commit(Item); to persist all instances of a type; global nodes use glob keyword for persistent state across requests as glob counter: Counter = Counter(); at module level.
+## 10. BY_LLM
+Basic: def f(x: str) -> str by llm;
+Structured: def f() -> MyObj by llm;
+Options: by llm(temperature=0.7); by llm(method="Reason"); by llm(stream=True);
+Semstring: has desc: str """hint for LLM""";
+Inline: result = "prompt" by llm;
+No import needed; builtin
 
-TESTING: Test blocks use test { } syntax with descriptive names; assert fails the test on false as assert len(result) == 3; check provides soft assertion that continues execution as check value > 0; complete example: test walker_collects_data { root ++> DataNode(value=1); root ++> DataNode(value=2); root ++> DataNode(value=3); result = root spawn Collector(); assert len(result.reports) == 3; assert sum(result.reports) == 6; }.
+def classify(text: str) -> str by llm;
+def extract_entities(text: str) -> list[str] by llm;
+obj Person { has name: str """person's full name"""; has age: int """age in years"""; }
+def parse_person(text: str) -> Person by llm;
 
-STANDARD LIBRARY: Built-in functions include print for output, input for user input, range for sequences, len for length, enumerate for indexed iteration, type for type checking, str int float for conversion, list dict set for collection construction; string methods include upper() lower() strip() split(sep) join(iterable) replace(old, new) startswith(prefix) endswith(suffix) find(sub); list methods include append(item) extend(iterable) insert(index, item) remove(item) pop(index) sort() reverse() index(item) count(item); dict methods include keys() values() items() get(key, default) update(other) pop(key) setdefault(key, default) clear().
+WRONG: by llm() RIGHT: by llm;
+WRONG: by llm("prompt") RIGHT: def f() -> T by llm;
+WRONG: import llm RIGHT: (no import needed)
 
-JSX AND FRONTEND: Jac supports reactive UIs that compile to JavaScript using cl { } client blocks; server block defines backend: sv { walker get_data { obj __specs__ { static has methods: list = ["get"]; static has auth: bool = false; } can fetch with `root entry { report {"data": "hello"}; } } }; client block defines frontend: cl { has count: int = 0; has data: str = ""; can with entry { response = fetch("/walker/get_data"); data = response.get("data", ""); } can with [count] entry { print(f"Count changed: {count}"); } can with exit { print("Cleanup"); } def increment() { count += 1; } <div><p>f"Count: {count}"</p><button onClick={increment}>"+"</button></div> }; mount effect uses can with entry { } equivalent to useEffect with empty deps; dependency effect uses can with [dep] entry { } to run when dep changes; multiple dependencies use can with (a, b) entry { }; cleanup uses can with exit { } for unmount logic; JSX syntax uses <Component prop={value} /> for components, {expression} for interpolation, onClick={handler} for events; components are functions returning JSX as def:pub Greeting(props: dict) -> any { return <h1>Hello, {props.name}!</h1>; }; file organization can be single .jac with sv/cl blocks or split .cl.jac files for larger projects; fragments use <>{children}</> for multiple elements without wrapper.
+## 11. FILE_JSON
+File: f = file.open(path, "r"); content = f.read(); f.close();
+Write: f = file.open(path, "w"); f.write(data); f.close();
+JSON: s = json.dumps(obj); obj = json.loads(s);
 
-DEPLOYMENT: Docker deployment uses FROM python:3.11-slim then RUN pip install jaclang then COPY . /app then WORKDIR /app then CMD ["jac", "start", "main.jac"]; Kubernetes deployment includes deployment yaml with replicas, container spec, environment variables, and service yaml with port configuration; essential environment variables are DATABASE_URL for persistence connection, JAC_SECRET_KEY for authentication, OPENAI_API_KEY for LLM features, JAC_HOST and JAC_PORT for server binding.
+## 12. API
+Start: jac start file.jac
+Walker as endpoint: walker becomes HTTP endpoint automatically
+Specs: obj __specs__ { static has methods: list = ["GET"]; static has auth: bool = true; static has path_prefix: str = "/api"; }
 
-PATTERNS: Single-file fullstack pattern combines frontend and backend in one .jac file: sv { node Item { has id: str; has name: str; } walker ListItems { obj __specs__ { static has methods: list = ["get"]; } can list with `root entry { items = [-->(`?Item)]; report [{"id": i.id, "name": i.name} for i in items]; } } walker CreateItem { has name: str; obj __specs__ { static has methods: list = ["post"]; } can create with `root entry { item = here ++> Item(id=str(uuid4()), name=self.name); report {"id": item[0].id, "name": item[0].name}; } } } cl { has items: list = []; has newName: str = ""; can with entry { response = fetch("/walker/ListItems"); items = response.get("reports", [[]])[0]; } def addItem() { if newName { fetch("/walker/CreateItem", {"name": newName}); newName = ""; response = fetch("/walker/ListItems"); items = response.get("reports", [[]])[0]; } } <div><input value={newName} onChange={|e| { newName = e.target.value; }} /><button onClick={addItem}>Add</button><ul>{[<li key={i["id"]}>{i["name"]}</li> for i in items]}</ul></div> }; graph traversal with collection pattern: walker Collector { has results: list = []; can start with `root entry { visit [-->]; } can collect with Item entry { self.results.append({"id": here.id, "name": here.name}); visit [-->]; } can finish with `root exit { report self.results; } }; AI-powered processing pattern: obj SentimentResult { has sentiment: str; has confidence: float; has keywords: list[str]; } def analyze_feedback(text: str) -> SentimentResult by llm; with entry { feedback = "Great product but shipping was slow"; result = analyze_feedback(feedback); print(f"Sentiment: {result.sentiment}, Confidence: {result.confidence}"); }; API endpoint walker with full specs: walker UserProfile { has user_id: str; obj __specs__ { static has methods: list = ["get", "post"]; static has auth: bool = true; static has path_prefix: str = "/api/v1"; static has as_query: list = ["user_id"]; } can get_profile with `root entry { user = [-->(`?User)](?id == self.user_id); if user { report {"id": user[0].id, "email": user[0].email}; } else { report {"error": "User not found"}; } } }.
+walker GetTodos { obj __specs__ { static has methods: list = ["GET"]; static has auth: bool = false; } can fetch with `root entry { report [{"id": "1", "title": "Task"}]; } }
+
+walker CreateTodo { has title: str; obj __specs__ { static has methods: list = ["POST"]; } can create with `root entry { report {"created": self.title}; } }
+
+WRONG: __specs__ = {"methods": ["GET"]} RIGHT: obj __specs__ { static has methods: list = ["GET"]; }
+WRONG: static has methods: dict = {"GET": true} RIGHT: static has methods: list = ["GET"];
+
+## 13. WEBSOCKET
+Spec: obj __specs__ { static has methods: list = ["websocket"]; }
+Notify users: socket.notify_users(user_ids, message);
+Notify channels: socket.notify_channels(channel_names, message);
+
+walker ChatStream { obj __specs__ { static has methods: list = ["websocket"]; } can stream with `root entry { socket.notify_users([root.id], {"msg": "hello"}); } }
+
+## 14. WEBHOOKS
+Spec: obj __specs__ { static has webhook: dict = {"type": "header", "name": "X-Signature"}; }
+Endpoint: /webhook/walker/name
+Types: header query body
+
+walker GithubHook { obj __specs__ { static has methods: list = ["POST"]; static has webhook: dict = {"type": "header", "name": "X-Hub-Signature-256"}; } can handle with `root entry { report {"received": true}; } }
+
+## 15. SCHEDULER
+Spec: obj __specs__ { static has schedule: dict = {"trigger": "cron", "hour": "9"}; static has private: bool = true; }
+Triggers: cron interval date
+
+walker DailyCleanup { obj __specs__ { static has schedule: dict = {"trigger": "cron", "hour": "0", "minute": "0"}; static has private: bool = true; } can run with `root entry { } }
+
+walker Heartbeat { obj __specs__ { static has schedule: dict = {"trigger": "interval", "minutes": "5"}; static has private: bool = true; } can ping with `root entry { } }
+
+## 16. ASYNC
+Async walker: async walker W { async can f with entry { await op(); } }
+Async def: async def fetch() -> str { return await http_get(url); }
+Task status: task.__jac__.status; task.__jac__.reports; task.__jac__.error;
+
+async walker DataFetcher { has url: str; async can fetch with `root entry { data = await http_get(self.url); report data; } }
+
+## 17. PERMISSIONS
+Grant: node.__jac__.grant(root, WritePerm);
+Revoke: node.__jac__.revoke(root);
+Check: node.__jac__.check_access(root, ReadPerm);
+Levels: NoPerm ReadPerm ConnectPerm WritePerm
+
+with entry { n = MyNode(); n.__jac__.grant(other_root, ReadPerm); if n.__jac__.check_access(other_root, WritePerm) { } n.__jac__.revoke(other_root); }
+
+## 18. PERSISTENCE
+Auto-persist: nodes connected to root persist automatically
+Manual: save(node); commit();
+Reference: &id
+Delete: del node; commit();
+Glob persist: glob counter: int = 0;
+
+with entry { root ++> Todo(title="task"); commit(); }
+
+## 19. TESTING
+Test block: test name { assert cond; check cond; }
+Assert: fails test on false
+Check: logs but continues
+
+test addition { assert 1 + 1 == 2; }
+test walker_works { root ++> Node(val=1); result = Collector() spawn root; assert len(result.reports) == 1; }
+
+## 20. STDLIB
+Builtins: print len range enumerate type str int float list dict set bool
+String: s.upper() s.lower() s.strip() s.split(sep) sep.join(list) s.replace(a,b) s.startswith(p) s.endswith(s)
+List: l.append(x) l.extend(iter) l.pop() l.pop(i) l.sort() l.reverse() l.index(x) l.count(x)
+Dict: d.keys() d.values() d.items() d.get(k) d.get(k,default) d.pop(k) d.update(other)
+Set: s.add(x) s.remove(x) s.discard(x) s.union(other) s.intersection(other)
+
+## 21. JSX
+Server block: sv { }
+Client block: cl { }
+Component: def:pub Name(props: dict) -> any { return <div>{props.value}</div>; }
+State: has count: int = 0; (auto useState)
+Mount: can with entry { }
+Unmount: can with exit { }
+Deps: can with [dep] entry { }
+Events: <button onClick={handler}>text</button>
+Conditional: if cond { <A /> } else { <B /> }
+List: for item in items { <Item data={item} /> }
+
+sv { walker GetData { obj __specs__ { static has methods: list = ["GET"]; } can fetch with `root entry { report {"items": [1,2,3]}; } } }
+
+cl { def:pub Counter() -> any { has count: int = 0; def inc() { count += 1; } return <div><p>{count}</p><button onClick={inc}>+</button></div>; } }
+
+cl { def:pub App() -> any { has data: list = []; async can with entry { result = root spawn GetData(); data = result.reports[0]["items"]; } return <ul>{for item in data { <li>{item}</li> }}</ul>; } }
+
+## 22. DEPLOY
+Dockerfile: FROM python:3.11-slim
+RUN pip install jaclang
+COPY . /app
+WORKDIR /app
+CMD ["jac", "start", "main.jac"]
+
+Env vars: DATABASE_URL JAC_SECRET_KEY OPENAI_API_KEY
+
+## 23. ENTRY
+Module entry: with entry { }
+WRONG: entry { } RIGHT: with entry { }
+
+with entry { print("program starts here"); root ++> MyNode(); }
+
+## PATTERNS
+
+### Pattern 1: Fullstack Single-File Todo App
+sv { node Todo { has id: str; has title: str; has done: bool = False; } walker ListTodos { obj __specs__ { static has methods: list = ["GET"]; } can list with `root entry { todos: list = []; for t in [-->(`?Todo)] { todos.append({"id": t.id, "title": t.title, "done": t.done}); } report todos; } } walker AddTodo { has title: str; obj __specs__ { static has methods: list = ["POST"]; } can add with `root entry { import uuid; t = here ++> Todo(id=str(uuid.uuid4()), title=self.title); report {"id": t[0].id, "title": t[0].title}; } } }
+
+cl { def:pub TodoApp() -> any { has todos: list = []; has newTitle: str = ""; async can with entry { result = root spawn ListTodos(); todos = result.reports[0] if result.reports else []; } async def addTodo() { if newTitle { result = root spawn AddTodo(title=newTitle); todos = todos + [result.reports[0]]; newTitle = ""; } } return <div><input value={newTitle} onChange={|e| { newTitle = e.target.value; }} /><button onClick={addTodo}>Add</button><ul>{for t in todos { <li>{t["title"]}</li> }}</ul></div>; } def:pub app() -> any { return <TodoApp />; } }
+
+### Pattern 2: Walker Graph Traversal
+node Person { has name: str; has age: int; }
+edge Knows { has since: int; }
+walker FindAdults { has adults: list = []; can start with `root entry { visit [-->]; } can check with Person entry { if here.age >= 18 { self.adults.append(here.name); report here.name; } visit [-->]; } can finish with `root exit { report {"count": len(self.adults), "names": self.adults}; } }
+with entry { root ++> Person(name="Alice", age=25); root ++> Person(name="Bob", age=15); root ++> Person(name="Carol", age=30); result = FindAdults() spawn root; print(result.reports); }
+
+### Pattern 3: API Endpoint with Specs
+walker UserProfile { has user_id: str; obj __specs__ { static has methods: list = ["GET"]; static has auth: bool = true; static has path_prefix: str = "/api/v1"; } can fetch with `root entry { user = [-->(`?User)](?id == self.user_id); if user { report {"id": user[0].id, "name": user[0].name, "email": user[0].email}; } else { report {"error": "not found"}; } } }
+
+walker UpdateProfile { has name: str = ""; has email: str = ""; obj __specs__ { static has methods: list = ["PUT"]; static has auth: bool = true; } can update with `root entry { user = [-->(`?User)](?id == root.id); if user { if self.name { user[0].name = self.name; } if self.email { user[0].email = self.email; } commit(); report {"updated": true}; } } }
+
+## QUICK REFERENCE
+Entry point: with entry { }
+Connect: ++> <++> +>:E:+>
+Traverse: [--> ] [<--] [-->:E:] [-->(`?T)] [-->](?a>v)
+Spawn: Walker() spawn node;
+Report: report val; result.reports
+Visit: visit [-->]; visit [-->] else { }
+Context: self here visitor root `root
+Access: :pub :priv :prot
+LLM: def f() -> T by llm;
+Specs: obj __specs__ { static has field: type = val; }
+Blocks: sv { } cl { }
+Test: test name { assert cond; }

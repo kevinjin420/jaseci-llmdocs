@@ -18,7 +18,6 @@ from ..pipeline.sanitizer import Sanitizer
 from ..pipeline.deterministic_extractor import DeterministicExtractor
 from ..pipeline.assembler import Assembler
 from ..pipeline.validator import Validator, JacCheckResult
-from ..pipeline.scoring import QualityScorer
 
 
 @dataclass
@@ -80,7 +79,6 @@ class PipelineRunner:
         self.sanitized_dir = self.root / "output" / "0_sanitized"
         self.extracted_dir = self.root / "output" / "1_extracted"
         self.final_dir = self.root / "output" / "2_final"
-        self.scores_dir = self.root / "scores"
 
         self.stages: dict[str, StageMetrics] = {
             "fetch": StageMetrics(name="Fetch & Sanitize"),
@@ -91,7 +89,6 @@ class PipelineRunner:
         self.overall_start: Optional[float] = None
         self.overall_end: Optional[float] = None
         self.final_validation: Optional[dict] = None
-        self.scorer = QualityScorer(self.scores_dir)
 
     async def emit(self, event: str, data: dict):
         await self.broadcast({
@@ -144,10 +141,6 @@ class PipelineRunner:
 
     def get_stage_details(self) -> list:
         return [v.to_dict() for v in self.stages.values()]
-
-    def _get_next_version(self) -> str:
-        """Generate next version string based on timestamp."""
-        return datetime.now().strftime("%Y%m%d_%H%M%S")
 
     async def run(self):
         if self.is_running:
@@ -430,22 +423,6 @@ class PipelineRunner:
                 on_progress=lambda c, t, m: progress_cb(c, t, f"jac check: {m}")
             )
 
-            version = self._get_next_version()
-            quality_score = self.scorer.score(
-                result, version,
-                jac_check_result=jac_check_result,
-                patterns_found=patterns,
-                token_count=token_count
-            )
-
-            baseline = self.scorer.get_baseline()
-            if baseline:
-                quality_score.regressions, quality_score.improvements = self.scorer.compare(
-                    quality_score, baseline
-                )
-
-            self.scorer.save_score(quality_score)
-
             self.final_validation = {
                 "is_valid": validation_result.is_valid and jac_check_result.pass_rate >= 80,
                 "issues": validation_result.issues,
@@ -461,15 +438,6 @@ class PipelineRunner:
                     "skipped": jac_check_result.skipped,
                     "pass_rate": jac_check_result.pass_rate,
                     "errors": jac_check_result.errors,
-                },
-                "quality_score": {
-                    "version": quality_score.version,
-                    "timestamp": quality_score.timestamp,
-                    "content_hash": quality_score.content_hash,
-                    "pattern_coverage": quality_score.pattern_coverage,
-                    "constructs": quality_score.constructs,
-                    "regressions": quality_score.regressions,
-                    "improvements": quality_score.improvements,
                 },
             }
 

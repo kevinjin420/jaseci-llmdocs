@@ -2,10 +2,10 @@
   "is_valid": false,
   "issues": [],
   "missing_patterns": [],
-  "patterns_found": 31,
+  "patterns_found": 30,
   "patterns_total": 32,
-  "output_size": 18249,
-  "token_count": 4247,
+  "output_size": 12376,
+  "token_count": 3696,
   "jac_check": {
     "total_blocks": 0,
     "passed": 0,
@@ -15,53 +15,57 @@
     "errors": []
   },
   "quality_score": {
-    "version": "20260130_215707",
-    "timestamp": "2026-01-30T21:57:07.801441",
-    "content_hash": "3602137ae6893807",
-    "pattern_coverage": 0.96875,
+    "version": "20260130_232220",
+    "timestamp": "2026-01-30T23:22:20.021533",
+    "content_hash": "85af5f10e7a49885",
+    "pattern_coverage": 0.9375,
     "constructs": [
       {
         "construct": "node",
-        "examples_found": 18,
+        "examples_found": 11,
         "examples_valid": 0
       },
       {
         "construct": "edge",
-        "examples_found": 8,
+        "examples_found": 4,
         "examples_valid": 0
       },
       {
         "construct": "walker",
-        "examples_found": 25,
+        "examples_found": 22,
         "examples_valid": 0
       },
       {
         "construct": "obj",
-        "examples_found": 15,
+        "examples_found": 20,
         "examples_valid": 0
       },
       {
         "construct": "can",
-        "examples_found": 36,
+        "examples_found": 34,
         "examples_valid": 0
       },
       {
         "construct": "spawn",
-        "examples_found": 8,
+        "examples_found": 12,
         "examples_valid": 0
       },
       {
         "construct": "visit",
-        "examples_found": 2,
+        "examples_found": 1,
         "examples_valid": 0
       },
       {
         "construct": "by_llm",
-        "examples_found": 0,
+        "examples_found": 1,
         "examples_valid": 0
       }
     ],
-    "regressions": [],
-    "improvements": []
+    "regressions": [
+      "Output size decreased significantly: 18,249 -> 12,376 bytes"
+    ],
+    "improvements": [
+      "Added by_llm examples (1)"
+    ]
   }
 }
