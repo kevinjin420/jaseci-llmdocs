@@ -1,0 +1,160 @@
+topics:
+  - id: intro
+    title: "JAC LANGUAGE"
+    prose: "Jac is a onelang superset of Python/JavaScript. Compiles to Python (backend/AI) or JavaScript (frontend). Write once, deploy anywhere."
+    constructs: []
+    max_examples: 0
+
+  - id: types
+    title: "TYPES"
+    prose: "Primitives: int float str bool bytes any. Collections: list[T] dict[K,V] set[T] tuple. Unions: int|None. Annotations: has x: T for fields, -> T for returns."
+    constructs: []
+    max_examples: 0
+
+  - id: control
+    title: "CONTROL FLOW"
+    prose: "if cond { } elif cond { } else { }. for x in items { }. for i=0 to i<10 by i+=1 { }. while cond { }. match x { case V { } }."
+    constructs: []
+    max_examples: 0
+
+  - id: functions
+    title: "FUNCTIONS"
+    prose: "def name(p: T) -> R { body }. Lambdas: |p| -> T { body }. Globals: glob var: T = val; at module level."
+    constructs:
+      - def
+      - glob
+    max_examples: 1
+
+  - id: imports
+    title: "IMPORTS"
+    prose: "import os; import from math { sqrt }; import from datetime { datetime as dt }; include module;. No import:py prefix."
+    constructs: []
+    max_examples: 0
+
+  - id: archetypes
+    title: "ARCHETYPES"
+    prose: "node: graph vertex with has fields, def methods, can abilities. edge: typed connection. walker: graph traverser. obj: value object. enum: enumeration."
+    constructs:
+      - node
+      - edge
+      - walker
+      - obj
+      - enum
+    max_examples: 2
+
+  - id: access
+    title: "ACCESS MODIFIERS"
+    prose: "has:priv f: T; def:pub m() { }; can:prot h with entry { }. Only :pub :priv :prot. No space between keyword and modifier."
+    constructs: []
+    max_examples: 0
+
+  - id: graph
+    title: "GRAPH OPERATIONS"
+    prose: "Connect: a ++> b forward, a <++> b bidirectional, a +>:Edge:+> b typed, a +>:E:attr=v:+> b with attrs. Disconnect: del a --> b. Traverse: [-->] forward, [<--] back, [-->:E:] typed. Filter: [-->(`?Node)] by type, [-->](?attr>v) by attr."
+    constructs:
+      - connect
+      - traverse
+      - filter
+    max_examples: 2
+
+  - id: abilities
+    title: "ABILITIES"
+    prose: "can name with Type entry { } or exit { }. Always requires with...entry/exit. Use def for regular methods. Keywords: self here visitor props root `root."
+    constructs:
+      - can
+      - with_entry
+      - with_exit
+    max_examples: 2
+
+  - id: walkers
+    title: "WALKER CONTROL"
+    prose: "Spawn: Walker() spawn node;. Visit: visit [-->]; visit [-->] else { }. Control: report val; disengage; skip;. Results: result.reports."
+    constructs:
+      - spawn
+      - visit
+      - report
+    max_examples: 2
+
+  - id: by_llm
+    title: "AI INTEGRATION"
+    prose: "def f(x: str) -> str by llm; (builtin, no import). Structured: def f() -> Obj by llm;. Params: by llm(temperature=0.7). Methods: by llm(method=\"Reason\"). Semstrings: has desc: str \"\"\"hint\"\"\";. Wrong: by llm() Right: by llm;"
+    constructs:
+      - by_llm
+    max_examples: 2
+
+  - id: file_json
+    title: "FILE AND JSON"
+    prose: "f=file.open(p,\"r\"); f.read(); f.write(s); f.close();. json.dumps(obj); json.loads(s);."
+    constructs: []
+    max_examples: 0
+
+  - id: api
+    title: "API ENDPOINTS"
+    prose: "jac start file.jac. Walkers become endpoints. Specs: obj __specs__ { static has methods: list=[\"GET\"]; static has auth: bool=true; }. Wrong: __specs__={\"methods\":[]}."
+    constructs:
+      - __specs__
+      - serve
+    max_examples: 1
+
+  - id: websocket
+    title: "WEBSOCKET"
+    prose: "obj __specs__ { static has methods: list=[\"websocket\"]; }. socket.notify_users(ids,msg); socket.notify_channels(names,msg);."
+    constructs:
+      - websocket
+    max_examples: 1
+
+  - id: scheduler
+    title: "SCHEDULER"
+    prose: "obj __specs__ { static has schedule: dict={\"trigger\":\"cron\",\"hour\":\"9\"}; static has private: bool=true; }. Triggers: cron interval date."
+    constructs: []
+    max_examples: 0
+
+  - id: async
+    title: "ASYNC"
+    prose: "async walker W { async can f with entry { await op(); } }. async def f() { }. task.__jac__.status/reports/error."
+    constructs:
+      - async
+    max_examples: 1
+
+  - id: permissions
+    title: "PERMISSIONS"
+    prose: "node.__jac__.grant(root, WritePerm); node.__jac__.revoke(root); node.__jac__.check_access(root, ReadPerm);. Levels: NoPerm ReadPerm ConnectPerm WritePerm."
+    constructs: []
+    max_examples: 0
+
+  - id: persistence
+    title: "PERSISTENCE"
+    prose: "Nodes connected to root auto-persist. save(node); commit();. Reference: &id. Delete: del node; commit();. Globals: glob var: T = val;."
+    constructs: []
+    max_examples: 0
+
+  - id: testing
+    title: "TESTING"
+    prose: "test name { assert cond; check cond; }."
+    constructs: []
+    max_examples: 0
+
+  - id: stdlib
+    title: "STANDARD LIBRARY"
+    prose: "print len range enumerate type str int float list dict set. String: upper() lower() strip() split() join(). List: append() extend() pop() sort(). Dict: keys() values() items() get()."
+    constructs: []
+    max_examples: 0
+
+  - id: jsx
+    title: "JSX AND FRONTEND"
+    prose: "sv { } for backend, cl { } for frontend. Effects: can with entry { } mount, can with [dep] entry { } dependency, can with exit { } cleanup. JSX: <Tag prop={val} /> {expr} onClick={fn}."
+    constructs:
+      - client_block
+      - server_block
+      - jsx_element
+    max_examples: 1
+
+  - id: patterns
+    title: "PATTERNS"
+    prose: null
+    constructs:
+      - walker
+      - node
+      - __specs__
+    max_examples: 3
+    full_examples: true

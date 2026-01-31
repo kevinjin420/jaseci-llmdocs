@@ -1,10 +1,11 @@
 """
-Single-pass LLM assembler for Jac documentation.
+DEPRECATED: LLM-based assembler for Jac documentation.
 
-Stage 2 of the lossless pipeline: assembles final reference from extracted content.
-Uses ONE LLM call with template-driven structure.
+This module uses LLM and produces non-deterministic output.
+Use template_assembler.TemplateAssembler instead for reproducible results.
 """
 
+import warnings
 from pathlib import Path
 from .llm import LLM
 from .deterministic_extractor import DeterministicExtractor, ExtractedContent
@@ -12,9 +13,19 @@ from .validator import Validator
 
 
 class Assembler:
-    """Assembles final reference document from extracted content."""
+    """
+    DEPRECATED: Use TemplateAssembler for deterministic output.
+
+    This class uses LLM and produces non-deterministic output.
+    """
 
     def __init__(self, llm: LLM, config: dict, on_progress=None):
+        warnings.warn(
+            "Assembler uses LLM and is non-deterministic. "
+            "Use template_assembler.TemplateAssembler instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         self.llm = llm
         self.config = config
         self.on_progress = on_progress or (lambda *a: None)
@@ -58,12 +69,18 @@ class Assembler:
 
 class LosslessPipeline:
     """
-    Two-stage lossless pipeline:
-    1. Deterministic extraction (no LLM)
-    2. Single-pass LLM assembly
+    DEPRECATED: Use PipelineRunner with TemplateAssembler instead.
+
+    This pipeline uses LLM assembly and produces non-deterministic output.
     """
 
     def __init__(self, config_path: Path):
+        warnings.warn(
+            "LosslessPipeline uses LLM and is non-deterministic. "
+            "Use PipelineRunner with TemplateAssembler instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         import yaml
         self.root = Path(__file__).parents[2]
 

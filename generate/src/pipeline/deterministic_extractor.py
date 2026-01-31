@@ -36,6 +36,26 @@ class ExtractedContent:
 class DeterministicExtractor:
     """Extracts content without LLM - purely deterministic."""
 
+    REJECTION_PATTERNS = [
+        r'\*\*Before\s*\(v[\d.]+',
+        r'\*\*After\s*\(v[\d.]+',
+        r'Renamed\s+to\s+`',
+        r'has\s+been\s+(renamed|deprecated|removed)',
+        r'(earlier|previous)\s+version',
+        r'v\d+\.\d+\.\d+\s+and\s+(earlier|later)',
+        r'^#{1,4}\s+\d+\.',
+        r'^\*\*[A-Z][a-z]+:?\*\*$',
+        r'```(bash|shell|console)',
+        r'The\s+`\w+`\s+command',
+        r'This\s+(feature|option|flag)',
+    ]
+
+    REJECTION_KEYWORDS = [
+        'deprecated', 'migration', 'upgrade', 'breaking change',
+        'v0.', 'v1.', 'earlier:', 'previously:',
+        'has been renamed', 'is now', 'instead of',
+    ]
+
     CONSTRUCT_PATTERNS = {
         'node': r'\bnode\s+\w+',
         'edge': r'\bedge\s+\w+',
@@ -152,6 +172,9 @@ class DeterministicExtractor:
             if not code or len(code) < 20:
                 continue
 
+            if not self._is_reference_content(code):
+                continue
+
             # Determine construct type(s) this example demonstrates
             construct_types = self._classify_code(code)
             keywords = self._find_keywords(code)
@@ -189,6 +212,23 @@ class DeterministicExtractor:
             if kw in code:
                 found.append(kw)
         return found
+
+    def _is_reference_content(self, code: str) -> bool:
+        """Return True if code is valid reference content, False if noise."""
+        for pattern in self.REJECTION_PATTERNS:
+            if re.search(pattern, code, re.MULTILINE | re.IGNORECASE):
+                return False
+
+        code_lower = code.lower()
+        rejection_count = sum(1 for kw in self.REJECTION_KEYWORDS if kw in code_lower)
+        if rejection_count >= 2:
+            return False
+
+        jac_indicators = ['node ', 'walker ', 'can ', 'has ', 'def ', 'with entry',
+                          '++>', 'spawn', 'visit', 'obj ', 'edge ']
+        has_jac = any(ind in code for ind in jac_indicators)
+
+        return has_jac
 
     def select_best_examples(self, content: ExtractedContent, max_per_type: int = 3) -> dict[str, list[CodeExample]]:
         """Select best examples for each construct type."""
@@ -255,7 +295,16 @@ class DeterministicExtractor:
                 if 'with entry' in ex.code.lower():
                     completeness += 5
 
-                return length_score + keyword_score + focus_score + completeness
+                # Penalize examples with noise markers
+                noise_penalty = 0
+                if 'renamed' in ex.code.lower():
+                    noise_penalty -= 30
+                if re.search(r'\*\*[A-Z]', ex.code):
+                    noise_penalty -= 20
+                if '```' in ex.code:
+                    noise_penalty -= 40
+
+                return length_score + keyword_score + focus_score + completeness + noise_penalty
 
             sorted_examples = sorted(examples, key=score, reverse=True)
 

@@ -1,43 +1,273 @@
-Jac is a onelang that supersets Python and JavaScript, enabling developers to build fullstack applications spanning frontend, backend, and AI under one unified language; Jac compiles to Python for backend and AI workloads while compiling to JavaScript for frontend, with seamless interoperability allowing developers to write once and deploy anywhere without context switching between languages.
+JAC LANGUAGE
+Jac is a onelang superset of Python/JavaScript. Compiles to Python (backend/AI) or JavaScript (frontend). Write once, deploy anywhere.
 
-SYNTAX AND TYPES: Jac supersets Python syntax with curly braces and an enhanced type system; primitives include int, float, str, bool, bytes, and any; collections include list, dict, set, tuple, and frozenset with type parameters like list[str] or dict[str, int]; type unions use the pipe operator as in int | None; type annotations appear with has for fields as has x: int and arrow syntax for return types as -> str; control flow uses if/elif/else with braces as if x > 0 { print("positive"); } elif x < 0 { print("negative"); } else { print("zero"); }; for loops iterate as for item in items { process(item); } or use the range-style syntax for i = 0 to i < 10 by i += 1 { print(i); }; while loops use while condition { body }; match/case statements pattern match as match status { case Status.PENDING { print("Waiting"); } case Status.ACTIVE { print("Active"); } }; standalone functions MUST use def as def func_name(param: type) -> return_type { body } and NEVER use can for standalone functions; CRITICAL: can is ONLY for abilities with event clauses like can name with Type entry { } and never for regular functions; lambdas use pipe syntax as |x: int| -> int { x * 2 }; entry points MUST use with entry { } and NEVER just entry { } as the with keyword is mandatory; named entry points use with entry:main { }; global variables at module level use glob config: Config = Config(); and to modify globals inside functions use global varname; statement.
+TYPES
+Primitives: int float str bool bytes any. Collections: list[T] dict[K,V] set[T] tuple. Unions: int|None. Annotations: has x: T for fields, -> T for returns.
 
-IMPORTS: Jac seamlessly imports from the Python ecosystem using standard import syntax; simple imports use import os; or import sys, json; for multiple modules; aliased imports use import datetime as dt;; from imports MUST use braces as import from math { sqrt, pi }; or import from datetime { datetime, timedelta };; aliased symbols use import from module { Original as Alias };; include statements use include module_path;; CRITICAL: do NOT use import:py prefix as this is WRONG; just use normal import syntax and any Python package works directly including sklearn, torch, numpy, and all standard library modules.
+CONTROL FLOW
+if cond { } elif cond { } else { }. for x in items { }. for i=0 to i<10 by i+=1 { }. while cond { }. match x { case V { } }.
 
-ARCHETYPES: Jac provides five archetype kinds; node archetypes define graph vertices with has for fields, def for methods, and can with entry/exit for abilities as node Person { has name: str; has age: int; def get_info() -> str { return f"{self.name}, {self.age}"; } can greet with Visitor entry { print(f"Hello from {self.name}"); } }; edge archetypes define typed connections with has for fields as edge Knows { has since: int; has strength: float = 1.0; def get_normalized(max: float) -> float { return self.strength / max; } }; walker archetypes define graph traversers with has for state, can with entry/exit for traversal abilities, and use visit, spawn, report, and disengage for control as walker Explorer { has found: list = []; can search with Node entry { self.found.append(here); visit [-->]; } }; obj archetypes define value objects with def for methods and optional postinit as obj Calculator { has value: int = 0; def add(n: int) -> int { self.value += n; return self.value; } }; enum archetypes define enumerations as enum Status { PENDING, ACTIVE, COMPLETED } or with explicit values as enum Color { RED = "red", GREEN = "green" }.
+FUNCTIONS
+def name(p: T) -> R { body }. Lambdas: |p| -> T { body }. Globals: glob var: T = val; at module level.
+# The function signature IS the specification
+def classify_sentiment(text: str) -> str by llm;
 
-ACCESS MODIFIERS: Three access levels exist being :pub for public which is the default, :priv for private, and :prot for protected; CRITICAL: the modifier comes AFTER the keyword with NO space between them; correct syntax is has:priv balance: float; and WRONG syntax includes has :priv balance or :priv has balance or has:private; for methods use def:pub get_data() -> str { } or def:priv internal() { }; for abilities use can:prot helper with entry { }; complete example: obj Account { has:pub name: str; has:priv balance: float; has:prot id: str; def:pub deposit(amt: float) { self.balance += amt; } def:priv validate() -> bool { return self.balance >= 0; } }.
+# Usage - the LLM infers behavior from the name and types
+with entry {
+    result = classify_sentiment("I love this product!");
+    # result = "positive"
+}
 
-GRAPH OPERATIONS: Define edge types with edge Road { has distance: float; has toll: bool = false; }; simple forward connection uses a ++> b; and bidirectional uses a <++> b;; typed edge without attributes uses a +>:Road:+> b;; typed edge with single attribute uses a +>:Road:distance=100.5:+> b;; typed edge with multiple attributes uses a +>:Road:distance=100.5:toll=true:+> b;; disconnect specific edge uses del a --> b;; disconnect all incoming to b uses del --> b;; disconnect all outgoing from a uses del a -->;; traverse forward with [-->] and backward with [<--] and bidirectional with [<-->];; typed traversal uses [-->:Road:] or [->:Road:->];; node type filter uses [-->(`?City)];; attribute filter uses [-->](?population > 1000000);; combined filters use [-->(`?City)](?population > 1000000 and active == true);; edge attribute filter during traversal uses [->:Friend:since > 2020:->];; chained multi-hop traversal uses [here ->:Friend:-> ->:Friend:->].
+IMPORTS
+import os; import from math { sqrt }; import from datetime { datetime as dt }; include module;. No import:py prefix.
 
-ABILITIES AND EVENTS: Abilities use can with event clauses and MUST include with Type entry or with Type exit; CRITICAL: can ALWAYS requires an event clause so use def for regular methods; node abilities trigger when walkers visit as can on_enter with Visitor entry { print("Entered"); }; walker abilities trigger on specific node types as can process with Person entry { print(here.name); }; generic abilities trigger on any type as can on_any with entry { log("Visited"); }; exit abilities run when leaving as can cleanup with Node exit { save_state(); }; execution order is node entry then walker entry then walker exit then node exit; key context variables include self for the archetype instance, here for the current node, visitor for the visiting walker, root for the user's root node, and `root as the root type literal for abilities.
+ARCHETYPES
+node: graph vertex with has fields, def methods, can abilities. edge: typed connection. walker: graph traverser. obj: value object. enum: enumeration.
+node DataNode {
+    has value: int = 0;
+}
 
-WALKER CONTROL: SPAWN SYNTAX places spawn AFTER walker instantiation and BEFORE target as WalkerType() spawn target_node;; examples include Greeter() spawn `root; and Explorer() spawn start_node; and walker(param=val) spawn here;; WRONG syntax is spawn Walker() on node;; visit queues nodes for traversal as visit [-->]; or with else clause as visit [-->] else { handle_leaf(); };; disengage stops the walker completely and returns early; report collects return values as report {"key": value}; and results accumulate in result.reports list; skip skips current iteration like continue; complete example: walker Explorer { has found: list = []; can search with Node entry { if here.name == "target" { report here; disengage; } self.found.append(here); visit [-->]; } } with entry { result = Explorer() spawn `root; print(result.reports); }.
+walker DataCollector {
+    can collect with DataNode entry {
+        report here.value;  # Continues execution
+        visit [-->];
+    }
+}
 
-AI INTEGRATION: The by llm feature is a BUILT-IN language feature requiring NO IMPORT; CRITICAL: do NOT use import from jaclang.core.llms as this path does not exist; basic syntax uses def summarize(text: str) -> str by llm; with semicolon terminator and no parentheses; WRONG syntax includes by llm() with empty parens; method in object uses obj Assistant { def answer(q: str) -> str by llm; }; structured output returns typed objects as def analyze(text: str) -> AnalysisObj by llm;; with parameters uses def translate(text: str) -> str by llm(temperature=0.7);; advanced methods include by llm(method="Reason") for chain-of-thought and by llm(method="ReAct") for tool-using agents; semstrings provide semantic context as has description: str """semantic hint for LLM""";; streaming uses def stream_story(prompt: str) -> str by llm(stream=True); and iterate with for chunk in stream_story("Tell me a story") { print(chunk, end=""); }; inline expressions use response = "Explain quantum computing" by llm;; pipeline chaining uses result = text |> (|t: str| -> str { t by llm("Correct grammar") }) |> (|t: str| -> str { t by llm("Simplify") });; tools integrate as def answer(q: str) -> str by llm(tools=[get_current_time]);.
+with entry {
+    root ++> DataNode(value=1);
+    result = root spawn DataCollector();
+    all_values = result.reports;  # List of reported values
+}
+walker:priv MyWalker {
+    # Runs when entering the root node
+    can on_root with `root entry {
+        visit [-->];
+    }
 
-FILE IO AND JSON: File operations use file.open(path, mode) returning a file handle, file.read() to read contents, file.write(data) to write, and file.close() to close; JSON operations use json.dumps(obj) to serialize objects to strings and json.loads(str) to parse strings to objects; example: f = file.open("data.json", "r"); data = json.loads(f.read()); f.close();.
+    # Runs when entering any Todo node
+    can on_todo with Todo entry {
+        process(here);
+    }
 
-CLOUD AND API: Start server with jac start file.jac which was renamed from jac serve; walkers automatically become API endpoints; __specs__ MUST be a nested obj with static has fields and NOT a dict literal; correct syntax: walker MyEndpoint { has data: str; obj __specs__ { static has methods: list = ["GET", "POST"]; static has auth: bool = true; static has path_prefix: str = "/api/v1"; static has as_query: list = ["param1"]; } can handle with `root entry { report {"status": "ok", "data": self.data}; } }; WRONG syntax is __specs__ = {"methods": [...]};; report returns response data to the client; file upload uses UploadFile type in walker has fields; fullstack applications use cl { } blocks for frontend code that compiles to JavaScript and sv { } blocks for backend code that compiles to Python, all in the same .jac file or split to .cl.jac files for larger projects.
+    # Runs when entering any node (generic)
+    can on_any with entry {
+        log("Visited a node");
+    }
+}
 
-WEBSOCKET: Configure websocket endpoints with methods: ["websocket"] in __specs__; socket methods include socket.notify_users(user_ids, data) to notify specific users, socket.notify_channels(channel_names, data) to broadcast to channels, and socket.notify_clients(client_ids, data) to notify specific connections; example: walker LiveUpdates { obj __specs__ { static has methods: list = ["websocket"]; } can stream with `root entry { socket.notify_channels(["updates"], {"event": "new_data"}); } }.
+ACCESS MODIFIERS
+has:priv f: T; def:pub m() { }; can:prot h with entry { }. Only :pub :priv :prot. No space between keyword and modifier.
 
-WEBHOOKS: Configure webhook endpoints with __specs__ webhook config specifying type as header, query, or body and name for the field; endpoint URL pattern is /webhook/walker/{name}; example: walker GithubHook { obj __specs__ { static has webhook: dict = {"type": "header", "name": "X-Hub-Signature"}; } can process with `root entry { report {"received": true}; } }.
+GRAPH OPERATIONS
+Connect: a ++> b forward, a <++> b bidirectional, a +>:Edge:+> b typed, a +>:E:attr=v:+> b with attrs. Disconnect: del a --> b. Traverse: [-->] forward, [<--] back, [-->:E:] typed. Filter: [-->(`?Node)] by type, [-->](?attr>v) by attr.
+node Item {
+    has name: str;
+}
 
-SCHEDULER: Configure scheduled walkers with __specs__ schedule config; cron schedule uses {"trigger": "cron", "hour": "9", "minute": "0"}; interval schedule uses {"trigger": "interval", "seconds": 30}; date schedule uses {"trigger": "date", "run_date": "2024-12-31T23:59:59"}; scheduled walkers should use private: true; example: walker DailyReport { obj __specs__ { static has schedule: dict = {"trigger": "cron", "hour": "9", "minute": "0"}; static has private: bool = true; } can run with `root entry { generate_report(); } }.
+walker:priv CreateItem {
+    has name: str;
 
-ASYNC: Async walkers use async walker keyword; async abilities use async can; async functions use async def; await pauses for async operations; task status accessed via task.__jac__.status, task.__jac__.reports, and task.__jac__.error; task queue uses create_task(); example: async walker DataFetcher { has url: str; async can fetch with `root entry { data = await http_get(self.url); report data; } }.
+    can create with `root entry {
+        new_item = here ++> Item(name=self.name);
+        report new_item[0];  # Report the created item
+    }
+}
 
-PERMISSIONS: Access the __jac__ anchor on any node for permission operations; permission levels from lowest to highest are NoPerm, ReadPerm, ConnectPerm, WritePerm imported from jaclang.core.permissions; grant permissions with node.__jac__.grant(target_root, WritePerm); or node.__jac__.grant(user_root, ReadPerm);; revoke with node.__jac__.revoke(target_root);; check access with node.__jac__.check_access(some_root, ReadPerm) returning bool; custom access control defines __jac_access__ method on node as node SecureData { has secret: str; has allowed_roots: list = []; can __jac_access__(caller: Root) -> bool { return caller in self.allowed_roots; } }.
+with entry {
+    # Usage
+    result = root spawn CreateItem(name="New Item");
+    created = result.reports[0];  # The new item
+}
+test walker_collects_data {
+    # Setup graph
+    root ++> DataNode(value=1);
+    root ++> DataNode(value=2);
+    root ++> DataNode(value=3);
 
-PERSISTENCE: Nodes connected to root auto-persist across requests; manual save uses node = here ++> Item(name="test"); save(node); commit();; reference by ID uses item = &item_id;; delete and commit uses del item; commit();; commit specific type uses commit(Item);; global nodes use glob keyword for persistent state across requests as glob counter: Counter = Counter();.
+    # Run walker
+    result = root spawn Collector();
 
-TESTING: Test blocks define test cases as test { }; assert fails the test on false as assert result == expected;; check performs soft assertion continuing on failure as check value > 0;; example: test walker_collects_data { root ++> DataNode(value=1); root ++> DataNode(value=2); result = root spawn Collector(); assert len(result.reports) == 2; assert sum(result.reports) == 3; }.
+    # Verify
+    assert len(result.reports) == 3;
+    assert sum(result.reports) == 6;
+}
 
-STANDARD LIBRARY: Built-in functions include print, input, range, len, enumerate, type, str, int, float, list, dict; string methods include upper(), lower(), strip(), split(sep), join(iterable), replace(old, new); list methods include append(item), extend(iterable), insert(index, item), remove(item), pop(index), sort(), reverse(); dict methods include keys(), values(), items(), get(key, default), update(other), pop(key).
+ABILITIES
+can name with Type entry { } or exit { }. Always requires with...entry/exit. Use def for regular methods. Keywords: self here visitor props root `root.
+walker FriendFinder {
+    can find with `root entry {
+        visit [-->];
+    }
+}
 
-JSX AND FRONTEND: Jac supports reactive UIs that compile to JavaScript using cl { } blocks; server block defines backend walkers as sv { walker get_data { obj __specs__ { static has methods: list = ["get"]; static has auth: bool = false; } can fetch with `root entry { report {"data": "hello"}; } } }; client block defines reactive components as cl { has count: int = 0; has data: str = ""; can with entry { response = fetch("/walker/get_data"); data = response.get("data", ""); } can with [count] entry { print(f"Count changed: {count}"); } can with exit { print("Cleanup"); } def increment() { count += 1; } <div><p>f"Count: {count}"</p><button onClick={increment}>"+"</button></div> }; mount effect uses can with entry { };; dependency effect uses can with [dep] entry { };; cleanup uses can with exit { };; JSX syntax uses <Component prop={value} /> and {expression} for interpolation and onClick={handler} for events; components receive props as def:pub Greeting(props: dict) -> any { return <h1>Hello, {props.name}!</h1>; }; fragments use <>{children}</> for multiple elements without wrapper; file organization uses single .jac with sv/cl blocks or split .cl.jac files for larger projects.
+with entry {
+    result = FriendFinder() spawn root;
+}
+walker:priv DeleteWithChildren {
+    has parent_id: str;
 
-DEPLOYMENT: Docker deployment uses FROM python:3.11-slim, RUN pip install jaclang, COPY . /app, WORKDIR /app, CMD ["jac", "start", "main.jac"]; Kubernetes deployment uses standard deployment, service, and ingress manifests; environment variables include DATABASE_URL for database connection, JAC_SECRET_KEY for authentication, and OPENAI_API_KEY for LLM integration; jac-scale commands include jac start --scale for scaled deployment, jac start --scale --build for build and deploy.
+    can search with `root entry {
+        visit [-->];
+    }
 
-PATTERNS: Single-file fullstack pattern combines frontend and backend in one .jac file as sv { walker get_todos { can fetch with `root entry { todos = [-->(`?Todo)]; report [{"id": t.id, "title": t.title, "done": t.done} for t in todos]; } } } cl { has todos: list = []; can with entry { result = fetch("/walker/get_todos"); todos = result.reports[0] if result.reports else []; } def:pub app() -> any { return <div><ul>{[<li>{t["title"]}</li> for t in todos]}</ul></div>; } }; graph traversal with collection pattern uses walker Collector { has items: list = []; can collect with `root entry { visit [-->]; } can gather with Item entry { self.items.append(here); visit [-->]; } can finish with `root exit { report self.items; } }; AI-powered processing uses def analyze_sentiment(text: str) -> Sentiment by llm; with enum Sentiment { POSITIVE, NEGATIVE, NEUTRAL } for structured output; API endpoint walker with full specs uses walker CreateItem { has name: str; has category: str = "default"; obj __specs__ { static has methods: list = ["POST"]; static has auth: bool = true; static has path_prefix: str = "/api/v1"; } can create with `root entry { new_item = here ++> Item(name=self.name, category=self.category); commit(); report {"id": new_item[0].id, "name": self.name}; } }.
+    can delete with Todo entry {
+        # Delete if this is the target or a child of the target
+        if here.id == self.parent_id or here.parent_id == self.parent_id {
+            del here;
+        }
+    }
+}
+
+WALKER CONTROL
+Spawn: Walker() spawn node;. Visit: visit [-->]; visit [-->] else { }. Control: report val; disengage; skip;. Results: result.reports.
+walker:priv MyWalker {
+    can work with `root entry {
+        report "result";
+    }
+}
+
+with entry {
+    response = root spawn MyWalker();
+
+    # Available properties
+    print(response.reports);    # Array of all reported values
+}
+walker:priv MyWalker {
+    can work with `root entry {
+        report ["item1", "item2"];
+        report {"count": 2};
+    }
+}
+
+with entry {
+    result = root spawn MyWalker();
+
+    # Bad: Magic indices
+    data = result.reports[0];
+    meta = result.reports[1];
+
+    # Good: Document or structure clearly
+    ...
+
+AI INTEGRATION
+def f(x: str) -> str by llm; (builtin, no import). Structured: def f() -> Obj by llm;. Params: by llm(temperature=0.7). Methods: by llm(method="Reason"). Semstrings: has desc: str """hint""";. Wrong: by llm() Right: by llm;
+with entry {
+    text = "Some input text";
+    result = text
+        |> (lambda t: str -> str: t by llm("Correct grammar"))
+        |> (lambda t: str -> str: t by llm("Simplify language"))
+        |> (lambda t: str -> str: t by llm("Translate to Spanish"));
+}
+def stream_story(prompt: str) -> str by llm(stream=True);
+
+# Returns generator
+with entry {
+    for chunk in stream_story("Tell me a story") {
+        print(chunk, end="");
+    }
+}
+
+FILE AND JSON
+f=file.open(p,"r"); f.read(); f.write(s); f.close();. json.dumps(obj); json.loads(s);.
+
+API ENDPOINTS
+jac start file.jac. Walkers become endpoints. Specs: obj __specs__ { static has methods: list=["GET"]; static has auth: bool=true; }. Wrong: __specs__={"methods":[]}.
+
+WEBSOCKET
+obj __specs__ { static has methods: list=["websocket"]; }. socket.notify_users(ids,msg); socket.notify_channels(names,msg);.
+
+SCHEDULER
+obj __specs__ { static has schedule: dict={"trigger":"cron","hour":"9"}; static has private: bool=true; }. Triggers: cron interval date.
+
+ASYNC
+async walker W { async can f with entry { await op(); } }. async def f() { }. task.__jac__.status/reports/error.
+cl {
+    # Safe pattern for single-report walkers
+    async def example() -> None {
+        result = root spawn ListTodos();
+        todos = result.reports[0] if result.reports else [];
+    }
+}
+
+PERMISSIONS
+node.__jac__.grant(root, WritePerm); node.__jac__.revoke(root); node.__jac__.check_access(root, ReadPerm);. Levels: NoPerm ReadPerm ConnectPerm WritePerm.
+
+PERSISTENCE
+Nodes connected to root auto-persist. save(node); commit();. Reference: &id. Delete: del node; commit();. Globals: glob var: T = val;.
+
+TESTING
+test name { assert cond; check cond; }.
+
+STANDARD LIBRARY
+print len range enumerate type str int float list dict set. String: upper() lower() strip() split() join(). List: append() extend() pop() sort(). Dict: keys() values() items() get().
+
+JSX AND FRONTEND
+sv { } for backend, cl { } for frontend. Effects: can with entry { } mount, can with [dep] entry { } dependency, can with exit { } cleanup. JSX: <Tag prop={val} /> {expr} onClick={fn}.
+cl {
+    def:pub Timer() -> any {
+        has seconds: int = 0;
+
+        # Setup interval on mount
+        can with entry {
+            intervalId = setInterval(lambda -> None {
+                seconds = seconds + 1;
+            }, 1000);
+        }
+
+        # Cleanup on unmount
+        can with exit {
+            clearInterval(intervalId);
+        }
+    ...
+
+PATTERNS
+walker DataProcessor {
+    has data: str;
+
+    # Runs when spawned at root
+    can start with `root entry {
+        print("Starting from root");
+        visit [-->];
+    }
+
+    # Runs when visiting a Person node
+    can process with Person entry {
+        print(f"Processing {here.name}");
+        visit [-->];
+    }
+
+    # Runs when visiting any node
+    can default with entry {
+        print("At unknown node type");
+        visit [-->];
+    }
+}
+walker Collector {
+    has items: list = [];
+    has max_items: int = 10;
+
+    can start with `root entry {
+        print("Starting collection");
+        visit [-->];
+    }
+
+    can collect with DataNode entry {
+        if len(self.items) < self.max_items {
+            self.items.append(here.value);
+        }
+        visit [-->];
+    }
+}
+walker:priv MyWalker {
+    can do_work with `root entry {
+        report "first";   # reports[0]
+        report "second";  # reports[1]
+    }
+}
+
+with entry {
+    # Spawning the walker
+    response = root spawn MyWalker();
+    print(response.reports);  # ["first", "second"]
+}

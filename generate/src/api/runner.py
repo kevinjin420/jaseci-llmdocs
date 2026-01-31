@@ -12,10 +12,9 @@ from datetime import datetime
 
 import tiktoken
 
-from ..pipeline.llm import LLM
 from ..pipeline.sanitizer import Sanitizer
 from ..pipeline.deterministic_extractor import DeterministicExtractor
-from ..pipeline.assembler import Assembler
+from ..pipeline.template_assembler import TemplateAssembler
 from ..pipeline.validator import Validator
 
 
@@ -56,12 +55,12 @@ class StageMetrics:
 
 class PipelineRunner:
     """
-    Lossless documentation pipeline runner.
+    Deterministic documentation pipeline runner.
 
     Stages:
     1. Fetch & Sanitize - Get docs, clean, extract skeletons (deterministic)
     2. Extract - Categorize content, select best examples (deterministic)
-    3. Assemble - Single LLM call to generate final reference
+    3. Assemble - Template-based assembly (deterministic, no LLM)
     """
 
     def __init__(self, config_path: Path, broadcast: Callable):
@@ -82,7 +81,7 @@ class PipelineRunner:
         self.stages: dict[str, StageMetrics] = {
             "fetch": StageMetrics(name="Fetch & Sanitize"),
             "extract": StageMetrics(name="Deterministic Extract"),
-            "assemble": StageMetrics(name="LLM Assembly"),
+            "assemble": StageMetrics(name="Template Assembly"),
         }
 
         self.overall_start: Optional[float] = None
@@ -332,14 +331,13 @@ class PipelineRunner:
             raise
 
     async def _run_assemble(self):
-        """Stage 3: Single LLM call to assemble final reference."""
+        """Stage 3: Deterministic template assembly."""
         stage = self.stages["assemble"]
         stage.status = "running"
         stage.start_time = time.time()
         await self.emit("stage_start", {"stage": "assemble"})
 
         try:
-            # Get extracted content
             if not hasattr(self, '_extracted_content'):
                 extractor = DeterministicExtractor(self.cfg)
                 self._extracted_content = extractor.extract_from_directory(self.sanitized_dir)
@@ -349,13 +347,14 @@ class PipelineRunner:
             stage.input_size = extracted_path.stat().st_size if extracted_path.exists() else 0
 
             progress_cb = self._make_progress_callback("assemble")
+            progress_cb(0, 2, "Assembling with templates...")
 
-            llm = LLM(self.cfg, self.cfg.get('assembly', {}))
-            assembler = Assembler(llm, self.cfg, on_progress=progress_cb)
-
+            assembler = TemplateAssembler()
             result = await asyncio.to_thread(
-                assembler.assemble, self._extracted_content, self._extractor
+                assembler.assemble, self._extracted_content
             )
+
+            progress_cb(1, 2, "Validating output...")
 
             self.final_dir.mkdir(parents=True, exist_ok=True)
             output_path = self.final_dir / "jac_reference.txt"
