@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import asyncio
+import json
 import yaml
 import shutil
 import time
@@ -16,7 +17,8 @@ from ..pipeline.llm import LLM
 from ..pipeline.sanitizer import Sanitizer
 from ..pipeline.deterministic_extractor import DeterministicExtractor
 from ..pipeline.assembler import Assembler
-from ..pipeline.validator import Validator
+from ..pipeline.validator import Validator, JacCheckResult
+from ..pipeline.scoring import QualityScorer
 
 
 @dataclass
@@ -78,6 +80,7 @@ class PipelineRunner:
         self.sanitized_dir = self.root / "output" / "0_sanitized"
         self.extracted_dir = self.root / "output" / "1_extracted"
         self.final_dir = self.root / "output" / "2_final"
+        self.scores_dir = self.root / "scores"
 
         self.stages: dict[str, StageMetrics] = {
             "fetch": StageMetrics(name="Fetch & Sanitize"),
@@ -88,6 +91,7 @@ class PipelineRunner:
         self.overall_start: Optional[float] = None
         self.overall_end: Optional[float] = None
         self.final_validation: Optional[dict] = None
+        self.scorer = QualityScorer(self.scores_dir)
 
     async def emit(self, event: str, data: dict):
         await self.broadcast({
@@ -140,6 +144,10 @@ class PipelineRunner:
 
     def get_stage_details(self) -> list:
         return [v.to_dict() for v in self.stages.values()]
+
+    def _get_next_version(self) -> str:
+        """Generate next version string based on timestamp."""
+        return datetime.now().strftime("%Y%m%d_%H%M%S")
 
     async def run(self):
         if self.is_running:
@@ -218,8 +226,21 @@ class PipelineRunner:
 
         try:
             sanitizer = Sanitizer(self.cfg)
+
+            def fetch_progress(source_id: str, current: int, total: int):
+                if self.loop:
+                    asyncio.run_coroutine_threadsafe(
+                        self.emit("progress", {
+                            "stage": "fetch",
+                            "current": current,
+                            "total": total,
+                            "message": f"Fetching {source_id}..."
+                        }),
+                        self.loop
+                    )
+
             stats = await asyncio.to_thread(
-                sanitizer.run, self.src, self.sanitized_dir
+                sanitizer.run, self.src, self.sanitized_dir, fetch_progress
             )
 
             input_size = 0
@@ -350,12 +371,31 @@ class PipelineRunner:
 
             progress_cb = self._make_progress_callback("assemble")
 
+            token_buffer = []
+            last_emit_time = [time.time()]
+
+            def on_token(token: str):
+                token_buffer.append(token)
+                now = time.time()
+                if now - last_emit_time[0] > 0.1 or len(token_buffer) > 50:
+                    if self.loop:
+                        chunk = ''.join(token_buffer)
+                        token_buffer.clear()
+                        last_emit_time[0] = now
+                        asyncio.run_coroutine_threadsafe(
+                            self.emit("llm_token", {"stage": "assemble", "token": chunk}),
+                            self.loop
+                        )
+
             llm = LLM(self.cfg, self.cfg.get('assembly', {}))
-            assembler = Assembler(llm, self.cfg, on_progress=progress_cb)
+            assembler = Assembler(llm, self.cfg, on_progress=progress_cb, on_token=on_token)
 
             result = await asyncio.to_thread(
                 assembler.assemble, self._extracted_content, self._extractor
             )
+
+            if token_buffer:
+                await self.emit("llm_token", {"stage": "assemble", "token": ''.join(token_buffer)})
 
             self.final_dir.mkdir(parents=True, exist_ok=True)
             output_path = self.final_dir / "jac_reference.txt"
@@ -366,10 +406,12 @@ class PipelineRunner:
             release_dir.mkdir(exist_ok=True)
             (release_dir / "candidate.txt").write_text(result)
 
+            # Run jac check before saving validation (will be added to final_validation below)
+
             stage.output_size = len(result)
             stage.files = [{"name": output_path.name, "size": stage.output_size}]
 
-            # Validate
+            # Validate patterns
             validation_result = self.validator.validate_final(result)
             patterns = self.validator.find_patterns(result)
 
@@ -380,20 +422,66 @@ class PipelineRunner:
             except Exception:
                 token_count = len(result) // 4  # rough estimate fallback
 
+            # Run jac check on all code examples
+            progress_cb(0, 1, "Running jac check on code examples...")
+            jac_check_result = self.validator.jac_check_examples(
+                result,
+                max_errors=10,
+                on_progress=lambda c, t, m: progress_cb(c, t, f"jac check: {m}")
+            )
+
+            version = self._get_next_version()
+            quality_score = self.scorer.score(
+                result, version,
+                jac_check_result=jac_check_result,
+                patterns_found=patterns,
+                token_count=token_count
+            )
+
+            baseline = self.scorer.get_baseline()
+            if baseline:
+                quality_score.regressions, quality_score.improvements = self.scorer.compare(
+                    quality_score, baseline
+                )
+
+            self.scorer.save_score(quality_score)
+
             self.final_validation = {
-                "is_valid": validation_result.is_valid,
+                "is_valid": validation_result.is_valid and jac_check_result.pass_rate >= 80,
                 "issues": validation_result.issues,
                 "missing_patterns": validation_result.missing_patterns,
                 "patterns_found": len(patterns),
                 "patterns_total": len(self.validator.CRITICAL_PATTERNS),
                 "output_size": len(result),
                 "token_count": token_count,
+                "jac_check": {
+                    "total_blocks": jac_check_result.total_blocks,
+                    "passed": jac_check_result.passed,
+                    "failed": jac_check_result.failed,
+                    "skipped": jac_check_result.skipped,
+                    "pass_rate": jac_check_result.pass_rate,
+                    "errors": jac_check_result.errors,
+                },
+                "quality_score": {
+                    "version": quality_score.version,
+                    "timestamp": quality_score.timestamp,
+                    "content_hash": quality_score.content_hash,
+                    "pattern_coverage": quality_score.pattern_coverage,
+                    "constructs": quality_score.constructs,
+                    "regressions": quality_score.regressions,
+                    "improvements": quality_score.improvements,
+                },
             }
+
+            # Save validation results as JSON
+            validation_json_path = release_dir / "candidate.validation.json"
+            validation_json_path.write_text(json.dumps(self.final_validation, indent=2))
 
             stage.extra = {
                 "validation": self.final_validation,
                 "output_path": str(output_path),
                 "release_path": str(release_dir / "candidate.txt"),
+                "validation_path": str(validation_json_path),
             }
 
             stage.status = "complete"

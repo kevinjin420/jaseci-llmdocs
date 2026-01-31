@@ -14,10 +14,11 @@ from .validator import Validator
 class Assembler:
     """Assembles final reference document from extracted content."""
 
-    def __init__(self, llm: LLM, config: dict, on_progress=None):
+    def __init__(self, llm: LLM, config: dict, on_progress=None, on_token=None):
         self.llm = llm
         self.config = config
         self.on_progress = on_progress or (lambda *a: None)
+        self.on_token = on_token
         self.validator = Validator()
 
         root = Path(__file__).parents[2]
@@ -35,9 +36,12 @@ class Assembler:
 
         self.on_progress(1, 3, "Assembling with LLM (single pass)...")
 
-        # Single LLM call
+        # Single LLM call (with optional streaming)
         prompt = self.prompt_template.replace("{content}", formatted_content)
-        result = self.llm.query(formatted_content, prompt)
+        if self.on_token:
+            result = self.llm.query_stream(formatted_content, prompt, on_token=self.on_token)
+        else:
+            result = self.llm.query(formatted_content, prompt)
 
         if not result:
             raise RuntimeError("LLM assembly failed - no output")

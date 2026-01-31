@@ -256,3 +256,43 @@ async def update_prompt(filename: str, data: dict):
     prompt_path = CONFIG_DIR / filename
     prompt_path.write_text(data["content"])
     return {"status": "saved", "filename": filename}
+
+
+@app.get("/api/scores")
+async def list_scores():
+    if not runner:
+        raise HTTPException(status_code=500, detail="Runner not initialized")
+    return runner.scorer.list_scores()
+
+
+@app.get("/api/scores/{version}")
+async def get_score(version: str):
+    if not runner:
+        raise HTTPException(status_code=500, detail="Runner not initialized")
+    score = runner.scorer.get_score(version)
+    if not score:
+        raise HTTPException(status_code=404, detail="Score not found")
+    return score.to_dict()
+
+
+@app.get("/api/scores/compare/{v1}/{v2}")
+async def compare_scores(v1: str, v2: str):
+    if not runner:
+        raise HTTPException(status_code=500, detail="Runner not initialized")
+
+    score1 = runner.scorer.get_score(v1)
+    score2 = runner.scorer.get_score(v2)
+
+    if not score1:
+        raise HTTPException(status_code=404, detail=f"Score for version {v1} not found")
+    if not score2:
+        raise HTTPException(status_code=404, detail=f"Score for version {v2} not found")
+
+    regressions, improvements = runner.scorer.compare(score2, score1)
+
+    return {
+        "baseline": score1.to_dict(),
+        "current": score2.to_dict(),
+        "regressions": regressions,
+        "improvements": improvements,
+    }

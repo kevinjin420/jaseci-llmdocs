@@ -1,104 +1,80 @@
-You are assembling a Jac language reference from extracted signatures and examples.
+You are assembling a Jac language reference. Jac is a onelang that supersets Python/JavaScript for fullstack apps (frontend compiles to JS, backend/AI compiles to Python).
 
-CORE PHILOSOPHY: Jac is a onelang that supersets Python and JavaScript, enabling developers to build fullstack applications - frontend, backend, and AI - under one unified language. Jac compiles to Python for backend/AI and JavaScript for frontend, with seamless interoperability. Write once, deploy anywhere.
+TARGET: 12-15KB. Terse reference format, not prose.
 
-TARGET: 20-25KB in dense prose format. No markdown formatting.
+FORMAT RULES:
+- Short declarative statements, not explanations
+- Show syntax, then example. No "as in" or "for example"
+- Group related items with semicolons
+- Code inline, no fences
+- One line per concept where possible
+- WRONG/RIGHT pairs: show only the code, minimal words
 
-OUTPUT FORMAT:
-- Dense prose paragraphs, no markdown headers/tables/code fences
-- NO blank lines between paragraphs - continuous text
-- Inline code snippets within text flow
-- Semicolon-separated lists for related items
-- One paragraph per topic, combine related concepts
-- Example: "Types: int str float bool any. Collections: list[T] dict[K,V] set[T]. Union: type1|type2."
+STRUCTURE EACH TOPIC:
+Topic: brief definition
+Syntax: pattern
+Example: code
+(Optional) Common error: wrong -> right
 
-HIGH-FAILURE AREAS (EMPHASIZE STRONGLY):
+HIGH-FAILURE SYNTAX (must be exact):
+- Entry: with entry { } not entry { }
+- Spawn: Walker() spawn node; (spawn after instantiation)
+- Import: import from module { sym } or import module; (no import:py)
+- LLM: def f() -> T by llm; (semicolon, no parens, no import needed)
+- Access: has:priv x (no space); only :pub :priv :prot
+- Permissions: node.__jac__.grant(root, Perm)
+- Specs: obj __specs__ { static has methods: list = [...]; } not dict literal
 
-ENTRY POINTS: ALWAYS use "with entry { }" NOT "entry { }". Correct: with entry { print("hello"); }. WRONG: entry { }. Named entry: with entry:main { }.
+TOPICS (cover all concisely):
 
-SPAWN KEYWORD: Walker spawning syntax: MyWalker() spawn node; or MyWalker() spawn `root;. The spawn keyword comes AFTER the walker instantiation. Example: walker Greeter { can greet with entry { print("Hi"); } } with entry { Greeter() spawn `root; }.
+1. TYPES: int float str bool bytes any; list[T] dict[K,V] set[T]; int|None for unions; has x: type; -> return
 
-IMPORT SYNTAX: Use "import from module { symbols }" for Jac. WRONG: import:py os. RIGHT: import os; or import from os { path }. For Python-specific: import from datetime { datetime }. Do NOT use import:py prefix.
+2. CONTROL: if cond { } elif { } else { }; for x in items { }; for i=0 to i<10 by i+=1 { }; while cond { }; match x { case V { } }
 
-BY LLM SYNTAX: "by llm" is a BUILT-IN language feature - NO IMPORT NEEDED. CORRECT: def func(x: str) -> str by llm; (semicolon, no parens). WRONG: def func(x: str) -> str by llm() or can func by llm. WRONG: import from jaclang.core.llms (this path does not exist). Just use "by llm" directly.
+3. FUNCTIONS: def name(p: T) -> R { }; lambdas: |p| -> T { }; glob var: T = val; at module level
 
-ACCESS MODIFIERS: Syntax is keyword:modifier with NO SPACE. has:priv x: int; def:pub foo() { }. Three values only: :pub :priv :prot. WRONG: has :priv x or :priv has x or has:private.
+4. IMPORTS: import os; import from math { sqrt }; import from datetime { datetime as dt }; include module;
 
-PERMISSION SYSTEM: Use __jac__ for node permissions. Grant: node.__jac__.grant(target_root, WritePerm);. Revoke: node.__jac__.revoke(target_root);. Permission levels: NoPerm, ReadPerm, ConnectPerm, WritePerm. Check: node.__jac__.check_access(root, ReadPerm).
+5. ARCHETYPES: node N { has f: T; def m() { } can on_v with W entry { } }; edge E { has f: T; }; walker W { has s: T; can act with N entry { visit [-->]; } }; obj O { has f: T; def m() { } }; enum E { A, B=1 }
 
----
+6. ACCESS: has:priv f: T; def:pub m() { }; can:prot h with entry { }; only :pub :priv :prot
 
-MANDATORY TOPICS (cover all in dense prose):
+7. GRAPH: a ++> b; a <++> b; a +>:Edge:+> b; a +>:E:attr=v:+> b; del a --> b; [-->] forward; [<--] back; [-->:E:] typed; [-->(`?Node)] filter type; [-->](?attr>v) filter attr
 
-1. SYNTAX & TYPES: Jac supersets Python syntax with curly braces and enhanced type system. Primitives (int, float, str, bool, bytes, any). Collections (list, dict, set, tuple, frozenset) with type params. Type unions (int | None). Type annotations (has x: type, -> return_type). Control flow: if/elif/else, for item in items { }, while cond { }. JAC FOR LOOP: for i = 0 to i < 10 by i += 1 { print(i); }. MATCH/CASE: match status { case Status.PENDING { print("Waiting"); } case Status.ACTIVE { print("Active"); } }. Standalone functions use def: def func_name(param: type) -> return_type { body }. IMPORTANT: can is ONLY for abilities with event clauses (can name with Type entry), never for standalone functions. Lambdas: |params| -> type { body }. Entry point: with entry { }. Global variables: glob config: Config = Config(); at module level, use global varname; to modify.
+8. ABILITIES: can name with Type entry { } or exit { }; always requires with...entry/exit; use def for regular methods; self=instance here=node visitor=walker props=walker_props root=user_root `root=root_type
 
-2. IMPORTS: Jac seamlessly imports from Python ecosystem. STANDARD PATTERN: import from module { Symbol1, Symbol2 }. Simple: import os;. Multiple: import sys, json;. Alias: import datetime as dt;. From with braces: import from math { sqrt, pi }. From datetime: import from datetime { datetime, timedelta }. Aliased: import from module { Original as Alias }. Include: include module_path;. DO NOT use "import:py" prefix - just use normal import syntax. Any Python package works directly: sklearn, torch, numpy.
+9. WALKERS: Walker() spawn node; visit [-->]; visit [-->] else { }; report val; disengage; skip; result.reports for collected
 
-3. ARCHETYPES: node (has for fields, def for methods, can with entry/exit for abilities). edge (has for fields, typed connections). walker (has for state, can with entry/exit for traversal abilities, visit, spawn). obj (value objects, def for methods, postinit). enum (enumerations with values). Include inline examples showing def for methods and can only with event clauses.
+10. BY_LLM: def f(x: str) -> str by llm; (builtin, no import); def f() -> Obj by llm; for structured; by llm(temperature=0.7); by llm(method="Reason"); has desc: str """hint"""; for semstrings; wrong: by llm() right: by llm;
 
-4. ACCESS MODIFIERS: Three levels: :pub (public, default), :priv (private), :prot (protected - NOT :protect or :protected). SYNTAX: modifier comes AFTER keyword with NO space: has:priv balance: float; (NOT has :priv: or :priv has). For methods: def:pub get_data() -> str { }. For abilities: can:prot helper with entry { }. Example: obj Account { has:pub name: str; has:priv balance: float; def:pub deposit(amt: float) { }; def:priv internal() { }; }.
+11. FILE_JSON: f=file.open(p,"r"); f.read(); f.write(s); f.close(); json.dumps(obj); json.loads(s)
 
-5. GRAPH OPERATIONS: Define edge type: edge Road { has distance: float; has toll: bool = false; }. Simple connect: a ++> b; (forward), a <++> b; (bidirectional). Typed edge (no attrs): a +>:Road:+> b;. Typed edge with attrs: a +>:Road:distance=100.5:+> b;. Multiple attrs: a +>:Road:distance=100.5:toll=true:+> b;. Disconnect: del a --> b; (specific), del --> b; (all incoming to b), del a -->; (all outgoing from a). Traverse: [-->] (forward), [<--] (backward), [<-->] (both). Typed traverse: [-->:Road:] or [->:Road:->]. Node filter: [-->(`?City)]. Attribute filter: [-->](?population > 1000000). Combined: [-->(`?City)](?population > 1000000 and active == true).
+12. API: jac start file.jac; walker becomes endpoint; walker W { has d: str; obj __specs__ { static has methods: list=["GET"]; static has auth: bool=true; static has path_prefix: str="/api"; } can h with `root entry { report {"k":v}; } }; wrong: __specs__={"methods":[]}
 
-6. ABILITIES & EVENTS: Abilities use can with event clauses - can name with Type entry { } or can name with Type exit { }. CRITICAL: can ALWAYS requires "with ... entry" or "with ... exit" - use def for regular methods. Generic abilities use can name with entry { } to trigger on any type. Execution order (node entry -> walker entry -> walker exit -> node exit). Keywords (self, here, visitor, props, root, `root).
+13. WEBSOCKET: obj __specs__ { static has methods: list=["websocket"]; }; socket.notify_users(ids,msg); socket.notify_channels(names,msg)
 
-7. WALKER CONTROL: SPAWN SYNTAX: WalkerType() spawn target_node;. Examples: Greeter() spawn `root;, Explorer() spawn start_node;, walker(param=val) spawn here;. The spawn keyword comes AFTER walker instantiation, BEFORE target. VISIT: visit [-->]; or visit [-->] else { handle_leaf(); }. DISENGAGE: stops walker completely, returns early. REPORT: collects return values: report {"key": value};. SKIP: skips current iteration (like continue). Full example: walker Explorer { has found: list = []; can search with Node entry { if here.name == "target" { report here; disengage; } self.found.append(here); visit [-->]; } } with entry { result = Explorer() spawn `root; print(result); }.
+14. WEBHOOKS: obj __specs__ { static has webhook: dict={"type":"header","name":"X-Sig"}; }; endpoint /webhook/walker/name
 
-8. AI INTEGRATION: "by llm" is a BUILT-IN FEATURE - NO IMPORT REQUIRED. Basic syntax: def summarize(text: str) -> str by llm; (semicolon terminator, no parentheses). Method in object: obj Assistant { def answer(q: str) -> str by llm; }. Structured output: def analyze(text: str) -> AnalysisObj by llm; (returns typed object). With parameters: def translate(text: str) -> str by llm(temperature=0.7);. Advanced: by llm(method="Reason") chain-of-thought, by llm(method="ReAct") tool-using agent. Semstrings provide context: has description: str """semantic hint for LLM""";. COMMON MISTAKES: Wrong: by llm() with empty parens - use by llm; instead. Wrong: import from jaclang.core.llms - this path does not exist, by llm is built-in.
+15. SCHEDULER: obj __specs__ { static has schedule: dict={"trigger":"cron","hour":"9"}; static has private: bool=true; }; triggers: cron interval date
 
-9. FILE I/O & JSON: file.open(path, mode), file.read(), file.write(), file.close(). json.dumps(obj), json.loads(str).
+16. ASYNC: async walker W { async can f with entry { await op(); } }; async def f() { }; task.__jac__.status/reports/error
 
-10. CLOUD & API: jac serve file.jac starts server. Walkers become API endpoints automatically. __specs__ MUST be nested obj with static has fields (NOT a dict): walker MyEndpoint { has data: str; obj __specs__ { static has methods: list = ["GET", "POST"]; static has auth: bool = true; static has path_prefix: str = "/api/v1/custom"; static has as_query: list = ["param1"]; } can handle with `root entry { report {"status": "ok", "data": self.data}; } }. WRONG: __specs__ = {"methods": [...]}. report returns response data. File upload uses UploadFile type. Fullstack: use cl { } for frontend, sv { } for backend in same .jac file, or split to .cl.jac files for larger projects.
+17. PERMISSIONS: node.__jac__.grant(root, WritePerm); node.__jac__.revoke(root); node.__jac__.check_access(root, ReadPerm); levels: NoPerm ReadPerm ConnectPerm WritePerm
 
-11. WEBSOCKET: methods: ["websocket"] in __specs__. Socket methods (socket.notify_users(), notify_channels(), notify_clients()).
+18. PERSISTENCE: nodes connected to root auto-persist; save(node); commit(); &id for reference; del node; commit(); glob var: T = val; for persistent globals
 
-12. WEBHOOKS: __specs__ webhook config with type (header/query/body) and name. Endpoint: /webhook/walker/{name}.
+19. TESTING: test name { assert cond; check cond; }
 
-13. SCHEDULER: __specs__ schedule config. Cron ({"trigger": "cron", "hour": "9", "minute": "0"}). Interval ({"trigger": "interval", "seconds": 30}). Date ({"trigger": "date", "run_date": "..."}). private: true for scheduled walkers.
+20. STDLIB: print len range enumerate type str int float list dict set; s.upper() lower() strip() split() join(); l.append() extend() pop() sort(); d.keys() values() items() get()
 
-14. ASYNC: async walker, async def, await. Task status (task.__jac__.status, reports, error). Task queue (create_task()).
+21. JSX: sv { walker W { obj __specs__ { static has methods: list=["get"]; } can f with `root entry { report {}; } } } cl { has count: int=0; can with entry { } can with [dep] entry { } can with exit { } def inc() { count+=1; } <div><p>{count}</p><button onClick={inc}>+</button></div> }
 
-15. PERMISSIONS: Access __jac__ anchor on any node for permission operations. Levels: NoPerm, ReadPerm, ConnectPerm, WritePerm (import from jaclang.core.permissions). GRANT: node.__jac__.grant(target_root, WritePerm); or node.__jac__.grant(user_root, ReadPerm);. REVOKE: node.__jac__.revoke(target_root);. CHECK: node.__jac__.check_access(some_root, ReadPerm) returns bool. Custom access control: define __jac_access__ method on node. Example: node SecureData { has secret: str; can __jac_access__(caller: Root) -> bool { return caller in self.allowed_roots; } }.
+22. DEPLOY: docker: FROM python:3.11-slim; pip install jaclang; jac start main.jac; env: DATABASE_URL JAC_SECRET_KEY OPENAI_API_KEY
 
-16. PERSISTENCE: Auto-persist nodes connected to root. Manual save: node = here ++> Item(name="test"); save(node); commit();. Reference by ID: item = &item_id;. Delete and commit: del item; commit();. Commit specific type: commit(Item);. Global nodes use glob keyword for persistent state across requests.
-
-17. TESTING: test { } blocks. assert (fail on false). check (soft assertion).
-
-18. STANDARD LIBRARY: print, input, range, len, enumerate, type, str, int, float, list, dict. String methods (upper, lower, strip, split, join, replace). List methods (append, extend, insert, remove, pop, sort, reverse). Dict methods (keys, values, items, get, update, pop).
-
-19. JSX & FRONTEND: Jac supports reactive UIs that compile to JavaScript. SERVER BLOCK: sv { walker get_data { obj __specs__ { static has methods: list = ["get"]; static has auth: bool = false; } can fetch with `root entry { report {"data": "hello"}; } } }. CLIENT BLOCK: cl { has count: int = 0; has data: str = ""; can with entry { response = fetch("/walker/get_data"); data = response.get("data", ""); } can with [count] entry { print(f"Count changed: {count}"); } can with exit { print("Cleanup"); } def increment() { count += 1; } <div><p>f"Count: {count}"</p><button onClick={increment}>"+"</button></div> }. Mount effect: can with entry { }. Dependency effect: can with [dep] entry { }. Cleanup: can with exit { }. JSX: <Component prop={value} />, {expression}, onClick={handler}. File organization: single .jac with sv/cl blocks, or split .cl.jac files for larger projects.
-
-20. DEPLOYMENT: Docker (FROM python, pip install jaclang, jac serve). Kubernetes (deployment, service, ingress). Environment variables (DATABASE_URL, JAC_SECRET_KEY, OPENAI_API_KEY).
-
-21. PATTERNS: Include 3-4 complete inline examples. Single-file fullstack: entire app in one .jac file with cl { } for frontend, sv { } for backend, walkers for API. Optional multi-file structure for larger projects: main.jac (backend), components/*.cl.jac (React components), hooks/*.cl.jac (custom hooks). Graph traversal with collection pattern. AI-powered processing with by llm; (no parens). API endpoint walker with __specs__.
-
-CRITICAL SYNTAX TO PRESERVE EXACTLY:
-- Entry Point: with entry { } (MUST include "with"), with entry:name { } for named
-- Spawn: Walker() spawn node; (spawn AFTER instantiation, BEFORE target)
-- Import: import from module { symbols } or import module; (NO import:py prefix)
-- LLM: def func() -> T by llm; (semicolon terminator, no parens). BUILT-IN - no import needed. Do NOT use import from jaclang.core.llms
-- Access: has:priv x (NO space between keyword and modifier), :pub :priv :prot only
-- Permissions: node.__jac__.grant(root, WritePerm), node.__jac__.revoke(root)
-- Connect: ++>, <++, <++>, +>:EdgeType:+> (typed edge), +>:Edge:attr=val:+> (with attributes)
-- Traverse: -->, <--, <-->, [-->:EdgeType:] (typed traverse)
-- Walker: visit, disengage, report, skip, here, self, visitor, props, root, `root
-- Functions vs Abilities: def for standalone functions, can ONLY with event clause (can name with Type entry/exit)
-- Types: has, def, ->, |
-- Globals: glob var: Type = value; at module level
-- Specs: obj __specs__ { static has auth: bool; static has methods: list; } (NOT a dict literal)
-- Onelang: cl { } (client/frontend), sv { } (server/backend)
-- Filter: [-->(`?NodeType)](?attr == val)
-
-COMMON MISTAKES TO WARN AGAINST:
-- WRONG: entry { } | RIGHT: with entry { } (MUST have "with" keyword)
-- WRONG: by llm() with empty parens | RIGHT: by llm; (semicolon, no parens)
-- WRONG: import from jaclang.core.llms { Model } | RIGHT: by llm is built-in, no import needed
-- WRONG: import:py os | RIGHT: import os; or import from os { path }
-- WRONG: spawn Walker() on node | RIGHT: Walker() spawn node; (spawn comes after instantiation)
-- WRONG: has :priv: x or :priv has x | RIGHT: has:priv x (no space, modifier after keyword)
-- WRONG: grant(node, perm) | RIGHT: node.__jac__.grant(root, WritePerm)
-- WRONG: __specs__ = {"methods": [...]} | RIGHT: obj __specs__ { static has methods: list = [...]; }
-- WRONG: can helper() { } | RIGHT: def helper() { } (can requires with...entry/exit)
+PATTERNS (include 2-3 complete examples):
+- Fullstack single-file with sv{} and cl{}
+- Walker graph traversal with visit/report
+- API endpoint with __specs__
 
 ---
 
@@ -107,4 +83,4 @@ EXTRACTED CONTENT:
 
 ---
 
-Generate the complete reference as dense prose. No markdown. No blank lines. All 21 topics must be covered. Inline code examples within paragraphs. Emphasize that Jac is a onelang - one language for frontend (JSX, compiles to JS), backend (walkers, compiles to Python), and AI (by llm) - enabling fullstack development without context switching between languages.
+Generate terse reference. No markdown. No blank lines. Show syntax and examples, minimize explanation. All topics required. ~12-15KB target.

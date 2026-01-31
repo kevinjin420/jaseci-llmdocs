@@ -623,8 +623,10 @@ function App() {
   const [validation, setValidation] = useState(null)
   const [logs, setLogs] = useState([])
   const [metrics, setMetrics] = useState(null)
+  const [streamingText, setStreamingText] = useState('')
   const wsRef = useRef(null)
   const logsEndRef = useRef(null)
+  const streamingRef = useRef(null)
 
   const fetchSources = async () => {
     try {
@@ -728,14 +730,19 @@ function App() {
       ws.onmessage = (e) => {
         const msg = JSON.parse(e.data)
 
-        if (msg.event !== 'progress') {
+        if (msg.event !== 'progress' && msg.event !== 'llm_token') {
           setLogs(prev => [...prev.slice(-99), msg])
+        }
+
+        if (msg.event === 'llm_token') {
+          setStreamingText(prev => prev + msg.data.token)
         }
 
         if (msg.event === 'pipeline_start') {
           setRunning(true)
           setValidation(null)
           setProgress({})
+          setStreamingText('')
         }
 
         if (msg.event === 'pipeline_complete') {
@@ -766,6 +773,9 @@ function App() {
             ...prev,
             [msg.data.stage]: { ...prev[msg.data.stage], status: 'running' }
           }))
+          if (msg.data.stage === 'assemble') {
+            setStreamingText('')
+          }
         }
 
         if (msg.event === 'stage_complete' && msg.data?.metrics) {
@@ -803,6 +813,12 @@ function App() {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [logs])
 
+  useEffect(() => {
+    if (streamingRef.current) {
+      streamingRef.current.scrollTop = streamingRef.current.scrollHeight
+    }
+  }, [streamingText])
+
   const runPipeline = async () => {
     setRunning(true)
     setLogs([])
@@ -814,6 +830,7 @@ function App() {
     setValidation(null)
     setMetrics(null)
     setProgress({})
+    setStreamingText('')
 
     try {
       await fetch('/api/run', { method: 'POST' })
@@ -942,6 +959,21 @@ function App() {
               onRun={runStage}
               disabled={running || !connected}
             />
+
+            {stages.assemble.status === 'running' && streamingText && (
+              <div className="mb-3 p-3 bg-zinc-900/60 rounded-lg border border-zinc-800/50">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-xs font-medium text-zinc-400">LLM Output (streaming)</h3>
+                  <span className="text-xs text-zinc-500">{streamingText.length.toLocaleString()} chars</span>
+                </div>
+                <div
+                  ref={streamingRef}
+                  className="h-48 overflow-y-auto bg-zinc-950/50 rounded p-2 font-mono text-xs text-zinc-300 whitespace-pre-wrap"
+                >
+                  {streamingText}
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <ValidationCard validation={validation} />

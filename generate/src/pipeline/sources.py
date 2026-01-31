@@ -3,9 +3,10 @@ import sqlite3
 import subprocess
 import tempfile
 import shutil
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Callable
 from enum import Enum
 
 
@@ -286,5 +287,52 @@ class SourceManager:
             results["sources"].append(stats)
             results["total_files"] += stats["total"]
             results["total_errors"] += len(stats["errors"])
+
+        return results
+
+    def fetch_all_parallel(
+        self,
+        out_dir: Path,
+        max_workers: int = 4,
+        on_progress: Optional[Callable[[str, int, int], None]] = None
+    ) -> dict:
+        """Fetch from all enabled sources in parallel using ThreadPoolExecutor."""
+        if out_dir.exists():
+            shutil.rmtree(out_dir)
+        out_dir.mkdir(parents=True)
+
+        sources = self.get_enabled()
+        total = len(sources)
+        results = {
+            "sources": [],
+            "total_files": 0,
+            "total_errors": 0,
+            "failed_sources": []
+        }
+
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_source = {
+                executor.submit(self.fetch_source, source, out_dir): source
+                for source in sources
+            }
+
+            completed = 0
+            for future in as_completed(future_to_source):
+                source = future_to_source[future]
+                completed += 1
+                try:
+                    stats = future.result()
+                    results["sources"].append(stats)
+                    results["total_files"] += stats["total"]
+                    results["total_errors"] += len(stats["errors"])
+                except Exception as e:
+                    results["failed_sources"].append({
+                        "id": source.id,
+                        "errors": [str(e)]
+                    })
+                    results["total_errors"] += 1
+
+                if on_progress:
+                    on_progress(source.id, completed, total)
 
         return results

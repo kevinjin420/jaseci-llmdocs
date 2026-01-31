@@ -95,11 +95,16 @@ class Sanitizer:
 
         return len(text) > 500
 
-    def run(self, docs_dir: Path, out_dir: Path) -> dict:
+    def run(self, docs_dir: Path, out_dir: Path, on_fetch_progress=None) -> dict:
         """Fetch from all sources and process files."""
         fetch_dir = docs_dir.parent / "fetched"
 
-        fetch_results = self.source_manager.fetch_all(fetch_dir)
+        if on_fetch_progress:
+            fetch_results = self.source_manager.fetch_all_parallel(
+                fetch_dir, max_workers=4, on_progress=on_fetch_progress
+            )
+        else:
+            fetch_results = self.source_manager.fetch_all(fetch_dir)
 
         if out_dir.exists():
             shutil.rmtree(out_dir)

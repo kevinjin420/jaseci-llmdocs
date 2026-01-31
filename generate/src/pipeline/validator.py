@@ -5,7 +5,11 @@ Validates that critical syntax patterns, code blocks, and content
 are preserved between compression stages.
 """
 import re
-from dataclasses import dataclass
+import subprocess
+import tempfile
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Optional
 
 
 @dataclass
@@ -14,6 +18,16 @@ class ValidationResult:
     issues: list
     missing_patterns: list
     size_ratio: float
+
+
+@dataclass
+class JacCheckResult:
+    total_blocks: int
+    passed: int
+    failed: int
+    skipped: int
+    pass_rate: float
+    errors: list = field(default_factory=list)
 
 
 class Validator:
@@ -137,4 +151,119 @@ class Validator:
             issues=issues,
             missing_patterns=missing,
             size_ratio=1.0
+        )
+
+    def extract_jac_blocks(self, text: str) -> list[tuple[int, str]]:
+        """Extract Jac code blocks from markdown text.
+
+        Returns list of (block_index, code) tuples.
+        """
+        blocks = []
+        pattern = r'```(?:jac|jaclang)?\s*\n(.*?)```'
+        matches = re.finditer(pattern, text, re.DOTALL | re.IGNORECASE)
+
+        for i, match in enumerate(matches):
+            code = match.group(1).strip()
+            if code and not code.startswith('//') and len(code) > 10:
+                blocks.append((i, code))
+
+        return blocks
+
+    def run_jac_check(self, code: str, timeout: int = 5) -> tuple[bool, Optional[str]]:
+        """Run jac check on a code snippet.
+
+        Returns (passed, error_message).
+        """
+        with tempfile.NamedTemporaryFile(
+            mode='w', suffix='.jac', delete=False
+        ) as f:
+            f.write(code)
+            f.flush()
+            temp_path = Path(f.name)
+
+        try:
+            result = subprocess.run(
+                ['jac', 'check', str(temp_path)],
+                capture_output=True,
+                text=True,
+                timeout=timeout
+            )
+
+            if result.returncode == 0:
+                return True, None
+            else:
+                error = result.stderr.strip() or result.stdout.strip()
+                first_line = error.split('\n')[0] if error else "Unknown error"
+                return False, first_line
+
+        except subprocess.TimeoutExpired:
+            return False, "Timeout"
+        except FileNotFoundError:
+            return False, "jac CLI not found"
+        except Exception as e:
+            return False, str(e)
+        finally:
+            temp_path.unlink(missing_ok=True)
+
+    def jac_check_examples(
+        self,
+        text: str,
+        max_errors: int = 10,
+        on_progress: Optional[callable] = None
+    ) -> JacCheckResult:
+        """Run jac check on all code examples in the documentation.
+
+        Args:
+            text: Documentation text containing code blocks
+            max_errors: Maximum number of errors to collect
+            on_progress: Optional callback(current, total, message)
+
+        Returns:
+            JacCheckResult with pass/fail statistics
+        """
+        blocks = self.extract_jac_blocks(text)
+        total = len(blocks)
+        passed = 0
+        failed = 0
+        skipped = 0
+        errors = []
+
+        for i, (block_idx, code) in enumerate(blocks):
+            if on_progress:
+                on_progress(i + 1, total, f"Checking block {block_idx + 1}...")
+
+            # Skip blocks that are clearly partial/pseudocode
+            if any(marker in code for marker in ['...', '# ...', '// ...']):
+                skipped += 1
+                continue
+
+            # Skip very short snippets (likely incomplete)
+            if len(code.split('\n')) < 2 and 'with entry' not in code:
+                skipped += 1
+                continue
+
+            success, error = self.run_jac_check(code)
+
+            if success:
+                passed += 1
+            else:
+                failed += 1
+                if len(errors) < max_errors:
+                    preview = code[:100].replace('\n', ' ')
+                    errors.append({
+                        "block": block_idx + 1,
+                        "error": error,
+                        "preview": preview + "..." if len(code) > 100 else preview
+                    })
+
+        total_checked = passed + failed
+        pass_rate = (passed / total_checked * 100) if total_checked > 0 else 0.0
+
+        return JacCheckResult(
+            total_blocks=total,
+            passed=passed,
+            failed=failed,
+            skipped=skipped,
+            pass_rate=pass_rate,
+            errors=errors
         )
