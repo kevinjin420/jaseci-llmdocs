@@ -8,7 +8,6 @@ Uses ONE LLM call with template-driven structure.
 from pathlib import Path
 from .llm import LLM
 from .deterministic_extractor import DeterministicExtractor, ExtractedContent
-from .validator import Validator
 
 
 class Assembler:
@@ -19,7 +18,6 @@ class Assembler:
         self.config = config
         self.on_progress = on_progress or (lambda *a: None)
         self.on_token = on_token
-        self.validator = Validator()
 
         root = Path(__file__).parents[2]
         prompt_path = root / "config" / "assembly_prompt.txt"
@@ -29,14 +27,12 @@ class Assembler:
     def assemble(self, extracted: ExtractedContent, extractor: DeterministicExtractor) -> str:
         """Assemble final document from extracted content in single LLM call."""
 
-        self.on_progress(0, 3, "Formatting extracted content...")
+        self.on_progress(0, 2, "Formatting extracted content...")
 
-        # Format content for LLM
         formatted_content = extractor.format_for_assembly(extracted)
 
-        self.on_progress(1, 3, "Assembling with LLM (single pass)...")
+        self.on_progress(1, 2, "Assembling with LLM...")
 
-        # Single LLM call (with optional streaming)
         prompt = self.prompt_template.replace("{content}", formatted_content)
         if self.on_token:
             result = self.llm.query_stream(formatted_content, prompt, on_token=self.on_token)
@@ -46,16 +42,7 @@ class Assembler:
         if not result:
             raise RuntimeError("LLM assembly failed - no output")
 
-        self.on_progress(2, 3, "Validating output...")
-
-        # Validate
-        validation = self.validator.validate_final(result)
-        if not validation.is_valid:
-            print(f"Warning: Validation issues: {validation.issues}")
-            if validation.missing_patterns:
-                print(f"Missing patterns: {validation.missing_patterns[:5]}")
-
-        self.on_progress(3, 3, "Assembly complete")
+        self.on_progress(2, 2, "Assembly complete")
 
         return result
 

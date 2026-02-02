@@ -10,6 +10,8 @@ from pydantic import BaseModel
 
 from .runner import PipelineRunner
 from ..pipeline.sources import SourceManager, Source, SourceType
+from ..pipeline.validator import Validator
+from ..pipeline.docs_validator import OfficialDocsValidator
 
 
 class SourceCreate(BaseModel):
@@ -256,3 +258,83 @@ async def update_prompt(filename: str, data: dict):
     prompt_path = CONFIG_DIR / filename
     prompt_path.write_text(data["content"])
     return {"status": "saved", "filename": filename}
+
+
+ROOT = Path(__file__).parents[2]
+
+
+@app.post("/api/validate")
+async def validate_output():
+    """Validate the current output against jac check and official docs."""
+    output_path = ROOT / "output" / "2_final" / "jac_reference.txt"
+    if not output_path.exists():
+        release_path = ROOT.parent / "release" / "candidate.txt"
+        if release_path.exists():
+            output_path = release_path
+        else:
+            raise HTTPException(status_code=404, detail="No output to validate")
+
+    text = output_path.read_text()
+
+    validator = Validator()
+    docs_validator = OfficialDocsValidator()
+
+    jac_results = validator.validate_all_examples(text)
+
+    syntax_verification = docs_validator.validate_syntax_in_output(text)
+    syntax_results = {
+        v.construct: {
+            "expected": v.expected,
+            "found": v.found_in_output,
+            "correct": v.matches_docs
+        }
+        for v in syntax_verification
+    }
+
+    pattern_checks = {
+        'spawn_correct': bool(
+            ('root spawn' in text or 'node spawn' in text) and
+            'spawn root' not in text and 'spawn node' not in text
+        ),
+        'tuple_correct': '(a, b) =' in text or '(x, y) =' in text,
+        'connect_correct': '+>:' in text and ':+>' in text,
+        'by_llm_correct': 'by llm;' in text or 'by llm(' in text,
+    }
+
+    all_syntax_ok = all(v.matches_docs for v in syntax_verification if v.found_in_output)
+    all_patterns_ok = all(pattern_checks.values())
+
+    is_valid = jac_results.pass_rate >= 95 and all_syntax_ok and all_patterns_ok
+
+    return {
+        "source_file": str(output_path),
+        "jac_check": {
+            "total": jac_results.total_blocks,
+            "passed": jac_results.passed,
+            "failed": jac_results.failed,
+            "skipped": jac_results.skipped,
+            "pass_rate": jac_results.pass_rate,
+            "errors": jac_results.errors[:10]
+        },
+        "syntax_verification": syntax_results,
+        "pattern_checks": pattern_checks,
+        "docs_summary": docs_validator.get_docs_summary(),
+        "recommendation": "PASS" if is_valid else "REVIEW",
+        "is_valid": is_valid
+    }
+
+
+@app.get("/api/validate/docs-info")
+async def get_docs_info():
+    """Get information about loaded official docs for debugging."""
+    docs_validator = OfficialDocsValidator()
+    return docs_validator.get_docs_summary()
+
+
+@app.get("/api/candidate")
+async def get_candidate():
+    """Get the current candidate.txt content."""
+    release_path = ROOT.parent / "release" / "candidate.txt"
+    if not release_path.exists():
+        raise HTTPException(status_code=404, detail="No candidate.txt found")
+    return {"content": release_path.read_text()}

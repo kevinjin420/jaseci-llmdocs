@@ -11,18 +11,28 @@ docgen_dir = Path(__file__).parents[2]
 if (docgen_dir / ".env").exists(): load_dotenv(docgen_dir / ".env")
 
 class LLM:
+    APP_URL = "https://jaseci.org"
+    APP_TITLE = "Jac Documentation Generator"
+
     def __init__(self, config: Dict, stage_cfg: Dict = None):
         self.cfg = config['llm'].copy()
         if stage_cfg and 'llm' in stage_cfg:
             self.cfg.update(stage_cfg['llm'])
-        
+
         self.key = os.environ.get(self.cfg.get('api_key_env', 'OPENROUTER_API_KEY'))
         if not self.key: raise ValueError("Missing API Key")
         self.url = "https://openrouter.ai/api/v1/chat/completions"
 
+    def _headers(self) -> Dict[str, str]:
+        return {
+            "Authorization": f"Bearer {self.key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": self.APP_URL,
+            "X-Title": self.APP_TITLE
+        }
+
     def query(self, text: str, prompt_tpl: str = None) -> str:
         prompt = prompt_tpl.replace('{content}', text) if prompt_tpl else text
-        headers = {"Authorization": f"Bearer {self.key}", "Content-Type": "application/json"}
         data = {
             "model": self.cfg['model'],
             "messages": [{"role": "user", "content": prompt}],
@@ -33,7 +43,7 @@ class LLM:
 
         for i in range(self.cfg.get('max_retries', 3)):
             try:
-                res = requests.post(self.url, headers=headers, json=data, timeout=120)
+                res = requests.post(self.url, headers=self._headers(), json=data, timeout=120)
                 if res.ok: return res.json()['choices'][0]['message']['content']
                 if res.status_code in [500, 502, 503, 504, 429]:
                     time.sleep(2 ** i)
@@ -52,10 +62,6 @@ class LLM:
     ) -> str:
         """Query LLM with streaming response."""
         prompt = prompt_tpl.replace('{content}', text) if prompt_tpl else text
-        headers = {
-            "Authorization": f"Bearer {self.key}",
-            "Content-Type": "application/json"
-        }
         data = {
             "model": self.cfg['model'],
             "messages": [{"role": "user", "content": prompt}],
@@ -71,7 +77,7 @@ class LLM:
         for attempt in range(max_retries):
             try:
                 with requests.post(
-                    self.url, headers=headers, json=data, stream=True, timeout=300
+                    self.url, headers=self._headers(), json=data, stream=True, timeout=300
                 ) as response:
                     if not response.ok:
                         if response.status_code in [500, 502, 503, 504, 429]:

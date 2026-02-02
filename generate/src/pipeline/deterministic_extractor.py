@@ -75,6 +75,7 @@ class DeterministicExtractor:
 
     def __init__(self, config: dict = None):
         self.config = config or {}
+        self.docs_validator = None
         root = Path(__file__).parents[2]
         template_path = root / "config" / "reference_template.yaml"
         if template_path.exists():
@@ -82,6 +83,12 @@ class DeterministicExtractor:
                 self.template = yaml.safe_load(f)
         else:
             self.template = {'sections': [], 'keywords': {'critical': self.CRITICAL_KEYWORDS}}
+
+        try:
+            from .docs_validator import OfficialDocsValidator
+            self.docs_validator = OfficialDocsValidator()
+        except ImportError:
+            pass
 
     def extract_from_directory(self, source_dir: Path) -> ExtractedContent:
         """Extract all content from sanitized markdown files."""
@@ -315,4 +322,44 @@ class DeterministicExtractor:
         output.append("")
         output.append(f"# KEYWORDS FOUND: {', '.join(sorted(content.keywords_found))}")
 
+        syntax_verification = self._verify_syntax_patterns()
+        if syntax_verification:
+            output.append("")
+            output.append("# SYNTAX VERIFICATION (from official docs)")
+            for name, verified in syntax_verification.items():
+                status = "OK" if verified else "NOT FOUND"
+                output.append(f"# - {name}: {status}")
+
         return '\n'.join(output)
+
+    def _verify_syntax_patterns(self) -> dict[str, bool]:
+        """Verify critical syntax patterns against official docs."""
+        if not self.docs_validator:
+            return {}
+
+        patterns_to_verify = {
+            'spawn': 'root spawn Walker()',
+            'connect': '+>: EdgeType() :+>',
+            'traverse': '[-->:EdgeType:-->]',
+            'entry': 'with `root entry',
+            'tuple_unpack': '(a, b) =',
+            'by_llm': 'by llm;',
+        }
+
+        results = {}
+        for name, pattern in patterns_to_verify.items():
+            verification = self.docs_validator.verify_pattern(pattern)
+            results[name] = verification.found_in_docs
+
+        return results
+
+    def get_canonical_examples(self) -> dict[str, str]:
+        """Get canonical syntax examples from official docs for critical constructs."""
+        if not self.docs_validator:
+            return {}
+
+        canonical = {}
+        for construct, info in self.docs_validator.CANONICAL_PATTERNS.items():
+            canonical[construct] = info['example']
+
+        return canonical

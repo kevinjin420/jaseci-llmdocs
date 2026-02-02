@@ -4,12 +4,20 @@
 Validates that critical syntax patterns, code blocks, and content
 are preserved between compression stages.
 """
+import os
 import re
 import subprocess
 import tempfile
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
+from threading import Lock
 from typing import Optional
+
+
+class ValidationError(Exception):
+    """Raised when strict validation fails."""
+    pass
 
 
 @dataclass
@@ -169,6 +177,101 @@ class Validator:
 
         return blocks
 
+    def extract_inline_jac(self, text: str) -> list[tuple[int, str, str]]:
+        """Extract Jac code blocks from plaintext inline format.
+
+        Returns list of (line_number, code, category) tuples.
+        Line numbers are 1-indexed (matching file line numbers).
+        Categories: 'definition', 'example', 'entry_point'
+        """
+        lines = text.split('\n')
+        blocks = []
+
+        definition_keywords = (
+            'node ', 'walker ', 'edge ', 'obj ', 'enum ',
+            'async walker ', 'async def '
+        )
+
+        i = 0
+        while i < len(lines):
+            line = lines[i].strip()
+
+            if not line or line.startswith('#') or line.startswith('//'):
+                i += 1
+                continue
+
+            if ':' in line and '{' not in line and not any(
+                line.startswith(kw) for kw in definition_keywords
+            ):
+                i += 1
+                continue
+
+            code = None
+            category = None
+            start_line = i + 1  # 1-indexed line number
+
+            if any(line.startswith(kw) for kw in definition_keywords):
+                code, end_line = self._extract_balanced_block(lines, i)
+                category = 'definition'
+                i = end_line + 1
+            elif line.startswith('with entry') or line.startswith('with exit'):
+                code, end_line = self._extract_balanced_block(lines, i)
+                category = 'entry_point'
+                i = end_line + 1
+            elif line.startswith('def ') and '{' in line:
+                code, end_line = self._extract_balanced_block(lines, i)
+                category = 'definition'
+                i = end_line + 1
+            else:
+                i += 1
+                continue
+
+            if code and len(code) > 15:
+                open_count = code.count('{')
+                close_count = code.count('}')
+                if open_count == close_count and open_count > 0:
+                    blocks.append((start_line, code, category))
+
+        return blocks
+
+    def _extract_balanced_block(
+        self, lines: list[str], start_idx: int
+    ) -> tuple[str, int]:
+        """Extract a code block with balanced braces starting at start_idx."""
+        result_lines = []
+        brace_count = 0
+        started = False
+        end_idx = start_idx
+
+        for i in range(start_idx, len(lines)):
+            line = lines[i]
+            stripped = line.strip()
+
+            if not stripped:
+                if started and brace_count == 0:
+                    break
+                if started:
+                    result_lines.append(line)
+                continue
+
+            if stripped.startswith('#') and not started:
+                break
+
+            for char in stripped:
+                if char == '{':
+                    brace_count += 1
+                    started = True
+                elif char == '}':
+                    brace_count -= 1
+
+            result_lines.append(stripped)
+            end_idx = i
+
+            if started and brace_count == 0:
+                break
+
+        return ' '.join(result_lines), end_idx
+
     def run_jac_check(self, code: str, timeout: int = 5) -> tuple[bool, Optional[str]]:
         """Run jac check on a code snippet.
 
@@ -205,61 +308,113 @@ class Validator:
         finally:
             temp_path.unlink(missing_ok=True)
 
-    def jac_check_examples(
+    def _is_fragment(self, code: str) -> bool:
+        """Check if code is a fragment (incomplete snippet) that shouldn't be validated."""
+        lines = code.strip().split('\n')
+        if len(lines) < 2:
+            if 'with entry' not in code and 'spawn' not in code:
+                return True
+
+        fragment_markers = ['...', '# ...', '// ...', '/* ... */', '...}', '{...']
+        if any(marker in code for marker in fragment_markers):
+            return True
+
+        has_definition = any(
+            re.search(pattern, code)
+            for pattern in [r'\bnode\s+\w+', r'\bwalker\s+\w+', r'\bedge\s+\w+',
+                            r'\bobj\s+\w+', r'\bdef\s+\w+', r'\bcan\s+\w+',
+                            r'with\s+.*entry', r'with\s+.*exit']
+        )
+        if not has_definition and len(lines) < 3:
+            return True
+
+        return False
+
+    def _check_block_task(
+        self,
+        idx: int,
+        code: str,
+        source: str
+    ) -> tuple[int, str, str, Optional[bool], Optional[str]]:
+        """Task for thread pool - check a single code block.
+
+        Returns (idx, code, source, success, error).
+        success=None indicates the block was skipped.
+        """
+        if self._is_fragment(code):
+            return (idx, code, source, None, None)
+
+        success, error = self.run_jac_check(code)
+        return (idx, code, source, success, error)
+
+    def validate_all_examples(
         self,
         text: str,
-        max_errors: int = 10,
-        on_progress: Optional[callable] = None
+        fail_threshold: float = 90.0,
+        on_progress: Optional[callable] = None,
+        max_workers: Optional[int] = None
     ) -> JacCheckResult:
-        """Run jac check on all code examples in the documentation.
+        """Run jac check on all fenced code blocks using parallel processing.
 
         Args:
             text: Documentation text containing code blocks
-            max_errors: Maximum number of errors to collect
+            fail_threshold: Minimum pass rate percentage (default 90%)
             on_progress: Optional callback(current, total, message)
+            max_workers: Maximum threads (default: min(32, cpu_count * 2))
 
         Returns:
-            JacCheckResult with pass/fail statistics
+            JacCheckResult with comprehensive statistics
         """
         blocks = self.extract_jac_blocks(text)
         total = len(blocks)
+
+        if total == 0:
+            return JacCheckResult(0, 0, 0, 0, 0.0, [])
+
+        if max_workers is None:
+            max_workers = min(32, (os.cpu_count() or 4) * 2)
+
         passed = 0
         failed = 0
         skipped = 0
         errors = []
+        completed = 0
+        progress_lock = Lock()
 
-        for i, (block_idx, code) in enumerate(blocks):
-            if on_progress:
-                on_progress(i + 1, total, f"Checking block {block_idx + 1}...")
+        def update_progress():
+            nonlocal completed
+            with progress_lock:
+                completed += 1
+                if on_progress:
+                    on_progress(completed, total, f"Validating {completed}/{total} blocks")
 
-            # Skip blocks that are clearly partial/pseudocode
-            if any(marker in code for marker in ['...', '# ...', '// ...']):
-                skipped += 1
-                continue
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {
+                executor.submit(self._check_block_task, block_idx, code, 'fenced'): (block_idx, code)
+                for block_idx, code in blocks
+            }
 
-            # Skip very short snippets (likely incomplete)
-            if len(code.split('\n')) < 2 and 'with entry' not in code:
-                skipped += 1
-                continue
+            for future in as_completed(futures):
+                block_idx, code, _, success, error = future.result()
+                update_progress()
 
-            success, error = self.run_jac_check(code)
-
-            if success:
-                passed += 1
-            else:
-                failed += 1
-                if len(errors) < max_errors:
-                    preview = code[:100].replace('\n', ' ')
+                if success is None:
+                    skipped += 1
+                elif success:
+                    passed += 1
+                else:
+                    failed += 1
+                    preview = code[:150].replace('\n', ' ')
                     errors.append({
                         "block": block_idx + 1,
                         "error": error,
-                        "preview": preview + "..." if len(code) > 100 else preview
+                        "code_preview": preview + "..." if len(code) > 150 else preview
                     })
 
         total_checked = passed + failed
         pass_rate = (passed / total_checked * 100) if total_checked > 0 else 0.0
 
-        return JacCheckResult(
+        result = JacCheckResult(
             total_blocks=total,
             passed=passed,
             failed=failed,
@@ -267,3 +422,111 @@ class Validator:
             pass_rate=pass_rate,
             errors=errors
         )
+
+        if pass_rate < fail_threshold and total_checked > 0:
+            print(f"WARNING: Only {pass_rate:.1f}% of examples passed jac check (threshold: {fail_threshold}%)")
+            for err in errors[:5]:
+                print(f"  Block {err['block']}: {err['error']}")
+
+        return result
+
+    def validate_strict(
+        self,
+        text: str,
+        fail_on_error: bool = True,
+        on_progress: Optional[callable] = None,
+        max_workers: Optional[int] = None
+    ) -> JacCheckResult:
+        """Strictly validate ALL Jac code using parallel processing.
+
+        Extracts code from markdown fences AND inline plaintext format,
+        then runs jac check on each block in parallel using ThreadPoolExecutor.
+
+        Args:
+            text: Documentation text containing code blocks
+            fail_on_error: If True, raise ValidationError on any failure
+            on_progress: Optional callback(current, total, message)
+            max_workers: Maximum threads (default: min(32, cpu_count * 2))
+
+        Returns:
+            JacCheckResult with comprehensive statistics
+
+        Raises:
+            ValidationError: If fail_on_error=True and any block fails
+        """
+        fenced_blocks = self.extract_jac_blocks(text)
+        inline_blocks = self.extract_inline_jac(text)
+
+        all_blocks = []
+        for idx, code in fenced_blocks:
+            all_blocks.append((idx, code, 'fenced'))
+        for line_num, code, category in inline_blocks:
+            all_blocks.append((line_num, code, category))
+
+        total = len(all_blocks)
+        if total == 0:
+            return JacCheckResult(0, 0, 0, 0, 100.0, [])
+
+        if max_workers is None:
+            max_workers = min(32, (os.cpu_count() or 4) * 2)
+
+        passed = 0
+        failed = 0
+        skipped = 0
+        errors = []
+        completed = 0
+        progress_lock = Lock()
+
+        def update_progress():
+            nonlocal completed
+            with progress_lock:
+                completed += 1
+                if on_progress:
+                    on_progress(completed, total, f"Checked {completed}/{total} blocks")
+
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {
+                executor.submit(self._check_block_task, idx, code, source): (idx, code, source)
+                for idx, code, source in all_blocks
+            }
+
+            for future in as_completed(futures):
+                idx, code, source, success, error = future.result()
+                update_progress()
+
+                if success is None:
+                    skipped += 1
+                elif success:
+                    passed += 1
+                else:
+                    failed += 1
+                    preview = code[:200].replace('\n', ' ')
+                    errors.append({
+                        "line": idx,
+                        "error": error,
+                        "source": source,
+                        "code": preview + "..." if len(code) > 200 else preview
+                    })
+
+        total_checked = passed + failed
+        pass_rate = (passed / total_checked * 100) if total_checked > 0 else 100.0
+
+        result = JacCheckResult(
+            total_blocks=total,
+            passed=passed,
+            failed=failed,
+            skipped=skipped,
+            pass_rate=pass_rate,
+            errors=errors
+        )
+
+        if errors and fail_on_error:
+            error_summary = "\n".join(
+                f"  [{e['source']}:{e['line']}] {e['error']}"
+                for e in errors[:5]
+            )
+            raise ValidationError(
+                f"{len(errors)} code blocks failed jac check:\n{error_summary}"
+            )
+
+        return result

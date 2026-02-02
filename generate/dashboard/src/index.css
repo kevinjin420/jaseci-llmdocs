@@ -111,6 +111,11 @@ button:disabled {
   background-size: 200% 100%;
 }
 
+.stage-fill-warning {
+  background: linear-gradient(90deg, #a16207, #854d0e, #a16207);
+  background-size: 200% 100%;
+}
+
 .stage-running {
   animation: pulse-glow-stage 1.5s ease-in-out infinite;
 }

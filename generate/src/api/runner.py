@@ -17,7 +17,8 @@ from ..pipeline.llm import LLM
 from ..pipeline.sanitizer import Sanitizer
 from ..pipeline.deterministic_extractor import DeterministicExtractor
 from ..pipeline.assembler import Assembler
-from ..pipeline.validator import Validator, JacCheckResult
+from ..pipeline.validator import Validator, JacCheckResult, ValidationError
+from ..pipeline.docs_validator import OfficialDocsValidator
 
 
 @dataclass
@@ -415,30 +416,86 @@ class PipelineRunner:
             except Exception:
                 token_count = len(result) // 4  # rough estimate fallback
 
-            # Run jac check on all code examples
-            progress_cb(0, 1, "Running jac check on code examples...")
-            jac_check_result = self.validator.jac_check_examples(
+            progress_cb(0, 4, "Running strict validation on all code blocks...")
+
+            await self.emit("validation", {
+                "status": "strict_validation_start",
+                "message": "Validating fenced and inline code blocks..."
+            })
+
+            def strict_progress(current: int, total: int, message: str):
+                if self.loop:
+                    asyncio.run_coroutine_threadsafe(
+                        self.emit("validation", {
+                            "status": "strict_validation_progress",
+                            "current": current,
+                            "total": total,
+                            "message": message
+                        }),
+                        self.loop
+                    )
+
+            strict_result = self.validator.validate_strict(
                 result,
-                max_errors=10,
-                on_progress=lambda c, t, m: progress_cb(c, t, f"jac check: {m}")
+                fail_on_error=False,
+                on_progress=strict_progress
             )
 
+            await self.emit("validation", {
+                "status": "strict_validation_complete",
+                "strict_check": {
+                    "total": strict_result.total_blocks,
+                    "passed": strict_result.passed,
+                    "failed": strict_result.failed,
+                    "skipped": strict_result.skipped,
+                    "pass_rate": strict_result.pass_rate,
+                    "errors": strict_result.errors[:10]
+                }
+            })
+
+            progress_cb(1, 3, "Verifying syntax patterns...")
+            docs_validator = OfficialDocsValidator()
+            syntax_verification = docs_validator.validate_syntax_in_output(result)
+            syntax_results = {
+                v.construct: {
+                    "expected": v.expected,
+                    "found": v.found_in_output,
+                    "correct": v.matches_docs
+                }
+                for v in syntax_verification
+            }
+
+            incorrect_syntax = [v for v in syntax_verification if not v.matches_docs and v.found_in_output]
+
+            await self.emit("validation", {
+                "status": "syntax_check_complete",
+                "syntax_verification": syntax_results,
+                "incorrect_count": len(incorrect_syntax)
+            })
+
+            progress_cb(3, 3, "Validation complete")
+
+            all_syntax_correct = all(v.matches_docs for v in syntax_verification if v.found_in_output)
+            strict_pass = strict_result.failed == 0
+
             self.final_validation = {
-                "is_valid": validation_result.is_valid and jac_check_result.pass_rate >= 80,
+                "is_valid": validation_result.is_valid and strict_pass and all_syntax_correct,
                 "issues": validation_result.issues,
                 "missing_patterns": validation_result.missing_patterns,
                 "patterns_found": len(patterns),
                 "patterns_total": len(self.validator.CRITICAL_PATTERNS),
                 "output_size": len(result),
                 "token_count": token_count,
-                "jac_check": {
-                    "total_blocks": jac_check_result.total_blocks,
-                    "passed": jac_check_result.passed,
-                    "failed": jac_check_result.failed,
-                    "skipped": jac_check_result.skipped,
-                    "pass_rate": jac_check_result.pass_rate,
-                    "errors": jac_check_result.errors,
+                "strict_validation": {
+                    "total_blocks": strict_result.total_blocks,
+                    "passed": strict_result.passed,
+                    "failed": strict_result.failed,
+                    "skipped": strict_result.skipped,
+                    "pass_rate": strict_result.pass_rate,
+                    "errors": strict_result.errors[:10],
                 },
+                "syntax_verification": syntax_results,
+                "recommendation": "PASS" if (strict_pass and all_syntax_correct) else "REVIEW",
             }
 
             # Save validation results as JSON

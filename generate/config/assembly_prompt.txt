@@ -17,13 +17,25 @@ Example: code
 (Optional) Common error: wrong -> right
 
 HIGH-FAILURE SYNTAX (must be exact):
+- CLI: jac start file.jac (not jac serve, serve does not exist); jac check file.jac to validate syntax
 - Entry: with entry { } not entry { }
-- Spawn: Walker() spawn node; (spawn after instantiation)
-- Import: import from module { sym } or import module; (no import:py)
+- Spawn: node spawn Walker(); (node first, then spawn Walker)
+- Import: import from module { sym } (no semicolon after }); import module; (no import:py)
 - LLM: def f() -> T by llm; (semicolon, no parens, no import needed)
-- Access: has:priv x (no space); only :pub :priv :prot
+- Access: has:priv x (no space); only :pub :priv :protect
 - Permissions: node.__jac__.grant(root, Perm)
 - Specs: obj __specs__ { static has methods: list = [...]; } not dict literal
+- Methods: use can for abilities (with entry/exit), use def for regular methods
+- Optionals: str | None, not str?
+- Booleans: True/False capitalized, not true/false
+- Docstrings: before declarations, not inside function bodies
+- Lambdas: lambda x: T -> T { body }, not |x| { }
+- Tuple unpacking: (a, b) = func(); parentheses required around left side
+- No pass keyword: use empty block {} or comment
+- Enumerate unpacking: for (i, x) in enumerate(items) { }; parentheses required
+- Typed edges: a ++> EdgeType() ++> b; edge must be instantiated with (), not a +>:EdgeType:+> b
+- Connection returns list: a ++> Node() returns list; use a[0] to get single node for chaining
+- Ability names: never name abilities list/dict/str/int or other builtins; use fetch/get/handle instead
 
 TOPICS (cover all concisely):
 
@@ -31,21 +43,21 @@ TOPICS (cover all concisely):
 
 2. CONTROL: if cond { } elif { } else { }; for x in items { }; for i=0 to i<10 by i+=1 { }; while cond { }; match x { case V { } }
 
-3. FUNCTIONS: def name(p: T) -> R { }; lambdas: |p| -> T { }; glob var: T = val; at module level
+3. FUNCTIONS: def name(p: T) -> R { }; lambdas: lambda p: T -> R { }; glob var: T = val; at module level
 
-4. IMPORTS: import os; import from math { sqrt }; import from datetime { datetime as dt }; include module;
+4. IMPORTS: import os; import from math { sqrt }; import from datetime { datetime as dt }; include module; packages require __init__.jac like Python's __init__.py
 
 5. ARCHETYPES: node N { has f: T; def m() { } can on_v with W entry { } }; edge E { has f: T; }; walker W { has s: T; can act with N entry { visit [-->]; } }; obj O { has f: T; def m() { } }; enum E { A, B=1 }
 
-6. ACCESS: has:priv f: T; def:pub m() { }; can:prot h with entry { }; only :pub :priv :prot
+6. ACCESS: has:priv f: T; def:pub m() { }; can:protect h with entry { }; only :pub :priv :protect
 
-7. GRAPH: a ++> b; a <++> b; a +>:Edge:+> b; a +>:E:attr=v:+> b; del a --> b; [-->] forward; [<--] back; [-->:E:] typed; [-->(`?Node)] filter type; [-->](?attr>v) filter attr
+7. GRAPH: a ++> b; a <++> b; a ++> Edge() ++> b (typed connection requires edge instance); del a --> b; [-->] forward; [<--] back; [-->:E:] typed traversal; [-->(`?Node)] filter type; [-->](?attr>v) filter attr
 
 8. ABILITIES: can name with Type entry { } or exit { }; always requires with...entry/exit; use def for regular methods; self=instance here=node visitor=walker props=walker_props root=user_root `root=root_type
 
-9. WALKERS: Walker() spawn node; visit [-->]; visit [-->] else { }; report val; disengage; skip; result.reports for collected
+9. WALKERS: node spawn Walker(); visit [-->]; visit [-->] else { }; report val; disengage; skip; result.reports for collected
 
-10. BY_LLM: def f(x: str) -> str by llm; (builtin, no import); def f() -> Obj by llm; for structured; by llm(temperature=0.7); by llm(method="Reason"); has desc: str """hint"""; for semstrings; wrong: by llm() right: by llm;
+10. BY_LLM: def f(x: str) -> str by llm; (builtin, no import); def f() -> Obj by llm; for structured; by llm(temperature=0.7); by llm(method="Reason"); has desc: str = "" """hint"""; for semstrings (default value required); wrong: by llm() right: by llm;
 
 11. FILE_JSON: f=file.open(p,"r"); f.read(); f.write(s); f.close(); json.dumps(obj); json.loads(s)
 
@@ -67,7 +79,7 @@ TOPICS (cover all concisely):
 
 20. STDLIB: print len range enumerate type str int float list dict set; s.upper() lower() strip() split() join(); l.append() extend() pop() sort(); d.keys() values() items() get()
 
-21. JSX: sv { walker W { obj __specs__ { static has methods: list=["get"]; } can f with `root entry { report {}; } } } cl { has count: int=0; can with entry { } can with [dep] entry { } can with exit { } def inc() { count+=1; } <div><p>{count}</p><button onClick={inc}>+</button></div> }
+21. JSX: sv { walker W { obj __specs__ { static has methods: list=["get"]; } can f with `root entry { report {}; } } } cl { def:pub App() -> any { has count: int=0; can with entry { } can with [dep] entry { } can with exit { } def inc() { count+=1; } return <div><p>{count}</p><button onClick={inc}>+</button></div>; } }
 
 22. DEPLOY: docker: FROM python:3.11-slim; pip install jaclang; jac start main.jac; env: DATABASE_URL JAC_SECRET_KEY OPENAI_API_KEY
 

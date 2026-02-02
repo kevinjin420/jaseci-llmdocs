@@ -3,7 +3,6 @@ import shutil
 from pathlib import Path
 
 from .sources import SourceManager, SourceType
-from .jac_extractor import JacExtractor
 from .semantic_extractor import SemanticExtractor
 from .lark_extractor import LarkExtractor
 
@@ -30,7 +29,6 @@ class Sanitizer:
         self.min_content_length = 200
         config_path = Path(__file__).parents[2] / "config" / "config.yaml"
         self.source_manager = SourceManager(config_path)
-        self.jac_extractor = JacExtractor(config)
         self.semantic_extractor = SemanticExtractor(config)
         self.lark_extractor = LarkExtractor(config)
 
@@ -165,26 +163,10 @@ class Sanitizer:
                     })
 
             if source.source_type in (SourceType.JAC, SourceType.BOTH):
-                jac_results = self.jac_extractor.process_directory(source_dir)
-                stats["jac_files"] += jac_results["totals"]["files"]
-                stats["jac_definitions"] += len(jac_results["all_definitions"])
-
-                if jac_results["all_definitions"]:
-                    jac_md = self.jac_extractor.generate_markdown(jac_results)
-                    jac_doc_path = out_dir / f"{source_id}_jac_examples.md"
-                    jac_doc_path.write_text(jac_md, encoding='utf-8')
-
-                    stats["kept_files"] += 1
-                    stats["files"].append({
-                        "path": jac_doc_path.name,
-                        "source": source_id,
-                        "type": "jac",
-                        "original_size": len(jac_md),
-                        "cleaned_size": len(jac_md),
-                        "definitions": len(jac_results["all_definitions"])
-                    })
-
                 ast_results = self.lark_extractor.process_directory(source_dir)
+                stats["jac_files"] += ast_results["totals"]["files"]
+                stats["jac_definitions"] += len(ast_results["all_definitions"])
+
                 if ast_results["all_definitions"]:
                     skeleton = self.lark_extractor.generate_skeleton(ast_results)
                     skeleton_path = out_dir / f"{source_id}_jac_skeleton.md"
@@ -194,8 +176,8 @@ class Sanitizer:
                     stats["files"].append({
                         "path": skeleton_path.name,
                         "source": source_id,
-                        "type": "skeleton",
-                        "original_size": len(jac_md) if jac_results["all_definitions"] else 0,
+                        "type": "jac",
+                        "original_size": len(skeleton),
                         "cleaned_size": len(skeleton),
                         "definitions": len(ast_results["all_definitions"])
                     })
