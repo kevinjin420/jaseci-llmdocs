@@ -3,8 +3,8 @@ source_dir: "docs"
 
 # LLM API Configuration
 llm:
-  provider: "openrouter"
-  model: "anthropic/claude-opus-4.5"
-  api_key_env: "OPENROUTER_API_KEY"
-  temperature: 0.0
-  max_retries: 3
+    provider: "openrouter"
+    model: "anthropic/claude-opus-4.6"
+    api_key_env: "OPENROUTER_API_KEY"
+    temperature: 0.0
+    max_retries: 3

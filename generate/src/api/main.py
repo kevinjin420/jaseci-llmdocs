@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import asyncio
+import re
 from pathlib import Path
 from typing import Optional
 from contextlib import asynccontextmanager
@@ -293,8 +294,7 @@ async def validate_output():
 
     pattern_checks = {
         'spawn_correct': bool(
-            ('root spawn' in text or 'node spawn' in text) and
-            'spawn root' not in text and 'spawn node' not in text
+            re.search(r'\bspawn\s+\w+|\w+\s+spawn\b', text)
         ),
         'tuple_correct': '(a, b) =' in text or '(x, y) =' in text,
         'connect_correct': '+>:' in text and ':+>' in text,

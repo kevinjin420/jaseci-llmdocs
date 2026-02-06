@@ -16,58 +16,71 @@ Syntax: pattern
 Example: code
 (Optional) Common error: wrong -> right
 
-HIGH-FAILURE SYNTAX (must be exact):
+HIGH-FAILURE SYNTAX (must be exact -- verified with jac check):
 - CLI: jac start file.jac (not jac serve, serve does not exist); jac check file.jac to validate syntax
 - Entry: with entry { } not entry { }
-- Spawn: node spawn Walker(); (node first, then spawn Walker)
-- Import: import from module { sym } (no semicolon after }); import module; (no import:py)
-- LLM: def f() -> T by llm; (semicolon, no parens, no import needed)
-- Access: has:priv x (no space); only :pub :priv :protect
+- Spawn: BOTH forms valid: node spawn Walker(); AND Walker() spawn node;
+- Import: import from module { sym } (no semicolon after }); import module; (semicolon required for plain import)
+- LLM: def f() -> T by llm; OR def f() -> T by llm(); both valid. by llm(temperature=0.7) for params. No import needed.
+- Access: has:priv x OR has :priv x (both valid); only :pub :priv :protect
 - Permissions: node.__jac__.grant(root, Perm)
 - Specs: obj __specs__ { static has methods: list = [...]; } not dict literal
 - Methods: use can for abilities (with entry/exit), use def for regular methods
 - Optionals: str | None, not str?
 - Booleans: True/False capitalized, not true/false
 - Docstrings: before declarations, not inside function bodies
-- Lambdas: lambda x: T -> T { body }, not |x| { }
+- Lambdas: TWO FORMS. Expression: lambda x: int -> int : x * 2; Block: lambda x: int -> int { return x * 2; }; Block form REQUIRES return statement. NEVER write lambda x: T -> T { expr } without return.
 - Tuple unpacking: (a, b) = func(); parentheses required around left side
 - No pass keyword: use empty block {} or comment
 - Enumerate unpacking: for (i, x) in enumerate(items) { }; parentheses required
-- Typed edges: a ++> EdgeType() ++> b; edge must be instantiated with (), not a +>:EdgeType:+> b
-- Connection returns list: a ++> Node() returns list; use a[0] to get single node for chaining
+- Match/case: match x { case 1: stmt; case _: stmt; } Cases use COLON then statements, NOT braces. Wrong: case 1 { } Right: case 1: stmt;
+- Typed edge CONNECTION: a +>: EdgeType() :+> b; uses +>: and :+> brackets. Wrong: a ++> EdgeType() ++> b. The ++> operator is ONLY for untyped connections (a ++> b).
+- Typed edge TRAVERSAL: [->:E:->] uses ->: and :-> brackets. Wrong: [-->:E:]. The --> operator is ONLY for untyped traversal [-->].
+- Chained typed traversal: [->:E1:->->:E2:->] chain pairs directly. Wrong: [-->:E1:->-->:E2:->]
+- Edge filter by attribute: [->:Friend:since > 2020:->] attribute filter inside the typed brackets
+- Disconnect: a del--> b; the del keyword attaches to the edge operator. Wrong: del a --> b;
+- Untyped connection returns list: a ++> Node() returns list; use a[0] to get single node
 - Ability names: never name abilities list/dict/str/int or other builtins; use fetch/get/handle instead
+- Try/except: try { } except TypeError as e { } finally { }; uses except not catch; braces around all blocks
+- Inheritance: obj Child(Parent) { }; walkers/nodes too: walker W(BaseW) { }; node N(BaseN) { }
+- Pipe: "hello" |> print; forward pipe operator passes left as arg to right
+- Impl blocks: impl Walker.ability { code }; separate declaration from implementation
+- Postinit: has field: T by postinit; then def postinit { self.field = computed; }
+- Walrus: root +>: E() :+> (end := A(val=10)); inline assignment with :=
+- Backward typed connect: a <+: E() :<+ b; backward typed uses <+: and :<+
+- Booleans RUNTIME: true/false pass syntax check but FAIL at runtime. ALWAYS use True/False.
 
 TOPICS (cover all concisely):
 
 1. TYPES: int float str bool bytes any; list[T] dict[K,V] set[T]; int|None for unions; has x: type; -> return
 
-2. CONTROL: if cond { } elif { } else { }; for x in items { }; for i=0 to i<10 by i+=1 { }; while cond { }; match x { case V { } }
+2. CONTROL: if cond { } elif { } else { }; for x in items { }; for i=0 to i<10 by i+=1 { }; while cond { }; match x { case V: stmt; case _: stmt; } (cases use COLON not braces); try { } except Type as e { } finally { } (uses except, not catch)
 
-3. FUNCTIONS: def name(p: T) -> R { }; lambdas: lambda p: T -> R { }; glob var: T = val; at module level
+3. FUNCTIONS: def name(p: T) -> R { }; lambdas: lambda p: T -> R : expr (expression form) OR lambda p: T -> R { return expr; } (block form, MUST have return); glob var: T = val; at module level; pipe: val |> func; f-strings: f"Hello {name}!"
 
 4. IMPORTS: import os; import from math { sqrt }; import from datetime { datetime as dt }; include module; packages require __init__.jac like Python's __init__.py
 
-5. ARCHETYPES: node N { has f: T; def m() { } can on_v with W entry { } }; edge E { has f: T; }; walker W { has s: T; can act with N entry { visit [-->]; } }; obj O { has f: T; def m() { } }; enum E { A, B=1 }
+5. ARCHETYPES: node N { has f: T; def m() { } can on_v with W entry { } }; edge E { has f: T; }; walker W { has s: T; can act with N entry { visit [-->]; } }; obj O { has f: T; def m() { } }; enum E { A, B=1 }; inheritance: obj Child(Parent) { }; impl blocks: impl W.ability { code }; postinit: has f: T by postinit; def postinit { self.f = val; }
 
-6. ACCESS: has:priv f: T; def:pub m() { }; can:protect h with entry { }; only :pub :priv :protect
+6. ACCESS: has:priv f: T; has :pub f: T; def:pub m() { }; can:protect h with entry { }; only :pub :priv :protect; both has:priv and has :priv are valid
 
-7. GRAPH: a ++> b; a <++> b; a ++> Edge() ++> b (typed connection requires edge instance); del a --> b; [-->] forward; [<--] back; [-->:E:] typed traversal; [-->(`?Node)] filter type; [-->](?attr>v) filter attr
+7. GRAPH: a ++> b (untyped connect); a <++> b (bidirectional); a +>: Edge() :+> b (typed forward connect); a <+: Edge() :<+ b (typed backward connect); a del--> b (disconnect, del attaches to arrow); [-->] forward traversal; [<--] back; [->:E:->] typed traversal (uses ->: :-> brackets); [<-:E:<-] typed backward; [->:E1:->->:E2:->] chained; [-->(`?Node)] filter type; [-->](?attr>v) filter attr; [->:E:attr > val:->] edge attr filter; walrus in connect: root +>: E() :+> (end := A()); visit : 0 : [-->] (indexed visit). Wrong: a ++> Edge() ++> b; [-->:E:]; del a --> b;
 
 8. ABILITIES: can name with Type entry { } or exit { }; always requires with...entry/exit; use def for regular methods; self=instance here=node visitor=walker props=walker_props root=user_root `root=root_type
 
-9. WALKERS: node spawn Walker(); visit [-->]; visit [-->] else { }; report val; disengage; skip; result.reports for collected
+9. WALKERS: node spawn Walker(); OR Walker() spawn node; (both valid); visit [-->]; visit [-->] else { }; visit [->:E:->]; report val; disengage; skip; result.reports for collected
 
-10. BY_LLM: def f(x: str) -> str by llm; (builtin, no import); def f() -> Obj by llm; for structured; by llm(temperature=0.7); by llm(method="Reason"); has desc: str = "" """hint"""; for semstrings (default value required); wrong: by llm() right: by llm;
+10. BY_LLM: def f(x: str) -> str by llm; (builtin, no import); def f() -> Obj by llm(); also valid; by llm(temperature=0.7) for params; by llm(method="Reason"); has desc: str = "" """hint"""; for semstrings (default value required); "prompt" by llm; for inline
 
 11. FILE_JSON: f=file.open(p,"r"); f.read(); f.write(s); f.close(); json.dumps(obj); json.loads(s)
 
-12. API: jac start file.jac; walker becomes endpoint; walker W { has d: str; obj __specs__ { static has methods: list=["GET"]; static has auth: bool=true; static has path_prefix: str="/api"; } can h with `root entry { report {"k":v}; } }; wrong: __specs__={"methods":[]}
+12. API: jac start file.jac; walker becomes endpoint; walker W { has d: str; obj __specs__ { static has methods: list=["GET"]; static has auth: bool=True; static has path_prefix: str="/api"; } can h with `root entry { report {"k":v}; } }; wrong: __specs__={"methods":[]}
 
 13. WEBSOCKET: obj __specs__ { static has methods: list=["websocket"]; }; socket.notify_users(ids,msg); socket.notify_channels(names,msg)
 
 14. WEBHOOKS: obj __specs__ { static has webhook: dict={"type":"header","name":"X-Sig"}; }; endpoint /webhook/walker/name
 
-15. SCHEDULER: obj __specs__ { static has schedule: dict={"trigger":"cron","hour":"9"}; static has private: bool=true; }; triggers: cron interval date
+15. SCHEDULER: obj __specs__ { static has schedule: dict={"trigger":"cron","hour":"9"}; static has private: bool=True; }; triggers: cron interval date
 
 16. ASYNC: async walker W { async can f with entry { await op(); } }; async def f() { }; task.__jac__.status/reports/error
 
@@ -75,7 +88,7 @@ TOPICS (cover all concisely):
 
 18. PERSISTENCE: nodes connected to root auto-persist; save(node); commit(); &id for reference; del node; commit(); glob var: T = val; for persistent globals
 
-19. TESTING: test name { assert cond; check cond; }
+19. TESTING: test name { assert cond; } (no check keyword, only assert)
 
 20. STDLIB: print len range enumerate type str int float list dict set; s.upper() lower() strip() split() join(); l.append() extend() pop() sort(); d.keys() values() items() get()
 
@@ -83,10 +96,10 @@ TOPICS (cover all concisely):
 
 22. DEPLOY: docker: FROM python:3.11-slim; pip install jaclang; jac start main.jac; env: DATABASE_URL JAC_SECRET_KEY OPENAI_API_KEY
 
-PATTERNS (include 2-3 complete examples):
-- Fullstack single-file with sv{} and cl{}
-- Walker graph traversal with visit/report
-- API endpoint with __specs__
+PATTERNS (include 2-3 complete examples using CORRECT syntax above):
+- Fullstack single-file with sv{} and cl{} -- use +>: E() :+> for typed edges, lambda x: T -> R : expr for lambdas
+- Walker graph traversal with visit/report -- use [->:E:->] for typed traversal, a del--> b for disconnect
+- API endpoint with __specs__ -- use match x { case V: stmt; } for match/case
 
 ---
 
@@ -95,4 +108,78 @@ EXTRACTED CONTENT:
 
 ---
 
-Generate terse reference. No markdown. No blank lines. Show syntax and examples, minimize explanation. All topics required. ~12-15KB target.
+VERIFIED SYNTAX EXAMPLES (all pass jac check v0.9.13 -- use these as ground truth):
+
+# Typed edge connect
+node A { has val: int = 0; }
+edge E { has weight: float = 1.0; }
+with entry { a = root ++> A(val=1); b = root ++> A(val=2); a[0] +>: E(weight=0.5) :+> b[0]; }
+
+# Typed edge traversal
+with entry { items = [->:E:->]; }
+
+# Chained typed traversal
+with entry { items = [root->:E1:->->:E2:->]; }
+
+# Disconnect
+with entry { a = root ++> A(); root del--> a[0]; }
+
+# Match/case (colons, not braces)
+with entry { x = 1; match x { case 1: print("one"); case _: print("other"); } }
+
+# Lambda expression form
+with entry { f = lambda x: int -> int : x * 2; }
+
+# Lambda block form (MUST have return)
+with entry { f = lambda x: int -> int { return x * 2; }; }
+
+# Lambda multi-param
+with entry { f = lambda x: int, y: int -> int : x + y; }
+
+# Spawn both forms
+with entry { root spawn W1(); W2() spawn root; }
+
+# Edge connect with kwargs
+with entry { root +>: E() : weight=0.5 :+> A(val=1); }
+
+# Edge filter by attribute
+with entry { items = [->:Friend:since > 2020:->]; }
+
+# Walker with typed visit
+walker W { can go with `root entry { visit [->:E:->]; } }
+
+# Backward typed connect
+with entry { a = root ++> A(val=1); b = root ++> A(val=2); a[0] <+: E(weight=0.5) :<+ b[0]; }
+
+# Backward typed traversal
+with entry { items = [<-:E:<-]; }
+
+# Try/except
+with entry { try { x = 1 / 0; } except ZeroDivisionError as e { print("caught"); } finally { print("done"); } }
+
+# Pipe operator
+with entry { "hello world" |> print; }
+
+# Inheritance
+obj Animal { has name: str; def speak() -> str { return "..."; } }
+obj Dog(Animal) { def speak() -> str { return "Woof!"; } }
+
+# Impl block (separate declaration from implementation)
+walker Creator { can create with `root entry; }
+impl Creator.create { print("created"); }
+
+# Postinit
+obj MyObj { has x: int = 0; has y: int by postinit; def postinit { self.y = self.x * 2; } }
+
+# Walrus in connect
+with entry { root +>: E() :+> (end := A(val=10)); }
+
+# Visit with index
+walker WI { can go with `root entry { visit : 0 : [-->]; } }
+
+# f-string
+with entry { name = "World"; print(f"Hello {name}!"); }
+
+---
+
+Generate terse reference. No markdown. No blank lines. Show syntax and examples, minimize explanation. All topics required. ~12-15KB target. Every code example MUST use the verified syntax above. When in doubt, prefer the VERIFIED SYNTAX EXAMPLES over any other source.

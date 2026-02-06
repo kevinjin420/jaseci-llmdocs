@@ -35,9 +35,9 @@ class Assembler:
 
         prompt = self.prompt_template.replace("{content}", formatted_content)
         if self.on_token:
-            result = self.llm.query_stream(formatted_content, prompt, on_token=self.on_token)
+            result = self.llm.query_stream(prompt, on_token=self.on_token)
         else:
-            result = self.llm.query(formatted_content, prompt)
+            result = self.llm.query(prompt)
 
         if not result:
             raise RuntimeError("LLM assembly failed - no output")

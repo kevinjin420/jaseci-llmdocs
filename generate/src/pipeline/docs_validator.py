@@ -34,9 +34,9 @@ class OfficialDocsValidator:
     CANONICAL_PATTERNS = {
         'spawn': {
             'correct': r'\w+\s+spawn\s+\w+\(',
-            'wrong': r'\w+\(\)\s+spawn\s+\w+',
-            'example': 'root spawn Walker();',
-            'description': 'node first, then spawn Walker'
+            'wrong': None,
+            'example': 'root spawn Walker(); OR Walker() spawn root;',
+            'description': 'both node spawn Walker() and Walker() spawn node are valid'
         },
         'connect': {
             'correct': r'\+>:\s*\w+',
@@ -45,10 +45,10 @@ class OfficialDocsValidator:
             'description': 'edge connection with type'
         },
         'traverse': {
-            'correct': r'\[-->:?\w*:?\]',
-            'wrong': None,
-            'example': '[-->:EdgeType:]',
-            'description': 'typed edge traversal'
+            'correct': r'\[->:\w+:->',
+            'wrong': r'\[-->:\w+:\]',
+            'example': '[->:EdgeType:->]',
+            'description': 'typed edge traversal uses ->: and :-> brackets'
         },
         'tuple_unpack': {
             'correct': r'\(\s*\w+\s*,\s*\w+\s*\)\s*=',
@@ -71,8 +71,8 @@ class OfficialDocsValidator:
         'lambda': {
             'correct': r'lambda\s+\w+\s*:',
             'wrong': r'\|\w+\|\s*\{',
-            'example': 'lambda x: int -> int { x * 2 }',
-            'description': 'use lambda keyword, not |x| syntax'
+            'example': 'lambda x: int -> int : x * 2',
+            'description': 'expression form uses colon, block form requires return'
         },
         'enumerate': {
             'correct': r'for\s+\(\s*\w+\s*,\s*\w+\s*\)\s+in\s+enumerate',

@@ -44,7 +44,12 @@ class Validator:
         (r'<\+\+>', 'edge: <++>'),
         (r'-->', 'edge: -->'),
         (r'<-->', 'edge: <-->'),
-        (r'by\s+llm\s*\(', 'by llm()'),
+        (r'\+>:', 'typed connect: +>:'),
+        (r':\+>', 'typed connect: :+>'),
+        (r'->:', 'typed traversal: ->:'),
+        (r':->',  'typed traversal: :->'),
+        (r'\bdel-->', 'disconnect: del-->'),
+        (r'by\s+llm\s*[;(]', 'by llm'),
         (r'with\s+entry', 'with entry'),
         (r'with\s+exit', 'with exit'),
         (r'`root\s+entry', 'root entry'),
@@ -72,6 +77,8 @@ class Validator:
         (r'/>', 'JSX self-closing'),
         (r'\buseState\b', 'React useState'),
         (r'\buseEffect\b', 'React useEffect'),
+        (r'\bcase\s+\w+\s*:', 'match case with colon'),
+        (r'lambda\s+\w+\s*:', 'lambda expression'),
     ]
 
     def __init__(self, min_size_ratio=0.1, required_pattern_ratio=0.5):
@@ -140,8 +147,9 @@ class Validator:
 
         if required_patterns is None:
             required_patterns = [
-                'edge: ++>', 'by llm()', 'with entry', 'spawn',
-                'node definition', 'walker definition', 'has x: type'
+                'edge: ++>', 'by llm', 'with entry', 'spawn',
+                'node definition', 'walker definition', 'has x: type',
+                'typed connect: +>:', 'typed traversal: ->:',
             ]
 
         found = self.find_patterns(text)
