@@ -40,6 +40,8 @@ class LLM:
         }
         if self.cfg.get('max_tokens'):
             data["max_tokens"] = self.cfg['max_tokens']
+        if self.cfg.get('seed') is not None:
+            data["seed"] = self.cfg['seed']
 
         for i in range(self.cfg.get('max_retries', 3)):
             try:
@@ -70,6 +72,8 @@ class LLM:
         }
         if self.cfg.get('max_tokens'):
             data["max_tokens"] = self.cfg['max_tokens']
+        if self.cfg.get('seed') is not None:
+            data["seed"] = self.cfg['seed']
 
         accumulated = []
         max_retries = self.cfg.get('max_retries', 3)

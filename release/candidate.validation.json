@@ -1,10 +1,10 @@
 {
   "is_valid": true,
   "strict": {
-    "total": 23,
-    "passed": 2,
+    "total": 14,
+    "passed": 3,
     "failed": 0,
-    "skipped": 21,
+    "skipped": 11,
     "pass_rate": 100.0,
     "errors": []
   },

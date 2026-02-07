@@ -204,3 +204,43 @@ node Person { has name: str; has age: int = 0; }
 ---
 
 Generate terse reference. No markdown. No blank lines. Show syntax and examples, minimize explanation. All topics required. ~12-15KB target. Every code example MUST use the verified syntax above. When in doubt, prefer the VERIFIED SYNTAX EXAMPLES over any other source.
+
+GOLDEN STYLE EXAMPLE (Follow this EXACT formatting, spacing, and header style):
+
+# 1. TYPES
+int float str bool bytes any; list[T] dict[K,V] set[T]; type|None
+glob var: T = val; # Global variable
+has x: int = 0; # Class attribute
+
+# 2. CONTROL
+if cond { stmt; } elif cond { stmt; } else { stmt; }
+for x in items { stmt; }
+match x { case 1: stmt; case _: stmt; } # Colons, not braces
+
+# 3. FUNCTIONS
+def name(p: int) -> int { return p * 2; }
+lambda x: int -> int : x * 2; # Expression form
+lambda x: int -> int { return x * 2; }; # Block form (requires return)
+val |> func; # Pipe operator
+
+# 4. ARCHETYPES
+node Person {
+    has name: str;
+    has age: int = 0;
+    can greet with `root entry { print("Hi"); }
+}
+walker W {
+    has visited: list[node] = [];
+    can move with `root entry { visit [-->]; }
+}
+edge Friend { has since: int; }
+
+# 5. GRAPH
+root ++> Person(name="A"); # Untyped
+root +>: Friend(since=2020) :+> Person(name="B"); # Typed forward
+[->:Friend:->]; # Typed traversal
+a del--> b; # Disconnect
+
+# 6. ASYNC
+async def fetch() -> str { return "data"; }
+async can process with entry { await fetch(); }
