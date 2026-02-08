@@ -1,6 +1,6 @@
 You are assembling a Jac language reference. Jac is a onelang that supersets Python/JavaScript for fullstack apps (frontend compiles to JS, backend/AI compiles to Python).
 
-TARGET: 12-15KB. Terse reference format, not prose.
+TARGET: 15-20KB. Terse reference format, not prose.
 
 FORMAT RULES:
 - Short declarative statements, not explanations
@@ -18,13 +18,17 @@ Example: code
 
 HIGH-FAILURE SYNTAX (must be exact -- verified with jac check):
 - CLI: jac start file.jac (not jac serve, serve does not exist); jac check file.jac to validate syntax
+- Top-level: only declarations (imports, globs, archetypes, functions, tests) allowed at module top level. Executable statements like print("x"); MUST go inside with entry { } or a function body. Bare statements at top level cause parse errors.
 - Entry: with entry { } not entry { }
-- Spawn: BOTH forms valid: node spawn Walker(); AND Walker() spawn node;
-- Import: import from module { sym } (no semicolon after }); import module; (semicolon required for plain import)
+- Spawn: BOTH forms valid: root spawn Walker(); AND Walker() spawn root; (use root or a variable, NEVER bare keyword node -- node is a keyword)
+- Import: import from module { sym } (no semicolon after }); import module; (semicolon required for plain import). Wrong: import from math, sqrt; (comma form does not exist). No import:py or import:jac syntax exists; plain import handles both Python and Jac modules.
 - LLM: def f() -> T by llm; OR def f() -> T by llm(); both valid. by llm(temperature=0.7) for params. No import needed.
 - Access: has:priv x OR has :priv x (both valid); only :pub :priv :protect
 - Permissions: node.__jac__.grant(root, Perm)
-- Specs: obj __specs__ { static has methods: list = [...]; } not dict literal
+- Specs: obj __specs__ { static has methods: list = [...]; } not dict literal. __specs__ controls methods/path/websocket ONLY; it does NOT control authentication.
+- Walker auth: controlled by :pub access modifier on walker declaration. walker :pub MyWalker { } is public (no auth). Without :pub, walkers require Jac built-in auth (token from /user/register or /user/login). WRONG: static has auth: bool = False; in __specs__ (auth field in __specs__ does nothing).
+- :pub walker root access: :pub walkers run as anonymous with READ-ONLY access to root. Graph writes (here +>: E() :+> Node()) silently fail when here is root in a :pub walker. Workaround: use Jac's built-in auth for walkers that need write access, or store data in JWT payloads.
+- Custom auth pattern: if using custom auth (OAuth, JWT), make ALL walkers :pub and handle auth checks manually inside the walker body. Jac's built-in auth is separate from custom auth.
 - Methods: use can for abilities (with entry/exit), use def for regular methods
 - Optionals: str | None, not str?
 - Booleans: True/False capitalized, not true/false
@@ -40,6 +44,9 @@ HIGH-FAILURE SYNTAX (must be exact -- verified with jac check):
 - Edge filter by attribute: [->:Friend:since > 2020:->] attribute filter inside the typed brackets
 - Disconnect: a del--> b; the del keyword attaches to the edge operator. Wrong: del a --> b;
 - Untyped connection returns list: a ++> Node() returns list; use a[0] to get single node
+- Traversal from variable node: [node_var -->] and [node_var ->:E:->] traverse from a specific node, not just here. Example: result = [city_a ->:Road:->]; This is required for any non-trivial graph program.
+- Globals in functions: glob var: T = val; declared at module level. Inside functions, access by name directly (counter += 1;). Do NOT re-declare glob inside function body (glob counter; inside a function FAILS).
+- Lambda as function argument: items.sort(key=lambda x: dict -> float : x["val"]); type annotations required even in argument position.
 - Ability names: never name abilities list/dict/str/int or other builtins; use fetch/get/handle instead
 - Try/except: try { } except TypeError as e { } finally { }; uses except not catch; braces around all blocks
 - Inheritance: obj Child(Parent) { }; walkers/nodes too: walker W(BaseW) { }; node N(BaseN) { }
@@ -53,6 +60,29 @@ HIGH-FAILURE SYNTAX (must be exact -- verified with jac check):
 - Reserved keywords as variables: obj, node, walker, edge, enum, can, has are keywords. NEVER use them as variable names. Wrong: obj = json.loads(s); Right: data = json.loads(s);
 - Attribute ordering: non-default attributes MUST come before default attributes in the same archetype. Wrong: node N { has x: int = 0; has y: str; } Right: node N { has y: str; has x: int = 0; }
 - Test names: test blocks use identifiers not strings. Wrong: test "my test" { } Right: test my_test { }
+- Fullstack entry: cl{} block in main.jac must have def:pub app matching [serve] base_route_app in jac.toml. Without this, / returns 404.
+- Client file discovery: .cl.jac files are auto-compiled to .jac/client/compiled/. Do NOT include .cl.jac via include (server parser cannot handle JSX). Use cl import from .module { Component } instead.
+- jac install: creates .jac/venv/ regardless of active conda/virtualenv. This is expected behavior. jac start auto-installs npm deps from jac.toml.
+- Dev server ports: --port is Vite frontend (default 8000, open in browser); --api_port is backend API (default 8001, auto-proxied). Two separate ports in dev mode.
+- No ternary ?: operator in Jac. Use Python-style: (expr) if condition else (expr). This is the BIGGEST JSX gotcha.
+- cl{} context uses JS builtins, NOT Python. Full mapping: .length not len(); String(x) not str(x); parseInt(x) not int(x); parseFloat(x) not float(x); Math.min(a,b) not min(a,b); Math.max(a,b) not max(a,b); .trim() not .strip(); no range() (use while loop); no enumerate() (use manual index); (dict["key"] or default) not dict.get("key", default); + for string concat not f-strings; for item in [[x,y]] then item[0] not tuple unpacking; no new keyword (cannot use new URLSearchParams() etc).
+- .cl.jac files do NOT need cl{} wrapper -- the .cl.jac extension makes the file implicitly client-side.
+- Server imports in .cl.jac files need sv prefix: sv import from walkers.xxx { Walker }. Without sv, import resolves client-side and fails.
+- Lifecycle in .cl.jac: use import from react { useEffect } and useEffect(lambda -> None { ... }, []), NOT can with entry { }. The can with entry pattern compiles differently server-side vs client-side. Official templates use useEffect.
+- root spawn compiles to await __jacSpawn(). Any function containing root spawn MUST be async def. useEffect lambda MUST be non-async -- extract async work to separate async def and call from the non-async lambda.
+- CSS imports: import "./styles.css"; in .cl.jac files works (compiler copies CSS, Vite processes it).
+- .jac/ directory is fully auto-generated (_entry.js, index.html, vite.config.js, package.json). Never modify manually.
+- include in __init__.jac: use full dotted paths (include pkg.module;). Short paths pass jac check but fail at runtime.
+- root spawn failures crash the caller (no automatic error handling). Wrap in try/except in async functions.
+- root spawn ALWAYS sends POST to /walker/WalkerName. If walker's __specs__ only lists ["GET"], client gets 401. Every walker called from client MUST include "POST" in methods list.
+- className not class for JSX attributes. React 18 ignores the class prop entirely; the Jac compiler passes props through as-is with no automatic conversion.
+- npm dependencies: ALL npm packages must be declared in jac.toml [dependencies.npm] or [dependencies.npm.dev]. Install via jac add --npm. Never run npm install or bun install directly in .jac/client/ -- it corrupts the managed dependency tree.
+- PostCSS config: Vite root is .jac/client/, NOT project root. postcss.config.js must be at .jac/client/postcss.config.js for Vite to find it. Project root alone won't work.
+- Tailwind v4: @import "tailwindcss" in CSS requires @tailwindcss/postcss installed and configured. Both tailwindcss and @tailwindcss/postcss must be in jac.toml [dependencies.npm], and postcss.config.js pointing to @tailwindcss/postcss must exist in Vite root (.jac/client/).
+- .jac/ is fully auto-generated: files placed inside (like postcss.config.js) may get wiped on regeneration. The durable source of truth is jac.toml and project-root config files.
+- .env loading: jac start does NOT auto-load .env files. Add python-dotenv to [dependencies] and use glob _dotenv_loaded: bool = load_dotenv() or True; at module level (since top-level executable statements are not allowed, the glob trick runs it as a declaration).
+- Empty lambda blocks: lambda e: any -> None {} (empty body) fails in 0.9.15. Use lambda e: any -> None { 0; } as no-op.
+- Complex lambda in JSX: onChange={(props["handler"] or lambda e: any -> None { 0; })} causes parse errors in 0.9.15. Use onChange={props["handler"]} directly.
 
 TOPICS (cover all concisely):
 
@@ -60,25 +90,25 @@ TOPICS (cover all concisely):
 
 2. CONTROL: if cond { } elif { } else { }; for x in items { }; for i=0 to i<10 by i+=1 { }; while cond { }; match x { case V: stmt; case _: stmt; } (cases use COLON not braces); try { } except Type as e { } finally { } (uses except, not catch)
 
-3. FUNCTIONS: def name(p: T) -> R { }; lambdas: lambda p: T -> R : expr (expression form) OR lambda p: T -> R { return expr; } (block form, MUST have return); glob var: T = val; at module level; pipe: val |> func; f-strings: f"Hello {name}!"
+3. FUNCTIONS: def name(p: T) -> R { }; lambdas: lambda p: T -> R : expr (expression form) OR lambda p: T -> R { return expr; } (block form, MUST have return); lambda as arg: items.sort(key=lambda x: dict -> float : x["val"]); glob var: T = val; at module level, accessible by name in functions (no re-declaration needed); pipe: val |> func; f-strings: f"Hello {name}!"; only declarations at top level, executable statements must be inside with entry { } or functions
 
-4. IMPORTS: import os; import from math { sqrt }; import from datetime { datetime as dt }; include module; packages require __init__.jac like Python's __init__.py
+4. IMPORTS: import os; import from math { sqrt }; import from datetime { datetime as dt }; include module; (include sub.module; for subpackages); packages require __init__.jac like Python's __init__.py; WRONG: import from math, sqrt; (comma form does not exist); no import:py or import:jac syntax exists
 
 5. ARCHETYPES: node N { has f: T; def m() { } can on_v with W entry { } }; edge E { has f: T; }; walker W { has s: T; can act with N entry { visit [-->]; } }; obj O { has f: T; def m() { } }; enum E { A, B=1 }; inheritance: obj Child(Parent) { }; impl blocks: impl W.ability { code }; postinit: has f: T by postinit; def postinit { self.f = val; }
 
 6. ACCESS: has:priv f: T; has :pub f: T; def:pub m() { }; can:protect h with entry { }; only :pub :priv :protect; both has:priv and has :priv are valid
 
-7. GRAPH: a ++> b (untyped connect); a <++> b (bidirectional); a +>: Edge() :+> b (typed forward connect); a <+: Edge() :<+ b (typed backward connect); a del--> b (disconnect, del attaches to arrow); [-->] forward traversal; [<--] back; [->:E:->] typed traversal (uses ->: :-> brackets); [<-:E:<-] typed backward; [->:E1:->->:E2:->] chained; [-->(`?Node)] filter type; [-->](?attr>v) filter attr; [->:E:attr > val:->] edge attr filter; walrus in connect: root +>: E() :+> (end := A()); visit : 0 : [-->] (indexed visit). Wrong: a ++> Edge() ++> b; [-->:E:]; del a --> b;
+7. GRAPH: a ++> b (untyped connect); a <++> b (bidirectional); a +>: Edge() :+> b (typed forward connect); a <+: Edge() :<+ b (typed backward connect); a del--> b (disconnect, del attaches to arrow); [-->] forward traversal; [<--] back; [->:E:->] typed traversal (uses ->: :-> brackets); [<-:E:<-] typed backward; [->:E1:->->:E2:->] chained; [-->(`?Node)] filter type; [-->](?attr>v) filter attr; [->:E:attr > val:->] edge attr filter; TRAVERSAL FROM VARIABLE: [node_var -->] or [node_var ->:E:->] traverses from a specific node (not just here); walrus in connect: root +>: E() :+> (end := A()); visit : 0 : [-->] (indexed visit). Wrong: a ++> Edge() ++> b; [-->:E:]; del a --> b;
 
 8. ABILITIES: can name with Type entry { } or exit { }; always requires with...entry/exit; use def for regular methods; self=instance here=node visitor=walker props=walker_props root=user_root `root=root_type
 
-9. WALKERS: node spawn Walker(); OR Walker() spawn node; (both valid); visit [-->]; visit [-->] else { }; visit [->:E:->]; report val; disengage; skip; result.reports for collected
+9. WALKERS: root spawn Walker(); OR Walker() spawn root; (both valid, use root or a variable, never bare keyword node); visit [-->]; visit [-->] else { }; visit [->:E:->]; report val; disengage; skip; result.reports for collected
 
 10. BY_LLM: def f(x: str) -> str by llm; (builtin, no import); def f() -> Obj by llm(); also valid; by llm(temperature=0.7) for params; by llm(method="Reason"); has desc: str = "" """hint"""; for semstrings (default value required); "prompt" by llm; for inline
 
 11. FILE_JSON: f=file.open(p,"r"); f.read(); f.write(s); f.close(); json.dumps(data); json.loads(s) (NEVER use obj as variable name, it is a keyword)
 
-12. API: jac start file.jac; walker becomes endpoint; walker W { has d: str; obj __specs__ { static has methods: list=["GET"]; static has auth: bool=True; static has path_prefix: str="/api"; } can h with `root entry { report {"k":v}; } }; wrong: __specs__={"methods":[]}
+12. API: jac start file.jac; walker becomes endpoint; walker :pub W { has d: str; obj __specs__ { static has methods: list=["GET"]; static has path_prefix: str="/api"; } can h with `root entry { report {"k":v}; } }; :pub makes walker public (no auth) but :pub walkers have READ-ONLY root access (graph writes silently fail); without :pub, auth required (Jac built-in: /user/register, /user/login for tokens); for custom auth (OAuth/JWT): make all walkers :pub, handle auth manually inside walker; __specs__ controls methods/path only, NOT auth; wrong: static has auth: bool=False; in __specs__ (does nothing)
 
 13. WEBSOCKET: obj __specs__ { static has methods: list=["websocket"]; }; socket.notify_users(ids,msg); socket.notify_channels(names,msg)
 
@@ -96,14 +126,22 @@ TOPICS (cover all concisely):
 
 20. STDLIB: print len range enumerate type str int float list dict set; s.upper() lower() strip() split() join(); l.append() extend() pop() sort(); d.keys() values() items() get()
 
-21. JSX: sv { walker W { obj __specs__ { static has methods: list=["get"]; } can f with `root entry { report {}; } } } cl { def:pub App() -> any { has count: int=0; can with entry { } can with [dep] entry { } can with exit { } def inc() { count+=1; } return <div><p>{count}</p><button onClick={inc}>+</button></div>; } }
+21. JSX/CLIENT: .cl.jac files are automatically client-side (no cl{} wrapper needed); sv import from walkers { W } for server imports in cl context; import from react { useEffect } for lifecycle (NOT can with entry in client context); useEffect(lambda -> None { myAsyncFunc(); }, []) for mount; async def myAsyncFunc() -> None { result = root spawn W(); } (root spawn requires async def); root spawn ALWAYS sends POST -- walker __specs__ MUST include "POST" in methods list; walker must be walker :pub (no auth) or client must be authenticated; NO ternary ?: -- use (expr) if cond else (expr); FULL JS builtin mapping: .length not len(); String(x) not str(x); parseInt(x) not int(x); parseFloat(x) not float(x); Math.min/max not min/max; .trim() not .strip(); no range() (use while loop); no enumerate(); (dict["k"] or default) not dict.get(); + for string concat (no f-strings); no tuple unpacking in cl (use item[0]); no new keyword; className not class for JSX attributes (React 18 ignores class prop); import "./styles.css"; for CSS; empty lambda body fails: use { 0; } not {}; cl { def:pub App() -> any { has count: int=0; def inc() { count += 1; } return <div><p>{count}</p><button onClick={inc}>+</button></div>; } }; component imports: import from .components.Button { Button }
 
-22. DEPLOY: docker: FROM python:3.11-slim; pip install jaclang; jac start main.jac; jac start --scale -t kubernetes (requires -t flag for target); env: DATABASE_URL JAC_SECRET_KEY OPENAI_API_KEY
+22. JAC.TOML (project config): [project] name version description entry-point="main.jac"; [dependencies] requests=">=2.28.0"; [dependencies.npm] jac-client-node="1.0.4"; [dependencies.npm.dev] "@jac-client/dev-deps"="1.0.0"; [dev-dependencies] watchdog=">=3.0.0"; [serve] port=8000 base_route_app="app" (serves client app at / instead of API info); [plugins.client] port=5173; [build] dir=".jac"; [scripts] dev="jac run main.jac"
+
+23. FULLSTACK SETUP: jac create myapp --use fullstack (scaffolds project); jac install (Python deps); jac start auto-installs npm deps from jac.toml; jac add --npm lodash (adds to jac.toml and installs); NEVER run npm install or bun install in .jac/client/ directly (corrupts managed tree); ENTRY POINT: main.jac has sv{} block importing server walkers + cl{} block with def:pub app() -> any matching base_route_app in jac.toml; .cl.jac files auto-compiled to .jac/client/compiled/ (do NOT include via include); include in __init__.jac: use full dotted paths (include pkg.module;) -- short paths pass jac check but fail at runtime; .jac/ directory is fully auto-generated (never modify manually, files get wiped on regen); Tailwind v4: add tailwindcss and @tailwindcss/postcss to [dependencies.npm], place postcss.config.js at .jac/client/postcss.config.js (Vite root, not project root)
+
+24. DEV SERVER: jac start --dev (HMR mode); --port is main dev port (Vite frontend, default 8000); --api_port is backend API (default 8001, proxied via Vite); --no-client skips client bundling (API only); browser opens port 8000; /walker/* /function/* /user/* auto-proxied to API; file watcher monitors .jac files for hot reload
+
+25. DEPLOY: docker: FROM python:3.11-slim; pip install jaclang; jac start main.jac; jac start --scale -t kubernetes (requires -t flag for target); env: DATABASE_URL JAC_SECRET_KEY OPENAI_API_KEY
+
+26. ENV_LOADING: jac start does NOT auto-load .env files; import from dotenv { load_dotenv }; glob _dotenv_loaded: bool = load_dotenv() or True; (glob trick runs at module load since top-level statements not allowed); then use import from os { getenv }; val = getenv("MY_VAR"); requires python-dotenv in [dependencies] in jac.toml
 
 PATTERNS (include 2-3 complete examples using CORRECT syntax above):
-- Fullstack single-file with sv{} and cl{} -- use +>: E() :+> for typed edges; for event handlers with assignments (onChange, onClick) use BLOCK form lambda: lambda e: any -> None { val = e.target.value; } NOT expression form (expression form cannot contain assignments)
-- Walker graph traversal with visit/report -- use [->:E:->] for typed traversal, a del--> b for disconnect
-- API endpoint with __specs__ -- use match x { case V: stmt; } for match/case
+- Fullstack single-file with sv{} and cl{} -- use +>: E() :+> for typed edges; block-form lambdas for event handlers; show jac.toml with base_route_app and dependencies.npm; show main.jac entry point pattern with sv{} imports and cl{} def:pub app; in cl{} use useEffect(lambda -> None { asyncFunc(); }, []) for lifecycle, async def for root spawn, JS builtins (.length not len()), (expr) if cond else (expr) not ternary ?:, string concat not f-strings, sv import for server walkers, className not class for JSX attributes; walker __specs__ MUST include "POST" for any walker called from client (root spawn always sends POST); walkers called from client should be walker :pub (public, no auth) unless client handles authentication; NEVER use static has auth: bool in __specs__ (auth is controlled by :pub on walker declaration)
+- Walker graph traversal with visit/report -- use [->:E:->] for typed traversal, a del--> b for disconnect, show [node_var ->:E:->] for traversal from specific node
+- API endpoint with __specs__ and :pub -- use walker :pub for public endpoints; match x { case V: stmt; } for match/case; NEVER use static has auth: bool in __specs__
 
 ---
 
@@ -140,7 +178,7 @@ with entry { f = lambda x: int -> int { return x * 2; }; }
 # Lambda multi-param
 with entry { f = lambda x: int, y: int -> int : x + y; }
 
-# Spawn both forms
+# Spawn both forms (use root or variable, NEVER bare keyword node)
 with entry { root spawn W1(); W2() spawn root; }
 
 # Edge connect with kwargs
@@ -201,9 +239,121 @@ node Person { has name: str; has age: int = 0; }
 # cl block list append (not + operator, cl{} blocks only)
 # items.append(x); NOT items = items + [x]; (this restriction is cl{} blocks only)
 
+# Traversal from a specific node variable (not just here)
+node City { has name: str; }
+edge Road { has distance: float = 0.0; }
+with entry { a = (root +>: Road(distance=50.0) :+> City(name="X"))[0]; neighbors = [a ->:Road:->]; untyped = [a -->]; }
+
+# Glob access in functions (no re-declaration needed)
+glob counter: int = 0;
+def increment() -> int { counter += 1; return counter; }
+
+# Lambda as sort key argument
+with entry { items: list = [{"v": 2.0}, {"v": 1.0}]; items.sort(key=lambda x: dict -> float : x["v"]); }
+
+# Top-level restriction: only declarations allowed, not executable statements
+# WRONG: print("hello"); at top level
+# RIGHT: with entry { print("hello"); }
+
+# Import forms
+# WRONG: import from math, sqrt;
+# RIGHT: import from math { sqrt }
+# import:py and import:jac do NOT exist in Jac
+
+# Fullstack entry point (main.jac) -- shows wiring pattern
+# sv { import from endpoints { Todo, AddTodo, ListTodos } }
+# cl { import from .frontend { app as ClientApp }
+#     def:pub app -> any { return <ClientApp />; }
+# }
+
+# jac.toml for fullstack project
+# [project]
+# name = "myapp"
+# entry-point = "main.jac"
+# [dependencies.npm]
+# jac-client-node = "1.0.4"
+# [dependencies.npm.dev]
+# "@jac-client/dev-deps" = "1.0.0"
+# [serve]
+# base_route_app = "app"
+# [plugins.client]
+
+# No ternary ?: in Jac
+# WRONG: result = x > 0 ? "yes" : "no";
+# RIGHT: result = ("yes") if x > 0 else ("no");
+
+# cl{} context: JS builtins, not Python
+# WRONG (in cl): len(items), item.strip(), str(x), f"Hello {name}"
+# RIGHT (in cl): items.length, item.trim(), String(x), "Hello " + name
+
+# sv import prefix for server imports in .cl.jac
+# sv import from walkers.todo { AddTodo, ListTodos }
+
+# useEffect for lifecycle in cl (NOT can with entry)
+# import from react { useEffect }
+# useEffect(lambda -> None { loadData(); }, []);
+# async def loadData() -> None { result = root spawn GetItems(); }
+# root spawn MUST be in async def (compiles to await)
+
+# include in __init__.jac: use full dotted paths
+# WRONG: include nodes; (passes jac check, fails at runtime)
+# RIGHT: include mypackage.nodes;
+
+# className not class in JSX (React 18 ignores class prop)
+# WRONG: <div class="container">
+# RIGHT: <div className="container">
+
+# root spawn sends POST -- walker must allow POST and be :pub for no-auth access
+# walker :pub MyWalker {
+#     obj __specs__ { static has methods: list = ["POST"]; } # MUST include POST for client spawn
+#     can run with `root entry { report "ok"; }
+# }
+# WRONG: static has auth: bool = False; # auth field in __specs__ does nothing
+# RIGHT: walker :pub MyWalker { } # :pub controls auth, not __specs__
+
+# npm deps via jac.toml only
+# [dependencies.npm]
+# tailwindcss = "^4.0.0"
+# "@tailwindcss/postcss" = "^4.0.0"
+# WRONG: cd .jac/client && npm install tailwindcss
+
+# :pub walker -- public but READ-ONLY root access
+# walker :pub ReadOnly {
+#     obj __specs__ { static has methods: list = ["GET", "POST"]; }
+#     can read with `root entry { report [-->]; } # OK: reads work
+# }
+# WRONG: graph writes silently fail in :pub walker when here is root
+# walker :pub WriteAttempt {
+#     can write with `root entry { here +>: E() :+> Node(); } # Silently fails!
+# }
+# For write access: use Jac built-in auth (walker without :pub + auth token)
+
+# Custom auth: make all walkers :pub, check auth manually
+# walker :pub SecureEndpoint {
+#     has token: str = "";
+#     can handle with `root entry {
+#         if not verify_jwt(self.token) { report {"error": "unauthorized"}; disengage; }
+#         report {"data": "secret"};
+#     }
+# }
+
+# .env loading via glob trick (top-level statements not allowed)
+# import from dotenv { load_dotenv }
+# import from os { getenv }
+# glob _dotenv_loaded: bool = load_dotenv() or True;
+# with entry { api_key = getenv("API_KEY"); }
+
+# Empty lambda body -- use { 0; } not {}
+# WRONG: lambda e: any -> None {}
+# RIGHT: lambda e: any -> None { 0; }
+
+# Full cl{} JS builtin mapping
+# WRONG (in cl): len(items), str(x), int(x), float(x), min(a,b), max(a,b), s.strip(), range(5), enumerate(items), d.get("k", v), f"Hi {x}"
+# RIGHT (in cl): items.length, String(x), parseInt(x), parseFloat(x), Math.min(a,b), Math.max(a,b), s.trim(), (use while loop), (manual index), (d["k"] or v), "Hi " + x
+
 ---
 
-Generate terse reference. No markdown. No blank lines. Show syntax and examples, minimize explanation. All topics required. ~12-15KB target. Every code example MUST use the verified syntax above. When in doubt, prefer the VERIFIED SYNTAX EXAMPLES over any other source.
+Generate terse reference. No markdown. No blank lines. Show syntax and examples, minimize explanation. All topics required. ~15-20KB target. Every code example MUST use the verified syntax above. When in doubt, prefer the VERIFIED SYNTAX EXAMPLES over any other source.
 
 GOLDEN STYLE EXAMPLE (Follow this EXACT formatting, spacing, and header style):
 

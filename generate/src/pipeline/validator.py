@@ -325,7 +325,26 @@ class Validator:
             if started and brace_count == 0:
                 break
 
-        return ' '.join(result_lines), end_idx
+        cleaned = []
+        for rl in result_lines:
+            rl = self._strip_inline_comment(rl)
+            if rl:
+                cleaned.append(rl)
+        return ' '.join(cleaned), end_idx
+
+    @staticmethod
+    def _strip_inline_comment(line: str) -> str:
+        """Strip # comments while preserving # inside strings."""
+        in_str = None
+        for i, ch in enumerate(line):
+            if ch in ('"', "'") and (i == 0 or line[i - 1] != '\\'):
+                if in_str is None:
+                    in_str = ch
+                elif in_str == ch:
+                    in_str = None
+            elif ch == '#' and in_str is None:
+                return line[:i].rstrip()
+        return line
 
     def run_jac_check(self, code: str, timeout: int = 5) -> tuple[bool, Optional[str]]:
         """Run jac check on a code snippet.
